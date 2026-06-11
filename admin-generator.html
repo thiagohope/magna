@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Magna Admin - Certificate Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body { background: #e5e7eb; color: #1a1a1a; font-family: 'Inter', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+        
+        .admin-panel {
+            background: #1f2937; color: white; padding: 2rem;
+            max-width: 400px; margin: 2rem auto; border-radius: 1rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .page { 
+            width: 210mm; min-height: 297mm; padding: 20mm; 
+            margin: 20px auto; background: white; 
+            position: relative; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; text-align: center;
+            border: 1px solid #ccc;
+        }
+
+        .border-inset { 
+            position: absolute; top: 15mm; right: 15mm; bottom: 15mm; left: 15mm; 
+            border: 1px solid #1a1a1a; pointer-events: none; 
+        }
+
+        @media print { 
+            body { background: white; }
+            .no-print, .admin-panel { display: none !important; } 
+            .page { box-shadow: none; margin: 0; border: none; width: 100%; height: 100vh; } 
+        }
+    </style>
+</head>
+<body>
+
+    <div class="admin-panel no-print">
+        <h2 class="text-xl font-bold mb-4 text-yellow-400">Gerador Admin Magna</h2>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Selecionar Obra</label>
+                <select id="artSelect" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white" onchange="updatePreview()">
+                    <option value="">Carregando obras...</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-sm text-gray-400 mb-1">Tipo / Dimensão</label>
+                <select id="printType" class="w-full p-2 rounded bg-gray-700 border border-gray-600 text-white" onchange="updatePreview()">
+                    <option value="Gallery Print (70x100 cm)">Gallery Print (70 x 100 cm)</option>
+                    <option value="Collector Print (50x70 cm)">Collector Print (50 x 70 cm)</option>
+                    <option value="Original Artwork">Original Artwork (Peça Única)</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Cópia Nº</label>
+                    <input type="number" id="copyNum" value="1" min="1" class="w-full p-2 rounded bg-gray-700 text-white" oninput="updatePreview()">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Total</label>
+                    <input type="number" id="totalCopies" value="50" class="w-full p-2 rounded bg-gray-700 text-white" oninput="updatePreview()">
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-600">
+                <label class="block text-sm text-yellow-400 mb-1 font-bold">UUID / Hash da Venda</label>
+                <input type="text" id="manualHash" placeholder="Cole o código recebido..." class="w-full p-2 rounded bg-gray-800 border border-yellow-600 text-white font-mono text-xs mb-2">
+                <div class="flex gap-2">
+                    <button onclick="generateCertificate(false)" class="w-1/2 bg-gray-600 hover:bg-gray-500 text-white py-2 px-2 rounded text-xs">🎲 Gerar Novo</button>
+                    <button onclick="generateCertificate(true)" class="w-1/2 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-2 rounded text-xs">✅ Usar Este Hash</button>
+                </div>
+                <button onclick="window.print()" class="w-full mt-4 bg-white hover:bg-gray-200 text-black font-bold py-2 px-4 rounded transition">🖨️ Imprimir PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="page" id="certificateArea">
+        <div class="border-inset"></div>
+        
+        <div class="z-10 mb-6">
+            <h1 class="serif text-4xl mb-2 tracking-widest">CERTIFICATE</h1>
+            <h2 class="text-xs uppercase tracking-[0.3em] text-gray-500">of Authenticity</h2>
+        </div>
+
+        <p id="certDisclaimer" class="max-w-md mx-auto text-sm italic text-gray-600 mb-8 font-serif leading-relaxed px-4">
+            --
+        </p>
+
+        <div class="w-64 h-64 mb-8 bg-gray-100 flex items-center justify-center border border-gray-200 shadow-sm p-2">
+            <img id="certImage" src="" class="max-w-full max-h-full object-contain">
+        </div>
+
+        <div class="w-full max-w-lg mx-auto z-10 text-left grid grid-cols-2 gap-x-8 gap-y-4 text-sm font-sans">
+            <div class="col-span-2 border-b border-dotted border-gray-300 pb-1">
+                <span class="text-gray-500 text-xs uppercase tracking-wide">Artwork Title</span>
+                <span id="certTitle" class="font-serif font-bold text-xl ml-2">--</span>
+            </div>
+            
+            <div class="col-span-2 border-b border-dotted border-gray-300 pb-1">
+                <span class="text-gray-500 text-xs uppercase tracking-wide">Artist</span>
+                <span class="font-semibold text-lg ml-2">Magna Leite</span>
+            </div>
+
+            <div class="col-span-2 border-b border-dotted border-gray-300 pb-1">
+                <span class="text-gray-500 text-xs uppercase tracking-wide">Format</span>
+                <span id="certDimension" class="font-semibold text-lg ml-2">--</span>
+            </div>
+
+            <div class="border-b border-dotted border-gray-300 pb-1">
+                <span class="text-gray-500 text-xs uppercase tracking-wide">Edition</span>
+                <span id="certEdition" class="font-semibold text-lg ml-2">--</span>
+            </div>
+
+            <div class="border-b border-dotted border-gray-300 pb-1">
+                <span class="text-gray-500 text-xs uppercase tracking-wide">Date</span>
+                <span id="certDate" class="font-semibold text-lg ml-2">--</span>
+            </div>
+        </div>
+
+        <div class="mt-12 w-full max-w-lg flex justify-between items-end">
+            <div class="text-center">
+                <img id="certQR" src="" class="w-24 h-24 mb-2 hidden">
+                <p id="certHash" class="text-[8px] font-mono text-gray-400 break-all w-24">--</p>
+            </div>
+            <div class="text-center w-40">
+                <div class="border-b border-black mb-2 h-10"></div>
+                <p class="text-[10px] uppercase tracking-widest text-gray-500">Artist Signature</p>
+            </div>
+        </div>
+        
+        <div class="absolute bottom-6 text-[9px] text-gray-300 uppercase tracking-widest">
+            Magna Studio · Brainboxmed Project
+        </div>
+    </div>
+
+    <script>
+        // Variável global para armazenar os dados carregados do JSON
+        let artworksData = {};
+
+        // 1. CARREGAR OBRAS AUTOMATICAMENTE AO ABRIR
+        async function loadArtworks() {
+            try {
+                const response = await fetch('artworks.json');
+                artworksData = await response.json();
+                
+                const select = document.getElementById('artSelect');
+                select.innerHTML = ''; // Limpa o "Carregando..."
+
+                // Preenche o dropdown com o que está no JSON
+                for (const [slug, art] of Object.entries(artworksData)) {
+                    const option = document.createElement('option');
+                    option.value = slug; // O valor é o ID (slug)
+                    option.textContent = art.title; // O texto é o Título
+                    select.appendChild(option);
+                }
+
+                updatePreview(); // Atualiza a tela com a primeira obra
+            } catch (error) {
+                alert("Erro ao carregar artworks.json. Use o Live Server.");
+                console.error(error);
+            }
+        }
+
+        // 2. ATUALIZAR A PRE-VISUALIZAÇÃO
+        function updatePreview() {
+            const select = document.getElementById('artSelect');
+            const slug = select.value;
+            
+            // Pega os dados da obra selecionada da memória
+            const art = artworksData[slug];
+            
+            if (!art) return;
+
+            // Preenche imagem e título
+            document.getElementById('certImage').src = art.image; // Caminho já vem do JSON (ex: assets/img.jpg)
+            document.getElementById('certTitle').textContent = art.title;
+            
+            // Lógica do Tipo/Dimensão
+            const printType = document.getElementById('printType').value;
+            document.getElementById('certDimension').textContent = printType;
+
+            // Lógica do Disclaimer
+            const disclaimerEl = document.getElementById('certDisclaimer');
+            
+            if (printType === 'Original Artwork') {
+                disclaimerEl.textContent = "\"This document certifies that the artwork described herein is an authentic, original work created by the artist Magna Leite. All copyright and reproduction rights are reserved by the artist.\"";
+                document.getElementById('certEdition').textContent = "Unique Piece (1/1)";
+                document.getElementById('copyNum').disabled = true;
+                document.getElementById('totalCopies').disabled = true;
+            } else {
+                disclaimerEl.textContent = "\"This document certifies that the artwork described herein is a limited edition Fine Art print, produced under the supervision of the artist Magna Leite. It is numbered and signed to guarantee authenticity.\"";
+                document.getElementById('copyNum').disabled = false;
+                document.getElementById('totalCopies').disabled = false;
+                const current = document.getElementById('copyNum').value;
+                const total = document.getElementById('totalCopies').value;
+                document.getElementById('certEdition').textContent = `${current.toString().padStart(2, '0')} / ${total}`;
+            }
+
+            const today = new Date();
+            document.getElementById('certDate').textContent = today.toLocaleDateString('pt-PT');
+        }
+
+        // 3. GERAR UUID E QR CODE
+        function uuidv4() {
+            return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        }
+
+        function generateCertificate(useManual) {
+            let finalHash;
+            if (useManual) {
+                const inputHash = document.getElementById('manualHash').value.trim();
+                if (!inputHash) { alert("Cole o Hash!"); return; }
+                finalHash = inputHash;
+            } else {
+                finalHash = uuidv4();
+                document.getElementById('manualHash').value = finalHash;
+            }
+
+            const hashDisplay = document.getElementById('certHash');
+            hashDisplay.textContent = finalHash;
+            hashDisplay.classList.remove('text-gray-600');
+            hashDisplay.classList.add('text-green-700', 'font-bold');
+
+            const slug = document.getElementById('artSelect').value;
+            const copyNum = document.getElementById('copyNum').value;
+            
+            const trackUrl = `https://brainboxmed.com/magna/verify.html?art=${slug}&edition=${copyNum}&id=${finalHash}`;
+            const qrApi = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(trackUrl)}`;
+            
+            const qrImg = document.getElementById('certQR');
+            qrImg.src = qrApi;
+            qrImg.classList.remove('hidden');
+
+            updatePreview();
+        }
+
+        // Iniciar carregamento
+        window.onload = loadArtworks;
+    </script>
+</body>
+</html>

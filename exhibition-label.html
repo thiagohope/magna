@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna - Exhibition Display Label</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Reset e Fontes */
+        body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; }
+        .serif { font-family: 'Playfair Display', serif; }
+        
+        /* === ESTILO PURE CANVAS === */
+        .canvas-floating {
+            border: 4px solid #ffffff; 
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+            display: inline-block;
+            line-height: 0;
+            background-color: transparent; 
+        }
+
+        .zoom-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* === CONFIGURAÇÃO DE IMPRESSÃO DINÂMICA === */
+        @media print {
+            .no-print { display: none !important; }
+            body { 
+                background: white; 
+                display: flex; 
+                align-items: center; 
+                justify-content: center; 
+                height: 100vh;
+                width: 100vw;
+                overflow: hidden;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            main { 
+                width: 100% !important; 
+                max-width: 100% !important; 
+                padding: 10mm !important; 
+                gap: 20mm !important;
+            }
+            h1 { font-size: 3.5rem !important; }
+            p { font-size: 1.1rem !important; }
+            .canvas-floating { box-shadow: none; border: 1px solid #ddd; }
+        }
+    </style>
+</head>
+<body class="p-8">
+
+    <div class="no-print w-full max-w-7xl mb-8 z-50 fixed top-0 left-0 right-0 mx-auto mt-4">
+        <div class="bg-white/95 backdrop-blur rounded-xl shadow-lg border border-gray-200 p-3 lg:p-4 flex flex-col lg:flex-row gap-4 items-center justify-between">
+            
+            <div class="flex flex-col gap-1 w-full lg:w-1/3">
+                <label class="text-[10px] font-bold uppercase tracking-widest text-gray-400" data-i18n="selectLabel">Artwork</label>
+                <select id="artSelect" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-black cursor-pointer bg-transparent">
+                    <option value="">Loading...</option>
+                </select>
+            </div>
+
+            <div class="flex gap-4 w-full lg:w-auto">
+                <div class="flex flex-col gap-1 w-1/2 lg:w-32">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-400" data-i18n="paperLabel">Paper Size</label>
+                    <select id="pageSize" onchange="updatePrintConfig()" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-black cursor-pointer bg-transparent font-medium">
+                        <option value="A4">A4</option>
+                        <option value="A3">A3</option>
+                        <option value="A5">A5</option>
+                        <option value="Letter">Letter</option>
+                    </select>
+                </div>
+
+                <div class="flex flex-col gap-1 w-1/2 lg:w-32">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Language</label>
+                    <select id="langSelect" class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-black cursor-pointer bg-transparent font-medium text-black">
+                        <option value="en">English</option>
+                        <option value="pt">Português</option>
+                        <option value="es">Español</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="flex gap-3 mt-2 lg:mt-0 w-full lg:w-auto justify-end">
+                 <a href="admin-hub.html" class="px-4 py-2 bg-white border border-gray-200 rounded text-sm font-medium hover:bg-gray-50 text-gray-600 transition h-10 flex items-center justify-center whitespace-nowrap" data-i18n="backBtn">
+                    Back
+                </a>
+                <button onclick="window.print()" class="px-6 py-2 bg-black text-white rounded text-sm font-bold uppercase tracking-wider hover:bg-gray-800 transition shadow-md h-10 flex items-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    <span data-i18n="printBtn">Print Label</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="h-32 w-full no-print"></div>
+
+    <main class="w-full max-w-7xl grid grid-cols-2 gap-16 items-center flex-grow p-10">
+        
+        <div class="flex flex-col items-center justify-center">
+            <div id="canvasContainer" class="canvas-floating rotate-1 transition duration-700">
+                <img id="mainImage" src="" alt="Artwork" class="zoom-img max-h-[70vh] w-auto">
+            </div>
+        </div>
+
+        <div class="flex flex-col h-full justify-center text-left">
+            
+            <div class="mb-4">
+                <p class="text-xs font-bold uppercase tracking-[0.4em] text-gray-400 border-b border-gray-300 pb-2 inline-block" data-i18n="headerMagna">Magna Exhibition</p>
+            </div>
+
+            <h1 id="artTitle" class="serif text-5xl lg:text-7xl mb-6 text-black leading-tight">...</h1>
+            
+            <div class="space-y-2 text-lg text-gray-600 mb-10 border-l-4 border-black pl-6">
+                <p>
+                    <span class="font-bold text-black uppercase text-xs tracking-wide block text-gray-400" data-i18n="labelArtist">Artist</span> 
+                    Magna
+                </p>
+                <div class="h-2"></div>
+                <p>
+                    <span class="font-bold text-black uppercase text-xs tracking-wide block text-gray-400" data-i18n="labelYearTech">Year & Tech</span> 
+                    <span id="artYear">...</span>, <span id="artTech">...</span>
+                </p>
+                <div class="h-2"></div>
+                <p>
+                    <span class="font-bold text-black uppercase text-xs tracking-wide block text-gray-400" data-i18n="labelDim">Dimensions</span> 
+                    <span id="artDim">...</span>
+                </p>
+            </div>
+
+            <div class="mb-12">
+                <p id="artStory" class="text-gray-800 leading-relaxed italic text-2xl font-serif">...</p>
+            </div>
+
+            <div class="mt-auto flex items-center gap-6 bg-white p-4 pr-8 rounded-lg border border-gray-200 w-fit shadow-sm">
+                <div id="qrcode" class="p-1 bg-white"></div>
+                <div>
+                    <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1" data-i18n="qrHeader">Interactive Guide</p>
+                    <p class="serif text-xl text-black leading-tight" data-i18n="qrText">Scan for Price <br>&amp; Authenticity</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const JSON_PATH = 'artworks.json'; 
+        let globalDB = null;
+        let currentSlug = null;
+
+        // === TRADUÇÕES UI ===
+        const translations = {
+            en: {
+                selectLabel: "Artwork",
+                paperLabel: "Paper Size",
+                backBtn: "Back",
+                printBtn: "Print Label",
+                headerMagna: "Magna Exhibition",
+                labelArtist: "Artist",
+                labelYearTech: "Year & Tech",
+                labelDim: "Dimensions",
+                qrHeader: "Interactive Guide",
+                qrText: "Scan for Price <br>& Authenticity"
+            },
+            pt: {
+                selectLabel: "Obra",
+                paperLabel: "Tamanho Papel",
+                backBtn: "Voltar",
+                printBtn: "Imprimir",
+                headerMagna: "Exposição Magna",
+                labelArtist: "Artista",
+                labelYearTech: "Ano e Técnica",
+                labelDim: "Dimensões",
+                qrHeader: "Guia Interativo",
+                qrText: "Scan para Preço <br>e Autenticidade"
+            },
+            es: {
+                selectLabel: "Obra",
+                paperLabel: "Tamaño Papel",
+                backBtn: "Volver",
+                printBtn: "Imprimir",
+                headerMagna: "Exposición Magna",
+                labelArtist: "Artista",
+                labelYearTech: "Año y Técnica",
+                labelDim: "Dimensiones",
+                qrHeader: "Guía Interactiva",
+                qrText: "Escanear para Precio <br>y Autenticidad"
+            }
+        };
+
+        // === 1. GESTÃO DE IDIOMA ===
+        function getLang() {
+            return localStorage.getItem('magna_lang') || 'en';
+        }
+
+        function setLanguage(lang) {
+            localStorage.setItem('magna_lang', lang);
+            document.documentElement.lang = lang;
+            
+            // Atualiza UI Fixa
+            const t = translations[lang];
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.innerHTML = t[key]; // innerHTML permite <br>
+            });
+
+            // Re-renderiza conteúdo dinâmico se já tivermos dados
+            if (globalDB && currentSlug) {
+                renderLabel(globalDB[currentSlug], currentSlug);
+            }
+        }
+
+        // === 2. CONFIGURAÇÃO DE IMPRESSÃO ===
+        function updatePrintConfig() {
+            const size = document.getElementById('pageSize').value;
+            const oldStyle = document.getElementById('print-style-block');
+            if (oldStyle) oldStyle.remove();
+
+            const style = document.createElement('style');
+            style.id = 'print-style-block';
+            style.innerHTML = `@page { size: ${size} landscape; margin: 0; }`;
+            document.head.appendChild(style);
+        }
+
+        // === 3. UTILITÁRIOS ===
+        function getSlugFromUrl() {
+            return new URLSearchParams(window.location.search).get('id');
+        }
+
+        function setSlugInUrl(slug) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('id', slug);
+            window.history.replaceState({}, "", url.toString());
+            currentSlug = slug;
+        }
+
+        async function loadDB() {
+            const res = await fetch(JSON_PATH);
+            return await res.json();
+        }
+
+        function fillSelect(db, activeSlug) {
+            const sel = document.getElementById('artSelect');
+            sel.innerHTML = '<option value="">-- Select Artwork --</option>';
+            Object.entries(db).forEach(([slug, art]) => {
+                const opt = document.createElement('option');
+                opt.value = slug;
+                opt.textContent = art.title;
+                if(slug === activeSlug) opt.selected = true;
+                sel.appendChild(opt);
+            });
+        }
+
+        // === 4. RENDERIZAÇÃO ===
+        function renderLabel(art, slug) {
+            if (!art) return;
+            document.title = `Label - ${art.title}`;
+            
+            // Imagem e Proporção
+            const container = document.getElementById('canvasContainer');
+            const dimRegex = /(\d+)\s*x\s*(\d+)/i;
+            const match = art.dimensions.match(dimRegex);
+            if (match) {
+                container.style.aspectRatio = `${match[1]} / ${match[2]}`;
+            }
+
+            let originalPath = art.image.startsWith('/') ? art.image.substring(1) : art.image;
+            let thumbPath = originalPath.replace('assets/', 'assets/thumbnails/');
+            
+            const imgEl = document.getElementById('mainImage');
+            imgEl.src = thumbPath;
+            imgEl.onerror = function() { this.src = originalPath; this.onerror = null; };
+
+            // Textos Dinâmicos (Traduzidos)
+            const lang = getLang();
+            
+            document.getElementById('artTitle').textContent = art.title;
+            document.getElementById('artYear').textContent = art.year;
+            
+            // Puxa do JSON nas 3 línguas
+            document.getElementById('artTech').textContent = art.technique[lang] || art.technique['en'];
+            document.getElementById('artDim').textContent = art.dimensions;
+            document.getElementById('artStory').textContent = `"${art.story[lang] || art.story['en']}"`;
+
+            // QR Code
+            const purchaseUrl = `${window.location.origin}/magna/artwork.html?id=${slug}`;
+            const qrContainer = document.getElementById("qrcode");
+            qrContainer.innerHTML = ""; 
+            new QRCode(qrContainer, {
+                text: purchaseUrl,
+                width: 90, 
+                height: 90,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.M
+            });
+        }
+
+        // === 5. INICIALIZAÇÃO ===
+        (async function init() {
+            updatePrintConfig();
+
+            try {
+                globalDB = await loadDB();
+                
+                // Determina Slug inicial
+                let slug = getSlugFromUrl();
+                if (!slug || !globalDB[slug]) {
+                    slug = Object.keys(globalDB)[0];
+                }
+                setSlugInUrl(slug);
+
+                // Configura Idioma inicial
+                const initialLang = getLang();
+                document.getElementById('langSelect').value = initialLang;
+                setLanguage(initialLang);
+
+                // Renderiza UI
+                fillSelect(globalDB, slug);
+                renderLabel(globalDB[slug], slug);
+
+                // Event Listeners
+                document.getElementById('artSelect').addEventListener('change', (e) => {
+                    const newSlug = e.target.value;
+                    if(newSlug && globalDB[newSlug]) {
+                        setSlugInUrl(newSlug);
+                        renderLabel(globalDB[newSlug], newSlug);
+                    }
+                });
+
+                document.getElementById('langSelect').addEventListener('change', (e) => {
+                    setLanguage(e.target.value);
+                });
+
+            } catch (error) {
+                console.error(error);
+            }
+        })();
+    </script>
+</body>
+</html>

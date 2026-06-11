@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna Manager v4.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; color: #334155; }
+        label { display: block; font-size: 0.65rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem; letter-spacing: 0.05em; }
+        input, select, textarea { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; background: #fff; font-size: 0.875rem; transition: all 0.2s; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #0f172a; box-shadow: 0 0 0 1px #0f172a; }
+        .section-header { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #0f172a; font-weight: 600; margin: 2rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .custom-select-btn { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0.75rem; background: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; cursor: pointer; transition: all 0.2s; }
+        .custom-select-btn:hover { border-color: #000; }
+        .custom-options { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem; margin-top: 0.5rem; max-height: 300px; overflow-y: auto; box-shadow: 0 10px 15px -3px rgba(0,0,0,.1); z-index: 50; display: none; }
+        .custom-options.open { display: block; }
+        .option-item { display: flex; align-items: center; gap: 1rem; padding: 0.75rem; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+        .option-item:hover { background: #f8fafc; }
+        .option-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+        .option-item .title { font-weight: 600; color: #0f172a; font-size: 0.9rem; }
+        .option-item .slug { font-family: monospace; font-size: 0.75rem; color: #94a3b8; }
+        .drop-zone-img { border: 2px dashed #cbd5e1; border-radius: 0.5rem; padding: 1rem; text-align: center; cursor: pointer; transition: all 0.2s; background: #f1f5f9; position: relative; }
+        .drop-zone-img:hover { border-color: #94a3b8; background: #e2e8f0; }
+        #loginScreen { position: fixed; inset: 0; background: #0f172a; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        #adminContent { display: none; }
+        .copy-btn { cursor: pointer; color: #2563eb; text-decoration: underline; font-size: 0.7rem; margin-left: 5px; white-space: nowrap; }
+        .toggle-checkbox:checked { right: 0; border-color: #22c55e; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #22c55e; }
+
+        /* Save button states */
+        #saveBtn { transition: all 0.3s; }
+        #saveBtn.saving { background: #3b82f6; cursor: wait; }
+        #saveBtn.success { background: #16a34a; }
+        #saveBtn.error { background: #dc2626; }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <!-- LOGIN -->
+    <div id="loginScreen">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+            <h1 class="font-serif text-3xl mb-2 text-black">Magna Manager</h1>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mb-8">Controle de Acesso</p>
+            <input type="password" id="passwordInput" placeholder="Senha" class="text-center mb-4">
+            <button onclick="checkLogin()" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:opacity-80 transition">ENTRAR</button>
+            <p id="errorMsg" class="text-red-500 text-xs mt-4 hidden">Acesso Negado</p>
+        </div>
+    </div>
+
+    <!-- ADMIN CONTENT -->
+    <div id="adminContent" class="max-w-7xl mx-auto p-4 md:p-8">
+
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="font-serif text-2xl font-bold text-gray-900">Magna Manager <span class="text-sm font-normal text-gray-400">v4.0</span></h1>
+                <p class="text-sm text-gray-500">Gestão de Obras, Preços, Proveniência & Coleções</p>
+            </div>
+            <div class="flex gap-3 items-center">
+                <!-- Load from server -->
+                <button onclick="loadFromServer()" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition">
+                    ↓ Carregar do Servidor
+                </button>
+                <!-- Load from file (fallback) -->
+                <div class="relative">
+                    <input type="file" id="jsonLoader" accept=".json" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <div id="dropZone" class="flex items-center gap-2 px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 font-medium text-sm hover:bg-gray-200 transition cursor-pointer">
+                        ↑ Carregar Ficheiro
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Status bar -->
+        <div id="statusBar" class="hidden mb-6 p-3 rounded-lg text-sm font-medium"></div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- LEFT FORM -->
+            <div class="lg:col-span-8 bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+
+                <!-- Artwork selector -->
+                <div class="mb-8 relative z-50">
+                    <label>Selecionar Obra</label>
+                    <div class="relative">
+                        <button id="selectBtn" class="custom-select-btn" onclick="toggleDropdown()">
+                            <span class="text-gray-400 italic">Carregue os dados primeiro...</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="dropdownList" class="custom-options"></div>
+                    </div>
+                </div>
+
+                <form id="artForm" class="opacity-50 pointer-events-none transition-opacity duration-300">
+
+                    <!-- Identity -->
+                    <div class="section-header mt-0">
+                        <span>Identidade da Obra</span>
+                        <span class="text-xs font-normal bg-gray-100 px-2 py-1 rounded text-gray-500 flex items-center gap-2">
+                            Slug: <input type="text" id="slug" oninput="updateInterface()" class="bg-transparent border-none p-0 w-24 text-right font-mono text-xs focus:ring-0" readonly>
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label>Título</label>
+                            <input type="text" id="title" class="font-serif text-lg">
+                        </div>
+                        <div>
+                            <label>Imagem (nome do ficheiro)</label>
+                            <div class="drop-zone-img" id="imgDropZone">
+                                <input type="file" id="imgFileInput" class="hidden" accept="image/*">
+                                <p class="text-xs text-gray-500 pointer-events-none"><span class="font-bold text-black">Clique</span> ou Arraste</p>
+                            </div>
+                            <input type="text" id="image" class="font-mono text-xs mt-2 bg-gray-50" placeholder="Nome do ficheiro...">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4 mb-4">
+                        <div><label>Ano</label><input type="text" id="year"></div>
+                        <div><label>Dimensões</label><input type="text" id="dimensions" placeholder="150 x 100 cm (H x W)"></div>
+                        <div>
+                            <label>Coleção</label>
+                            <select id="collection">
+                                <option value="">— Sem coleção —</option>
+                                <option value="setubal">Setúbal</option>
+                                <option value="concept">Concept</option>
+                                <option value="nature">Nature</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Prices display -->
+                    <div class="section-header"><span>Preços Públicos (visíveis no site)</span></div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                        <div>
+                            <label class="text-emerald-800">Original (€)</label>
+                            <input type="number" id="price_original" min="0" step="50" placeholder="1200" class="border-emerald-200 font-bold text-lg text-center">
+                        </div>
+                        <div>
+                            <label class="text-emerald-800">Gallery Print (€)</label>
+                            <input type="number" id="price_gallery" min="0" step="10" placeholder="300" class="border-emerald-200 font-bold text-lg text-center">
+                        </div>
+                        <div>
+                            <label class="text-emerald-800">Collector Print (€)</label>
+                            <input type="number" id="price_collector" min="0" step="10" placeholder="150" class="border-emerald-200 font-bold text-lg text-center">
+                        </div>
+                        <div>
+                            <label class="text-emerald-800">Digital (€)</label>
+                            <input type="number" id="price_digital" min="0" step="5" placeholder="30" class="border-emerald-200 font-bold text-lg text-center">
+                        </div>
+                    </div>
+
+                    <!-- Editions sold -->
+                    <div class="section-header"><span>Controle de Edições Vendidas</span></div>
+                    <div class="grid grid-cols-3 gap-4 mb-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <div class="text-center"><label class="text-yellow-800">Gallery Prints</label><input type="number" id="sold_gallery" class="text-center font-bold" min="0" value="0"></div>
+                        <div class="text-center border-l border-yellow-200"><label class="text-yellow-800">Collector Prints</label><input type="number" id="sold_collector" class="text-center font-bold" min="0" value="0"></div>
+                        <div class="text-center border-l border-yellow-200"><label class="text-yellow-800">Downloads</label><input type="number" id="sold_digital" class="text-center font-bold" min="0" value="0"></div>
+                    </div>
+
+                    <!-- Provenance history -->
+                    <div class="section-header">
+                        <span>Histórico de Proveniência</span>
+                        <button type="button" onclick="addHistoryRow()" class="text-[10px] bg-black text-white px-3 py-1 rounded hover:opacity-80 uppercase font-bold">+ Adicionar</button>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
+                        <div id="historyList" class="space-y-3"><p class="text-center text-xs text-gray-400 italic py-2">Nenhum registro.</p></div>
+                    </div>
+
+                    <!-- Certificate data -->
+                    <div class="section-header"><span>Dados do Certificado</span></div>
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                            <label class="text-blue-800">Registry ID (Hash único)</label>
+                            <div class="flex gap-2 mt-1">
+                                <input type="text" id="originalHash" class="font-mono text-xs" readonly>
+                                <button type="button" onclick="generateUUID()" class="p-2 bg-white rounded border text-xs flex-shrink-0">Gerar</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label>Status (Original)</label>
+                            <select id="status" class="mb-2">
+                                <option value="available">Disponível</option>
+                                <option value="sold_private">Vendido (Privado)</option>
+                                <option value="sold_public">Vendido (Público)</option>
+                            </select>
+                            <label>Localização (PT)</label>
+                            <input type="text" id="loc_pt" placeholder="Ex: Lisboa, Portugal">
+                        </div>
+                    </div>
+
+                    <!-- Texts & translations (collapsed) -->
+                    <details class="mb-6 border rounded-lg p-3 bg-white">
+                        <summary class="text-xs font-bold uppercase cursor-pointer text-gray-500">Expandir Textos & Traduções</summary>
+                        <div class="mt-4 space-y-4">
+                            <div class="grid grid-cols-3 gap-2">
+                                <input id="tech_pt" placeholder="Técnica PT">
+                                <input id="tech_en" placeholder="Technique EN">
+                                <input id="tech_es" placeholder="Técnica ES">
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <textarea id="story_pt" rows="3" placeholder="História PT"></textarea>
+                                <textarea id="story_en" rows="3" placeholder="Story EN"></textarea>
+                                <textarea id="story_es" rows="3" placeholder="Historia ES"></textarea>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Stripe payment links (collapsed) -->
+                    <details class="mb-8 border rounded-lg p-3 bg-white" open>
+                        <summary class="text-xs font-bold uppercase cursor-pointer text-gray-500">Links de Pagamento (Stripe)</summary>
+                        <div class="mt-4 space-y-4">
+                            <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                                <label class="text-black mb-2">Original Artwork</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input id="priceOriginal_test" placeholder="Test Link" class="bg-yellow-50 border-yellow-200">
+                                    <input id="priceOriginal_live" placeholder="Live Link" class="bg-green-50 border-green-200">
+                                </div>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                                <label class="text-black mb-2">Gallery Print (70×100)</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input id="pricePrintGallery_test" placeholder="Test Link" class="bg-yellow-50 border-yellow-200">
+                                    <input id="pricePrintGallery_live" placeholder="Live Link" class="bg-green-50 border-green-200">
+                                </div>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                                <label class="text-black mb-2">Collector Print (50×70)</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input id="pricePrintCollector_test" placeholder="Test Link" class="bg-yellow-50 border-yellow-200">
+                                    <input id="pricePrintCollector_live" placeholder="Live Link" class="bg-green-50 border-green-200">
+                                </div>
+                            </div>
+                            <div class="p-3 bg-gray-50 rounded border border-gray-200">
+                                <label class="text-black mb-2">Digital Download (4K)</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input id="priceDigital_test" placeholder="Test Link" class="bg-yellow-50 border-yellow-200">
+                                    <input id="priceDigital_live" placeholder="Live Link" class="bg-green-50 border-green-200">
+                                </div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- SAVE BUTTON -->
+                    <div class="flex gap-3">
+                        <button type="button" id="saveBtn" onclick="saveToServer()" class="flex-1 py-4 bg-black text-white rounded-xl font-bold text-base hover:bg-gray-900 shadow-lg transition">
+                            💾 GUARDAR NO SERVIDOR
+                        </button>
+                        <button type="button" onclick="generateJSON()" class="px-6 py-4 border-2 border-gray-300 text-gray-700 rounded-xl font-bold text-sm hover:border-black transition">
+                            Gerar JSON
+                        </button>
+                    </div>
+                    <p class="text-center text-xs text-gray-400 mt-2">Guardar no servidor atualiza o site imediatamente. Gerar JSON é para download manual.</p>
+
+                </form>
+            </div>
+
+            <!-- RIGHT SIDEBAR -->
+            <div class="lg:col-span-4 space-y-6 sticky top-8">
+
+                <!-- Stripe Helper -->
+                <div class="bg-blue-50 p-5 rounded-xl border border-blue-200 text-xs">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="font-bold text-blue-900 uppercase tracking-wide">Stripe Setup Helper</h3>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[9px] font-bold" id="modeLabel">TESTE</span>
+                            <div class="relative inline-block w-8 align-middle select-none">
+                                <input type="checkbox" id="modeToggle" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 left-0" onchange="updateInterface()"/>
+                                <label for="modeToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-300 cursor-pointer"></label>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-blue-700 mb-3 leading-tight">Copie para <strong>"Confirmation Page"</strong> no Stripe.</p>
+                    <div class="space-y-3">
+                        <div><span class="font-bold text-[10px] text-gray-500 block">ORIGINAL</span>
+                            <div class="flex gap-1"><input type="text" id="helper_orig" class="font-mono text-[9px] bg-white h-6 w-full px-1 border border-blue-100 rounded" readonly><span onclick="copyVal('helper_orig')" class="copy-btn">Copiar</span></div></div>
+                        <div><span class="font-bold text-[10px] text-gray-500 block">GALLERY PRINT</span>
+                            <div class="flex gap-1"><input type="text" id="helper_gal" class="font-mono text-[9px] bg-white h-6 w-full px-1 border border-blue-100 rounded" readonly><span onclick="copyVal('helper_gal')" class="copy-btn">Copiar</span></div></div>
+                        <div><span class="font-bold text-[10px] text-gray-500 block">COLLECTOR PRINT</span>
+                            <div class="flex gap-1"><input type="text" id="helper_col" class="font-mono text-[9px] bg-white h-6 w-full px-1 border border-blue-100 rounded" readonly><span onclick="copyVal('helper_col')" class="copy-btn">Copiar</span></div></div>
+                        <div><span class="font-bold text-[10px] text-gray-500 block">DOWNLOAD</span>
+                            <div class="flex gap-1"><input type="text" id="helper_dl" class="font-mono text-[9px] bg-white h-6 w-full px-1 border border-blue-100 rounded" readonly><span onclick="copyVal('helper_dl')" class="copy-btn">Copiar</span></div></div>
+                    </div>
+                </div>
+
+                <!-- Certificate Preview -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-gray-200 via-black to-gray-200"></div>
+                    <h3 class="font-serif text-xl mb-1">Preview Certificado</h3>
+                    <div class="text-[10px] text-gray-400 mb-2 italic">Modo: <span id="certModeLabel" class="font-bold text-black">LOCAL</span></div>
+                    <div class="bg-gray-50 p-4 rounded-lg inline-block mb-3 border border-gray-100 mt-2">
+                        <div id="qrPreview"></div>
+                    </div>
+                    <a id="certLink" href="#" target="_blank" class="block w-full border border-black text-black py-2 rounded text-xs font-bold hover:bg-black hover:text-white transition uppercase">Ver Certificado</a>
+                </div>
+
+                <!-- JSON Output -->
+                <div class="bg-gray-900 text-green-400 p-5 rounded-xl shadow-lg font-mono text-xs">
+                    <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
+                        <span class="font-bold">Snippet JSON</span>
+                        <button onclick="copyToClipboard()" class="bg-green-700 text-white px-2 py-1 rounded hover:bg-green-600 transition text-xs">Copiar</button>
+                    </div>
+                    <textarea id="output" class="w-full h-48 bg-transparent border-none resize-none focus:ring-0 text-green-400 p-0 text-[11px]" readonly>// Output aparece aqui após Gerar JSON...</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- History row template -->
+    <template id="historyRowTemplate">
+        <div class="history-row bg-white p-3 rounded border border-gray-200 relative group hover:shadow-md mb-2 transition">
+            <div class="flex gap-2 mb-2">
+                <input type="date" class="hist-date w-1/3 text-xs">
+                <div class="w-2/3">
+                    <select class="hist-event w-full text-xs font-bold">
+                        <option value="Creation">Criação / Ateliê</option>
+                        <option value="Exhibition">Exposição</option>
+                        <option value="Transfer">Venda / Transferência</option>
+                        <option value="Restoration">Restauro</option>
+                        <option value="Certification" selected>Certificação Oficial</option>
+                    </select>
+                </div>
+            </div>
+            <input type="text" class="hist-loc text-xs mb-2" placeholder="Local">
+            <input type="text" class="hist-details text-xs text-gray-500" placeholder="Detalhes (opcional)">
+            <button onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition shadow-sm">×</button>
+        </div>
+    </template>
+
+    <script>
+        // ============================================================
+        // CONFIG — set MAGNA_API_SECRET in server env, paste same value here
+        // ============================================================
+        const API_ENDPOINT = 'https://brainboxmed.com/magna/api/save-artworks';
+        const API_SECRET   = prompt('API Secret (deixe em branco se não configurado ainda):') || '';
+        // Note: in a future version this can be stored in sessionStorage after login
+
+        let globalArtworks = {};
+
+        // ============================================================
+        // LOGIN
+        // ============================================================
+        async function checkLogin() {
+            const p = document.getElementById('passwordInput').value;
+            const msgBuffer  = new TextEncoder().encode(p);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
+            if (hash === "13f020a2bf9d1113807cf1c1c78a2e8f85b31a652ea4db3ccdf1877339c8dcef") {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+            } else {
+                document.getElementById('errorMsg').classList.remove('hidden');
+            }
+        }
+        document.getElementById('passwordInput').addEventListener('keypress', e => { if(e.key==='Enter') checkLogin(); });
+
+        // ============================================================
+        // LOAD FROM SERVER
+        // ============================================================
+        async function loadFromServer() {
+            showStatus('A carregar dados do servidor...', 'info');
+            try {
+                const res  = await fetch('artworks.json?v=' + Date.now());
+                if (!res.ok) throw new Error('Falha ao carregar artworks.json');
+                globalArtworks = await res.json();
+                renderDropdownOptions();
+                showStatus(`✅ ${Object.keys(globalArtworks).length} obras carregadas do servidor.`, 'success');
+            } catch(err) {
+                showStatus('❌ Erro: ' + err.message, 'error');
+            }
+        }
+
+        // ============================================================
+        // LOAD FROM FILE (fallback)
+        // ============================================================
+        const fileInput = document.getElementById('jsonLoader');
+        fileInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = evt => {
+                try {
+                    globalArtworks = JSON.parse(evt.target.result);
+                    renderDropdownOptions();
+                    document.getElementById('dropZone').innerHTML = `<span class="text-green-600 font-bold">✅ ${Object.keys(globalArtworks).length} obras carregadas</span>`;
+                    showStatus(`✅ Ficheiro carregado: ${Object.keys(globalArtworks).length} obras.`, 'success');
+                } catch(err) { showStatus('❌ JSON inválido.', 'error'); }
+            };
+            reader.readAsText(file);
+        });
+
+        // ============================================================
+        // SAVE TO SERVER
+        // ============================================================
+        async function saveToServer() {
+            const btn = document.getElementById('saveBtn');
+
+            // Build updated data from form first
+            const snippet = buildArtworkData();
+            if (!snippet) return;
+            const slug = document.getElementById('slug').value.trim();
+            globalArtworks[slug] = snippet;
+
+            btn.textContent = '⏳ A guardar...';
+            btn.className   = btn.className.replace('bg-black', '') + ' saving';
+            btn.disabled    = true;
+
+            try {
+                const res = await fetch(API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Magna-Secret': API_SECRET
+                    },
+                    body: JSON.stringify(globalArtworks)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Erro desconhecido');
+
+                btn.textContent = '✅ GUARDADO!';
+                btn.classList.add('success');
+                showStatus(`✅ Site atualizado! ${data.artworks} obras guardadas no servidor.`, 'success');
+
+                setTimeout(() => {
+                    btn.textContent = '💾 GUARDAR NO SERVIDOR';
+                    btn.className   = btn.className.replace('saving','').replace('success','') + ' bg-black';
+                    btn.disabled    = false;
+                }, 3000);
+
+            } catch(err) {
+                btn.textContent = '❌ ERRO — Tente novamente';
+                btn.classList.add('error');
+                showStatus('❌ Erro ao guardar: ' + err.message + ' — Verifique se o servidor está ativo e o secret está correto.', 'error');
+                btn.disabled = false;
+                setTimeout(() => {
+                    btn.textContent = '💾 GUARDAR NO SERVIDOR';
+                    btn.className   = btn.className.replace('saving','').replace('error','') + ' bg-black';
+                }, 4000);
+            }
+        }
+
+        // ============================================================
+        // STATUS BAR
+        // ============================================================
+        function showStatus(msg, type) {
+            const bar = document.getElementById('statusBar');
+            bar.classList.remove('hidden', 'bg-blue-50', 'text-blue-800', 'bg-green-50', 'text-green-800', 'bg-red-50', 'text-red-800');
+            if (type === 'info')    bar.classList.add('bg-blue-50',  'text-blue-800');
+            if (type === 'success') bar.classList.add('bg-green-50', 'text-green-800');
+            if (type === 'error')   bar.classList.add('bg-red-50',   'text-red-800');
+            bar.textContent = msg;
+            bar.classList.remove('hidden');
+            if (type !== 'error') setTimeout(() => bar.classList.add('hidden'), 5000);
+        }
+
+        // ============================================================
+        // DROPDOWN
+        // ============================================================
+        function toggleDropdown() {
+            if (Object.keys(globalArtworks).length === 0) { showStatus('Carregue os dados primeiro (servidor ou ficheiro).', 'info'); return; }
+            document.getElementById('dropdownList').classList.toggle('open');
+        }
+
+        function renderDropdownOptions() {
+            const list = document.getElementById('dropdownList');
+            list.innerHTML = `<div class="option-item" onclick="loadArtwork(null)"><div class="w-10 h-10 bg-gray-200 rounded flex items-center justify-center font-bold text-xl">+</div><div><div class="title">Criar Nova Obra</div><div class="slug">nova</div></div></div>`;
+            Object.keys(globalArtworks).forEach(slug => {
+                const art = globalArtworks[slug];
+                const img = art.image || '';
+                list.innerHTML += `<div class="option-item" onclick="loadArtwork('${slug}')"><img src="${img}" onerror="this.src='https://via.placeholder.com/40'"><div><div class="title">${art.title}</div><div class="slug">${slug}</div></div></div>`;
+            });
+        }
+
+        // ============================================================
+        // LOAD ARTWORK INTO FORM
+        // ============================================================
+        function loadArtwork(slug) {
+            document.getElementById('dropdownList').classList.remove('open');
+            document.getElementById('artForm').classList.remove('opacity-50', 'pointer-events-none');
+            const btn = document.getElementById('selectBtn');
+
+            if (!slug) {
+                btn.innerHTML = `<span>Criando Nova Obra...</span>`;
+                document.getElementById('artForm').reset();
+                document.getElementById('slug').value = '';
+                document.getElementById('slug').readOnly = false;
+                document.getElementById('historyList').innerHTML = '';
+                generateUUID();
+                addHistoryRow();
+                updateInterface();
+                return;
+            }
+
+            const data = globalArtworks[slug];
+            btn.innerHTML = `<span class="font-bold">${data.title}</span> <span class="text-xs text-gray-400">(${slug})</span>`;
+
+            document.getElementById('slug').value      = slug;
+            document.getElementById('slug').readOnly   = true;
+            document.getElementById('title').value     = data.title || '';
+            document.getElementById('year').value      = data.year || '';
+            document.getElementById('dimensions').value = data.dimensions || '';
+            document.getElementById('image').value     = (data.image || '').replace('assets/', '');
+            document.getElementById('collection').value = data.collection || '';
+            document.getElementById('status').value    = data.status || 'available';
+            document.getElementById('loc_pt').value    = (typeof data.location === 'object') ? data.location.pt : (data.location || '');
+            document.getElementById('originalHash').value = data.originalHash || '';
+            if (!data.originalHash) generateUUID();
+
+            // Price display
+            const pd = data.priceDisplay || {};
+            document.getElementById('price_original').value  = pd.original  || '';
+            document.getElementById('price_gallery').value   = pd.printGallery  || '';
+            document.getElementById('price_collector').value = pd.printCollector || '';
+            document.getElementById('price_digital').value   = pd.digital   || '';
+
+            // Editions sold
+            document.getElementById('sold_gallery').value   = data.editionsSold?.gallery   || 0;
+            document.getElementById('sold_collector').value = data.editionsSold?.collector || 0;
+            document.getElementById('sold_digital').value   = data.editionsSold?.digital   || 0;
+
+            // Stripe links
+            const setLink = (id, val) => { document.getElementById(id).value = val || ''; };
+            setLink('priceOriginal_test',     data.priceOriginal?.test);
+            setLink('priceOriginal_live',     data.priceOriginal?.live);
+            setLink('pricePrintGallery_test', data.pricePrintGallery?.test);
+            setLink('pricePrintGallery_live', data.pricePrintGallery?.live);
+            setLink('pricePrintCollector_test', data.pricePrintCollector?.test);
+            setLink('pricePrintCollector_live', data.pricePrintCollector?.live);
+            setLink('priceDigital_test',      data.priceDigital?.test);
+            setLink('priceDigital_live',      data.priceDigital?.live);
+
+            // Translations
+            ['pt','en','es'].forEach(lang => {
+                document.getElementById(`tech_${lang}`).value  = data.technique?.[lang]  || '';
+                document.getElementById(`story_${lang}`).value = data.story?.[lang] || '';
+            });
+
+            // History
+            const histContainer = document.getElementById('historyList');
+            histContainer.innerHTML = '';
+            if (data.history?.length > 0) data.history.forEach(evt => addHistoryRow(evt));
+            else histContainer.innerHTML = '<p class="text-center text-xs text-gray-400 italic py-2">Nenhum registro.</p>';
+
+            updateInterface();
+        }
+
+        // ============================================================
+        // BUILD ARTWORK DATA OBJECT
+        // ============================================================
+        function buildArtworkData() {
+            const slug = document.getElementById('slug').value.trim();
+            if (!slug) { showStatus('❌ Slug ID é obrigatório.', 'error'); return null; }
+
+            const histRows   = document.querySelectorAll('.history-row');
+            const historyData = [];
+            histRows.forEach(row => {
+                historyData.push({
+                    date: row.querySelector('.hist-date').value,
+                    event: row.querySelector('.hist-event').value,
+                    location: row.querySelector('.hist-loc').value,
+                    details: row.querySelector('.hist-details').value || ''
+                });
+            });
+            historyData.sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            const getLink = id => document.getElementById(id).value.trim();
+
+            return {
+                title:      document.getElementById('title').value,
+                year:       document.getElementById('year').value,
+                technique:  { pt: document.getElementById('tech_pt').value, en: document.getElementById('tech_en').value, es: document.getElementById('tech_es').value },
+                dimensions: document.getElementById('dimensions').value,
+                image:      'assets/' + document.getElementById('image').value.replace(/^assets\//, ''),
+                collection: document.getElementById('collection').value || null,
+                priceDisplay: {
+                    original:       parseInt(document.getElementById('price_original').value)  || 0,
+                    printGallery:   parseInt(document.getElementById('price_gallery').value)   || 0,
+                    printCollector: parseInt(document.getElementById('price_collector').value) || 0,
+                    digital:        parseInt(document.getElementById('price_digital').value)   || 0
+                },
+                story:      { pt: document.getElementById('story_pt').value, en: document.getElementById('story_en').value, es: document.getElementById('story_es').value },
+                status:     document.getElementById('status').value,
+                location:   { pt: document.getElementById('loc_pt').value, en: 'Setubal', es: 'Setubal' },
+                originalHash: document.getElementById('originalHash').value,
+                editionsSold: {
+                    gallery:   parseInt(document.getElementById('sold_gallery').value)   || 0,
+                    collector: parseInt(document.getElementById('sold_collector').value) || 0,
+                    digital:   parseInt(document.getElementById('sold_digital').value)   || 0
+                },
+                priceOriginal:       { test: getLink('priceOriginal_test'),       live: getLink('priceOriginal_live') },
+                pricePrintGallery:   { test: getLink('pricePrintGallery_test'),   live: getLink('pricePrintGallery_live') },
+                pricePrintCollector: { test: getLink('pricePrintCollector_test'), live: getLink('pricePrintCollector_live') },
+                priceDigital:        { test: getLink('priceDigital_test'),        live: getLink('priceDigital_live') },
+                history: historyData
+            };
+        }
+
+        // ============================================================
+        // GENERATE JSON SNIPPET (manual fallback)
+        // ============================================================
+        function generateJSON() {
+            const slug = document.getElementById('slug').value.trim();
+            const data = buildArtworkData();
+            if (!data) return;
+            document.getElementById('output').value = `  "${slug}": ${JSON.stringify(data, null, 4)},`;
+        }
+
+        function copyToClipboard() {
+            const el = document.getElementById('output');
+            el.select();
+            document.execCommand('copy');
+            showStatus('JSON copiado para a área de transferência.', 'success');
+        }
+
+        // ============================================================
+        // HISTORY ROW
+        // ============================================================
+        function addHistoryRow(data = null) {
+            const container = document.getElementById('historyList');
+            if (container.querySelector('p')) container.innerHTML = '';
+            const clone = document.getElementById('historyRowTemplate').content.cloneNode(true);
+            if (data) {
+                clone.querySelector('.hist-date').value    = data.date;
+                clone.querySelector('.hist-event').value   = data.event;
+                clone.querySelector('.hist-loc').value     = data.location;
+                clone.querySelector('.hist-details').value = data.details || '';
+            } else {
+                clone.querySelector('.hist-date').valueAsDate = new Date();
+            }
+            container.appendChild(clone);
+        }
+
+        // ============================================================
+        // UUID
+        // ============================================================
+        function generateUUID() {
+            document.getElementById('originalHash').value = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+                (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)
+            );
+        }
+
+        // ============================================================
+        // INTERFACE UPDATE (mode toggle, QR, Stripe helper)
+        // ============================================================
+        function updateInterface() {
+            const slug   = document.getElementById('slug').value || 'SEU_ID';
+            const isLive = document.getElementById('modeToggle').checked;
+            const label  = document.getElementById('modeLabel');
+            label.textContent = isLive ? 'LIVE (PROD)' : 'TESTE (LOCAL)';
+            label.className   = isLive ? 'text-[9px] font-bold text-green-600' : 'text-[9px] font-bold text-blue-800';
+
+            const baseUrl = isLive ? 'https://brainboxmed.com/magna' : 'http://127.0.0.1:5500';
+
+            document.getElementById('helper_orig').value = `${baseUrl}/success-original.html?art=${slug}`;
+            document.getElementById('helper_gal').value  = `${baseUrl}/digital-token.html?art=${slug}&type=gallery`;
+            document.getElementById('helper_col').value  = `${baseUrl}/digital-token.html?art=${slug}&type=collector`;
+            document.getElementById('helper_dl').value   = `${baseUrl}/download-page.html?art=${slug}`;
+
+            const certUrl   = `${baseUrl}/certificate.html?id=${slug}`;
+            const certLabel = document.getElementById('certModeLabel');
+            certLabel.textContent = isLive ? 'ONLINE (LIVE)' : 'LOCAL (TESTE)';
+            certLabel.className   = isLive ? 'font-bold text-green-600' : 'font-bold text-blue-600';
+
+            document.getElementById('certLink').href = certUrl;
+            document.getElementById('qrPreview').innerHTML = '';
+            new QRCode(document.getElementById('qrPreview'), { text: certUrl, width: 80, height: 80 });
+        }
+
+        function copyVal(id) {
+            const el = document.getElementById(id);
+            el.select();
+            document.execCommand('copy');
+            showStatus('Link copiado! Cole no Stripe.', 'success');
+        }
+
+        // Image drag & drop
+        const imgDropZone  = document.getElementById('imgDropZone');
+        const imgFileInput = document.getElementById('imgFileInput');
+        imgDropZone.addEventListener('click',     () => imgFileInput.click());
+        imgFileInput.addEventListener('change',   e => { if(e.target.files.length) document.getElementById('image').value = e.target.files[0].name; });
+        imgDropZone.addEventListener('dragover',  e => { e.preventDefault(); imgDropZone.classList.add('border-black'); });
+        imgDropZone.addEventListener('dragleave', e => { e.preventDefault(); imgDropZone.classList.remove('border-black'); });
+        imgDropZone.addEventListener('drop',      e => { e.preventDefault(); if(e.dataTransfer.files.length) document.getElementById('image').value = e.dataTransfer.files[0].name; });
+    </script>
+</body>
+</html>

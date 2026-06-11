@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna - Gallery QR Code (A4)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body { 
+            background: #e5e5e5; 
+            font-family: 'Inter', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px; 
+            justify-content: center;
+        }
+        .serif { font-family: 'Playfair Display', serif; }
+        
+        /* Configuração de Página (Híbrida: Ecrã vs Impressão) */
+        .page {
+            background: white;
+            width: 100%;
+            max-width: 210mm; /* Limita largura ao A4 */
+            min-height: 60vh; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            position: relative;
+            padding: 10%; 
+            box-sizing: border-box;
+        }
+
+        /* Aspect Ratio A4 apenas em ecrãs maiores */
+        @media (min-width: 768px) {
+            .page {
+                height: 297mm;
+                padding: 20mm;
+            }
+        }
+
+        /* Estilo Exclusivo para Impressão */
+        @media print {
+            body { background: white; margin: 0; padding: 0; display: block; }
+            .no-print { display: none !important; }
+            .page { 
+                box-shadow: none; margin: 0; width: 210mm; height: 297mm; 
+                padding: 20mm !important; border: none; page-break-after: always;
+            }
+            #qrHighRes { width: 180mm !important; height: 180mm !important; max-width: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <button onclick="closeTab()" class="no-print fixed top-6 left-6 z-50 w-12 h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-red-50 hover:text-red-600 transition focus:outline-none group" title="Close Window">
+        <svg class="w-6 h-6 text-gray-500 group-hover:text-red-600 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+
+    <button onclick="window.print()" class="no-print fixed top-6 right-6 z-50 w-12 h-12 bg-white rounded-full shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition focus:outline-none text-gray-800" title="Print A4">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+    </button>
+
+    <div class="page text-center">
+        
+        <header class="mb-8 md:mb-12">
+            <h1 class="serif text-4xl md:text-6xl tracking-widest text-black mb-2">MAGNA</h1>
+            <p class="text-[10px] md:text-sm uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400">Artworks & Exhibitions</p>
+        </header>
+
+        <div class="mb-8 md:mb-12 w-full flex justify-center">
+            <img id="qrHighRes" src="" alt="Scan to Visit Gallery" class="w-full max-w-[250px] md:max-w-[180mm] h-auto object-contain" style="image-rendering: pixelated;">
+        </div>
+
+        <footer class="mt-auto">
+            <p class="serif italic text-lg md:text-2xl text-gray-800 mb-2">Scan to visit the digital gallery</p>
+            <p class="text-[10px] md:text-xs text-gray-400 uppercase tracking-widest">brainboxmed.com/magna</p>
+        </footer>
+
+    </div>
+
+    <script>
+        // Função para Fechar a Janela
+        function closeTab() {
+            window.close();
+            setTimeout(() => {
+                if (!window.closed) {
+                    alert("O navegador impediu o fecho automático.\nPor favor, feche esta aba manualmente.");
+                }
+            }, 100);
+        }
+
+        // Geração do QR Code
+        document.addEventListener("DOMContentLoaded", () => {
+            // URL Dinâmica
+            let galleryUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/';
+            console.log("QR Code aponta para:", galleryUrl);
+
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&color=000000&bgcolor=FFFFFF&data=${encodeURIComponent(galleryUrl)}`;
+            document.getElementById('qrHighRes').src = qrUrl;
+        });
+    </script>
+
+</body>
+</html>

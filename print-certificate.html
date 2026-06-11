@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limited Edition Certificate - Magna</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Setup específico para impressão A4 */
+        body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .serif { font-family: 'Playfair Display', serif; }
+        
+        @page { size: A4; margin: 0; }
+        @media print { 
+            .no-print { display: none !important; } 
+            body { background: white; }
+            .page { box-shadow: none; margin: 0; width: 210mm; height: 296mm; border: none; } 
+        }
+
+        .page { 
+            width: 210mm; 
+            min-height: 297mm; 
+            padding: 20mm; 
+            margin: 20px auto; 
+            background: white; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            text-align: center; 
+            border: 1px solid #e5e5e5;
+        }
+
+        .border-inset { 
+            position: absolute; 
+            top: 15mm; right: 15mm; bottom: 15mm; left: 15mm; 
+            border: 1px solid #1a1a1a; 
+            pointer-events: none; 
+        }
+    </style>
+</head>
+<body class="bg-gray-100 py-10">
+
+    <div class="no-print fixed top-4 right-4 z-50 flex gap-2 flex-col items-end">
+        <div class="bg-yellow-100 text-yellow-800 px-3 py-2 rounded text-xs font-medium border border-yellow-200 shadow-sm">
+            <p><strong>Dica:</strong> Adicione <code>&edition=01/50</code> ao link para preencher a tiragem.</p>
+        </div>
+        <button onclick="window.print()" class="bg-black text-white px-6 py-2 rounded shadow hover:bg-gray-800 transition font-bold uppercase tracking-wider text-xs">
+            Imprimir Certificado (PDF)
+        </button>
+    </div>
+
+    <div class="page">
+        <div class="border-inset"></div>
+
+        <div id="loading" class="absolute inset-0 flex items-center justify-center bg-white z-20">
+            <p class="text-gray-400 animate-pulse">Carregando dados da obra...</p>
+        </div>
+
+        <header class="mb-6 mt-4 z-10 w-full">
+            <h1 class="serif text-4xl tracking-widest uppercase mb-1">Limited Edition Certificate</h1>
+            <h2 class="serif text-lg text-gray-500 italic">Certificado de Tiragem Limitada</h2>
+        </header>
+
+        <div class="mb-6 p-2 border border-gray-100 shadow-sm z-10 bg-white rotate-1">
+            <img id="artImage" src="" alt="Artwork Preview" class="h-56 object-contain shadow-inner">
+        </div>
+
+        <div class="w-full max-w-lg mx-auto z-10 text-left grid grid-cols-2 gap-x-8 gap-y-5 text-sm">
+            
+            <div class="col-span-2 border-b border-black pb-1 mb-1">
+                <span class="font-bold uppercase tracking-wide text-xs">Artwork Details / Detalhes da Obra</span>
+            </div>
+
+            <div class="flex flex-col">
+                <span class="text-gray-500 text-[10px] uppercase tracking-wider">Title / Título</span>
+                <span id="artTitle" class="font-serif text-xl italic leading-tight">...</span>
+            </div>
+            
+            <div class="flex flex-col">
+                <span class="text-gray-500 text-[10px] uppercase tracking-wider">Artist / Artista</span>
+                <span class="font-bold text-lg leading-tight">Magna</span>
+            </div>
+
+            <div class="flex flex-col border-l-4 border-yellow-400 pl-3 bg-yellow-50 py-2">
+                <span class="text-gray-500 text-[9px] uppercase font-bold text-black">Edition Number / Tiragem</span>
+                <span id="editionNum" class="font-bold text-2xl font-mono text-gray-400">___ / ___</span>
+            </div>
+
+            <div class="flex flex-col justify-center">
+                <span class="text-gray-500 text-[10px] uppercase tracking-wider">Print Year / Ano</span>
+                <span id="printYear" class="font-semibold">2025</span>
+            </div>
+
+            <div class="col-span-2">
+                <span class="text-gray-500 text-[10px] uppercase tracking-wider">Paper & Quality / Papel</span>
+                <div class="font-medium border-b border-dotted border-gray-300 pb-1">Hahnemühle Photo Rag 308g (Museum Quality Pigment Ink)</div>
+            </div>
+
+            <div class="col-span-2 border-b border-black pb-1 mb-1 mt-6">
+                <span class="font-bold uppercase tracking-wide text-xs">Original Provenance & Registry</span>
+            </div>
+
+            <div class="col-span-2 flex justify-between items-end border-b border-dotted border-gray-300 pb-2">
+                <div>
+                    <span class="text-gray-500 text-[10px] uppercase block tracking-wider">Location of Original Artwork</span>
+                    <span id="originalLocation" class="font-serif italic text-lg">...</span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[9px] text-gray-400 uppercase tracking-wider block">Original Status</span>
+                    <span id="originalStatus" class="inline-block text-[10px] font-bold px-2 py-0.5 bg-gray-100 rounded uppercase">...</span>
+                </div>
+            </div>
+
+            <div class="col-span-2 mt-2 bg-gray-50 p-3 rounded border border-gray-100">
+                <span class="text-gray-500 text-[9px] uppercase block mb-1 font-bold">Unique Digital Hash (Original)</span>
+                <div id="artHash" class="font-mono text-[10px] text-gray-600 break-all">...</div>
+            </div>
+        </div>
+
+        <div class="mt-auto mb-6 max-w-xl text-center px-4 z-10">
+            <p class="serif italic text-gray-600 leading-relaxed text-sm">
+                "This document certifies that this fine art print is an authentic limited edition, produced under the direct supervision of Magna. The digital registry linked below ensures the traceability of the original masterpiece."
+            </p>
+        </div>
+
+        <div class="flex items-end justify-between w-full max-w-lg mb-8 z-10 px-4 border-t pt-4 border-gray-200">
+            
+            <div class="text-left flex items-center gap-3">
+                <img id="qrcode" src="" class="p-1 bg-white border border-gray-300 w-20 h-20 object-contain">
+                
+                <div class="flex flex-col">
+                    <p class="text-[9px] uppercase tracking-widest text-gray-500 font-bold">Trace Original</p>
+                    <p class="text-[8px] text-gray-400 max-w-[100px] leading-tight">Scan to view the live history of the original artwork.</p>
+                </div>
+            </div>
+
+            <div class="text-center flex flex-col items-center ml-auto">
+                <img src="assets/icons/magna-sign.png" alt="Magna Signature" class="h-24 mb-2 mix-blend-multiply opacity-90" style="transform: rotate(-2deg);">
+                <div class="w-48 border-b border-black mb-1 h-1"></div> 
+                <p class="serif text-sm">Magna</p>
+                <p class="text-[9px] uppercase tracking-widest text-gray-400">Artist Signature</p>
+            </div>
+        </div>
+
+        <div class="text-center w-full z-10 opacity-40">
+            <span class="serif text-[9px] tracking-[0.3em] uppercase">Magna Studio &middot; BrainboxMed Registry</span>
+        </div>
+    </div>
+
+    <script>
+        async function initPrintCertificate() {
+            const params = new URLSearchParams(window.location.search);
+            const slug = params.get('id');
+            const edition = params.get('edition'); // Ex: ?id=anfora&edition=01/50
+
+            if (!slug) {
+                alert("Erro: ID da obra não encontrado na URL.");
+                return;
+            }
+
+            try {
+                // 1. Buscar Dados
+                const response = await fetch('artworks.json');
+                const db = await response.json();
+                const art = db[slug];
+
+                if (!art) throw new Error("Obra não encontrada");
+
+                // 2. Preencher Campos
+                document.getElementById('artImage').src = art.image;
+                document.getElementById('artTitle').textContent = art.title;
+                document.getElementById('printYear').textContent = new Date().getFullYear();
+                
+                const locLang = (art.location && art.location.en) ? art.location.en : (art.location.pt || art.location);
+                document.getElementById('originalLocation').textContent = locLang;
+                
+                const statusMap = {
+                    'available': 'Available / Disponível',
+                    'sold_private': 'Sold (Private Collection)',
+                    'sold_public': 'Museum / Public'
+                };
+                document.getElementById('originalStatus').textContent = statusMap[art.status] || art.status;
+                
+                document.getElementById('artHash').textContent = art.originalHash || "Pending Registration";
+
+                if(edition) {
+                    document.getElementById('editionNum').textContent = edition;
+                    document.getElementById('editionNum').classList.remove('text-gray-400');
+                    document.getElementById('editionNum').classList.add('text-black');
+                }
+
+                // 3. Gerar QR Code (Aponta para o Certificado Original)
+                const originalCertUrl = `${window.location.origin}/certificate.html?id=${slug}`;
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=000000&bgcolor=ffffff&data=${encodeURIComponent(originalCertUrl)}`;
+                
+                document.getElementById("qrcode").src = qrUrl;
+
+                // Remove Loader
+                document.getElementById('loading').style.display = 'none';
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = "<p class='text-red-500'>Erro ao carregar dados.</p>";
+            }
+        }
+
+        window.addEventListener('load', initPrintCertificate);
+    </script>
+
+</body>
+</html>

@@ -1,360 +1,917 @@
 <!doctype html>
-<html lang="pt">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Magna — Obras & Exposições</title>
-    <meta name="description" content="Portfólio e catálogo online da artista Magna: seleção curada de obras, exposições e contato.">
+    <title>Magna — Artworks & Exhibitions</title>
+    <meta name="description" content="Portfolio and online catalog of artist Magna Leite. Contemporary acrylic paintings, limited edition prints and digital works.">
 
-    <!-- Bloqueio para robots (REMOVER quando publicar) -->
-    <meta name="robots" content="noindex, nofollow, noimageindex, noarchive">
-    <meta name="googlebot" content="noindex, nofollow">
+    <!-- SEO off until ready to go public. Remove line below to enable. -->
+    <meta name="robots" content="noindex, nofollow">
 
-    <!-- OG/Twitter -->
-    <meta property="og:title" content="Magna — Obras & Exposições">
-    <meta property="og:description" content="Seleção curada de obras e exposições.">
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://exemplo.com/">
-    <meta property="og:image" content="assets/obra-01.jpg">
-    <meta name="twitter:card" content="summary_large_image">
-
-    <link rel="canonical" href="https://thiagohope.github.io/marchant/">
+    <meta property="og:title" content="Magna — Artworks & Exhibitions">
+    <meta property="og:description" content="Contemporary acrylic paintings by Magna Leite. Acrylique Pluie technique.">
+    <meta property="og:image" content="assets/img/magna-portrait.jpg">
     <meta name="theme-color" content="#ffffff">
 
-    <!-- Favicon -->
     <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16x16.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/icons/apple-touch-icon.png">
-    <link rel="manifest" href="site.webmanifest">
-
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
-
-    <!-- Schema.org -->
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "Person",
-        "name": "Magna",
-        "jobTitle": "Artista plástica",
-        "url": "https://exemplo.com/",
-        "image": "assets/magna-portrait.jpg",
-        "sameAs": ["https://www.instagram.com/"],
-        "address": {"@type":"PostalAddress", "addressCountry":"PT"}
-      }
-    </script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@graph": [
-          {
-            "@type": "VisualArtwork",
-            "name": "Horizonte Atlântico",
-            "image": "assets/obra-01.jpg",
-            "creator": {"@type":"Person", "name":"Magna"},
-            "artform": "Painting",
-            "artMedium": "Acrylic paint",
-            "artworkSurface": "Canvas",
-            "dateCreated": "2024",
-            "width": {"@type":"QuantitativeValue","value":100,"unitText":"cm"},
-            "height": {"@type":"QuantitativeValue","value":80,"unitText":"cm"},
-            "offers": {"@type":"Offer","url":"#contato","availability":"http://schema.org/LimitedAvailability"}
-          },
-          {
-            "@type": "VisualArtwork",
-            "name": "Terra Vermelha",
-            "image": "assets/obra-02.jpg",
-            "creator": {"@type":"Person", "name":"Magna"},
-            "artform": "Painting",
-            "artMedium": "Oil paint",
-            "artworkSurface": "Canvas",
-            "dateCreated": "2023",
-            "width": {"@type":"QuantitativeValue","value":80,"unitText":"cm"},
-            "height": {"@type":"QuantitativeValue","value":60,"unitText":"cm"},
-            "offers": {"@type":"Offer","url":"#contato","availability":"http://schema.org/SoldOut"}
-          },
-          {
-            "@type": "VisualArtwork",
-            "name": "Luz que Respira",
-            "image": "assets/obra-03.jpg",
-            "creator": {"@type":"Person", "name":"Magna"},
-            "artform": "Painting",
-            "artMedium": "Mixed media",
-            "artworkSurface": "Canvas",
-            "dateCreated": "2025",
-            "width": {"@type":"QuantitativeValue","value":120,"unitText":"cm"},
-            "height": {"@type":"QuantitativeValue","value":90,"unitText":"cm"},
-            "offers": {"@type":"Offer","url":"#contato","availability":"http://schema.org/InStock"}
-          }
-        ]
-      }
-    </script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
     <style>
-      :root{
-        --bg:#fff; --fg:#0f172a; --muted:#64748b; --line:rgba(15,23,42,.12); --accent:#0f172a;
+      :root {
+        --bg: #fff;
+        --fg: #0f172a;
+        --muted: #64748b;
+        --line: rgba(15,23,42,.10);
       }
-      body{font-family:Inter,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:var(--fg);background:var(--bg)}
-      h1,h2,h3,h4{font-family:Poppins,Inter,sans-serif;letter-spacing:.2px}
-      .container{max-width:1152px;margin:0 auto;padding:0 1rem}
-      .shadow-soft{box-shadow:0 10px 30px rgba(0,0,0,.06)}
-      .card{background:#fff;border:1px solid var(--line);border-radius:18px}
-      .link{color:var(--fg);text-underline-offset:2px}
-      .link:hover{opacity:.8}
-      .btn{display:inline-flex;align-items:center;gap:.5rem;padding:.65rem 1rem;border-radius:.75rem;border:1px solid var(--line);background:#fff}
-      .btn:hover{transform:translateY(-1px)}
-      .hero img{object-fit:cover}
-      .grid-art{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:1rem}
-      @media(min-width:640px){.grid-art{grid-template-columns:repeat(2,minmax(0,1fr))}}
-      @media(min-width:1024px){.grid-art{grid-template-columns:repeat(3,minmax(0,1fr))}}
-      .art-item img{transition:transform .6s ease, filter .6s ease}
-      .art-item:hover img{transform:scale(1.02)}
-      .art-caption{display:flex;align-items:center;justify-content:space-between;font-size:.9rem;color:var(--muted)}
-      .pill{border:1px solid var(--line);border-radius:9999px;padding:.35rem .7rem;font-size:.75rem;color:#334155}
-      .toolbar{position:sticky;top:64px;background:rgba(255,255,255,.75);backdrop-filter:saturate(180%) blur(8px);border-bottom:1px solid var(--line);z-index:20}
-      /* Lightbox */
-      .lb-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;padding:1rem;z-index:40}
-      .lb-backdrop.is-open{display:flex}
-      .lb-panel{background:#fff;border-radius:18px;max-width:1100px;width:100%;overflow:hidden}
-      .lb-head{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--line)}
-      .lb-body{padding:1rem}
-      .lb-img{max-height:72vh;width:100%;object-fit:contain}
-      /* Print */
-      @media print{
-        @page{size:A4;margin:15mm}
-        header,.toolbar,.btn,.filters,nav,.no-print{display:none!important}
-        .card{box-shadow:none!important;border:1px solid #ddd!important}
-        .art-item{break-inside:avoid}
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: Inter, sans-serif; color: var(--fg); background: #f9f9f7; }
+      h1,h2,h3,h4 { font-family: Poppins, sans-serif; }
+      .serif { font-family: 'Playfair Display', serif; }
+
+      /* ── LAYOUT ── */
+      .container { max-width: 1200px; margin: 0 auto; padding: 0 1.25rem; }
+
+      /* ── HEADER — fully solid, never transparent ── */
+      .site-header {
+        position: sticky; top: 0; z-index: 40;
+        background: #ffffff;
+        border-bottom: 1px solid var(--line);
+        box-shadow: 0 1px 0 rgba(0,0,0,.06);
       }
+
+      /* ── FILTER PILLS ── */
+      .pill {
+        border: 1px solid #d1d5db; border-radius: 9999px;
+        padding: .3rem .9rem; font-size: .75rem; color: #374151;
+        background: white; transition: all .2s; cursor: pointer; white-space: nowrap;
+      }
+      .pill:hover { border-color: #111; color: #111; }
+      .pill.active { border-color: #111; background: #111; color: white; font-weight: 500; }
+
+      /* ── TOOLBAR ── */
+      .toolbar {
+        position: sticky; top: 57px;
+        background: white;
+        border-bottom: 1px solid var(--line);
+        z-index: 30;
+      }
+      .filter-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .filter-scroll::-webkit-scrollbar { display: none; }
+
+      /* ── MASONRY-STYLE GALLERY GRID ── */
+      .gallery-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+      }
+      @media(max-width: 900px) { .gallery-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; } }
+      @media(max-width: 560px) { .gallery-grid { grid-template-columns: 1fr; gap: .875rem; } }
+
+      /* ── ART CARD — Saatchi style ── */
+      .art-card {
+        background: white;
+        border: 1px solid #ebebeb;
+        border-radius: 4px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: box-shadow .3s ease, transform .3s ease;
+        position: relative;
+      }
+      .art-card:hover {
+        box-shadow: 0 8px 32px rgba(0,0,0,.13);
+        transform: translateY(-3px);
+      }
+
+      /* Image container — white background, full painting visible */
+      .art-card__img-wrap {
+        background: #f8f8f6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        min-height: 220px;
+      }
+      .art-card__img-wrap img {
+        display: block;
+        max-width: 100%;
+        max-height: 340px;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        transition: transform .5s ease;
+      }
+      .art-card:hover .art-card__img-wrap img { transform: scale(1.03); }
+
+      /* Info below image */
+      .art-card__info {
+        padding: .875rem 1rem 1rem;
+        border-top: 1px solid #f0f0f0;
+      }
+      .art-card__title { font-family: 'Playfair Display', serif; font-size: 1rem; color: #111; font-weight: 400; margin-bottom: .2rem; }
+      .art-card__meta { font-size: .72rem; color: #888; margin-bottom: .5rem; }
+      .art-card__price { font-size: .85rem; font-weight: 700; color: #111; }
+      .art-card__prints { font-size: .7rem; color: #aaa; margin-top: .1rem; }
+
+      /* Sold badge */
+      .sold-badge {
+        position: absolute; top: 10px; right: 10px;
+        background: rgba(0,0,0,.75); color: white;
+        font-size: .6rem; padding: 3px 8px; border-radius: 3px;
+        font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+      }
+
+      /* ── LIGHTBOX MODAL — full Saatchi/Instagram feel ── */
+      .lightbox {
+        position: fixed; inset: 0; z-index: 1000;
+        background: rgba(10,10,10,.92);
+        display: none; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity .3s ease;
+        padding: 1rem;
+      }
+      .lightbox.open { display: flex; }
+      .lightbox.visible { opacity: 1; }
+
+      .lightbox__inner {
+        background: white;
+        width: 100%; max-width: 1060px;
+        height: 90vh;
+        border-radius: 6px;
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 1fr 420px;
+        transform: scale(.96) translateY(12px);
+        transition: transform .3s ease;
+        position: relative;
+      }
+      .lightbox.visible .lightbox__inner { transform: scale(1) translateY(0); }
+
+      @media(max-width: 780px) {
+        .lightbox__inner {
+          grid-template-columns: 1fr;
+          grid-template-rows: 50vh 1fr;
+          height: 95vh;
+          overflow: hidden;
+        }
+      }
+
+      /* Left — image panel */
+      .lightbox__img-panel {
+        background: #f4f4f2;
+        display: flex; align-items: center; justify-content: center;
+        padding: 1.5rem;
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+      }
+      .lightbox__img-panel img {
+        max-width: 100%;
+        max-height: calc(90vh - 3rem);
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        display: block;
+        margin: auto;
+      }
+
+      /* Nav arrows */
+      .lightbox__arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        background: rgba(255,255,255,.9); border: none;
+        width: 40px; height: 40px; border-radius: 50%;
+        font-size: 1.1rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,.15);
+        transition: all .2s; z-index: 10;
+      }
+      .lightbox__arrow:hover { background: white; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+      .lightbox__arrow--prev { left: 12px; }
+      .lightbox__arrow--next { right: 12px; }
+
+      /* Right — details panel */
+      .lightbox__detail {
+        padding: 2rem 1.75rem;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        border-left: 1px solid #ebebeb;
+        height: 100%;
+        max-height: 90vh;
+      }
+      @media(max-width: 780px) {
+        .lightbox__detail { max-height: 45vh; }
+      }
+
+      .lightbox__close {
+        position: absolute; top: 14px; right: 14px;
+        background: rgba(0,0,0,.5); color: white;
+        border: none; width: 32px; height: 32px;
+        border-radius: 50%; font-size: 1rem;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        transition: background .2s; z-index: 20;
+      }
+      .lightbox__close:hover { background: rgba(0,0,0,.8); }
+
+      .lightbox__title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 400; line-height: 1.2; color: #111; }
+      .lightbox__meta { font-size: .8rem; color: #888; line-height: 1.7; }
+      .lightbox__story { font-family: 'Playfair Display', serif; font-style: italic; font-size: .95rem; color: #444; line-height: 1.7; border-left: 2px solid #e5e5e5; padding-left: .875rem; }
+
+      .lightbox__divider { border: none; border-top: 1px solid #f0f0f0; }
+
+      /* Pricing table */
+      .price-row {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: .6rem 0; border-bottom: 1px solid #f5f5f5;
+      }
+      .price-row:last-child { border-bottom: none; }
+      .price-row__label { font-size: .8rem; color: #555; }
+      .price-row__note { font-size: .68rem; color: #aaa; display: block; margin-top: 1px; }
+      .price-row__amount { font-size: .95rem; font-weight: 700; color: #111; }
+
+      /* CTA buttons */
+      .btn-acquire {
+        display: block; width: 100%; padding: .9rem;
+        background: #111; color: white; border: none;
+        border-radius: 4px; font-size: .85rem; font-weight: 600;
+        text-align: center; text-decoration: none; cursor: pointer;
+        transition: background .2s; letter-spacing: .02em;
+      }
+      .btn-acquire:hover { background: #333; }
+      .btn-secondary {
+        display: block; width: 100%; padding: .75rem;
+        background: white; color: #111;
+        border: 1.5px solid #d1d5db; border-radius: 4px;
+        font-size: .8rem; font-weight: 500; text-align: center;
+        text-decoration: none; cursor: pointer; transition: all .2s;
+        margin-top: .5rem;
+      }
+      .btn-secondary:hover { border-color: #111; background: #f9f9f7; }
+
+      /* Provenance */
+      .provenance-block { background: #f9f9f7; border-radius: 4px; padding: .875rem; font-size: .75rem; }
+      .provenance-block__label { font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #aaa; margin-bottom: .5rem; }
+      .provenance-block__row { display: flex; justify-content: space-between; margin-bottom: .3rem; color: #666; }
+      .provenance-block__hash { font-family: monospace; font-size: .65rem; color: #bbb; word-break: break-all; margin-top: .4rem; }
+
+      /* ── SKELETON ── */
+      .skeleton { background: #efefed; animation: pulse 1.8s ease-in-out infinite; border-radius: 4px; }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+      /* ── FADE IN ── */
+      @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+      .art-card { animation: fadeUp .4s ease both; }
+
+      /* ── EMAIL MODAL ── */
+      .email-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.55);
+        backdrop-filter: blur(4px); z-index: 2000;
+        display: none; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity .3s;
+      }
+      .email-overlay.open { display: flex; }
+      .email-overlay.visible { opacity: 1; }
+      .email-box {
+        background: white; width: 100%; max-width: 440px;
+        border-radius: 8px; padding: 2rem; margin: 1rem;
+        transform: translateY(16px); transition: transform .3s;
+        box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      }
+      .email-overlay.visible .email-box { transform: translateY(0); }
+
+      /* ── MISC ── */
+      .status-available { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+      .status-sold { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
     </style>
   </head>
   <body>
-    <a href="#galeria" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:bg-white focus:text-black focus:px-3 focus:py-2 focus:rounded">Ir direto para a galeria</a>
 
-    <!-- Header minimal -->
-    <header class="sticky top-0 z-30 bg-white/80 backdrop-filter backdrop-blur border-b" style="border-color:var(--line)">
+    <!-- ═══════════════════════════════════════════════
+         HEADER — solid white, always
+    ═══════════════════════════════════════════════ -->
+    <header class="site-header">
       <div class="container py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-full bg-black text-white flex items-center justify-center font-semibold">M</div>
-          <div class="leading-tight">
-            <h1 class="font-medium tracking-wide">Magna</h1>
-            <p class="text-xs" style="color:var(--muted)">Obras & Exposições</p>
+          <div class="w-9 h-9 rounded-full bg-gray-100 overflow-hidden flex-shrink-0">
+            <img src="assets/icons/favicon-192.png" alt="M" class="w-full h-full object-cover">
+          </div>
+          <div>
+            <h1 class="text-lg font-semibold tracking-widest text-gray-900" style="font-family:Poppins,sans-serif;">MAGNA</h1>
+            <p class="text-xs text-gray-400 leading-none" data-i18n="siteSubtitle">Artworks & Exhibitions</p>
           </div>
         </div>
-        <nav aria-label="Navegação principal" class="hidden md:flex items-center gap-6 text-sm">
-          <a href="#sobre" class="link">Sobre</a>
-          <a href="#galeria" class="link">Obras</a>
-          <a href="#exposicoes" class="link">Exposições</a>
-          <a href="#contato" class="link">Contato</a>
-        </nav>
-      </div>
-    </header>
-
-    <!-- Hero: imagem cheia, sem painel de texto -->
-    <section class="hero">
-      <figure class="relative">
-        <img src="assets/obra-01.jpg" alt="Obra em destaque" class="w-full h-72 md:h-[68vh]" />
-        <figcaption class="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white/80 px-3 py-1 rounded-full text-xs" style="color:#334155;border:1px solid var(--line)">
-          Série recente · 2024–2025
-        </figcaption>
-      </figure>
-    </section>
-
-    <!-- Sobre (curto) -->
-    <section id="sobre" class="py-14">
-      <div class="container grid md:grid-cols-5 gap-10 items-start">
-        <div class="md:col-span-2">
-          <img src="assets/magna-portrait.jpg" alt="Magna no ateliê" class="rounded-2xl shadow-soft w-full object-cover" />
-        </div>
-        <div class="md:col-span-3">
-          <h2 class="text-2xl font-medium mb-3">Sobre Magna</h2>
-          <p class="text-gray-600 leading-relaxed">
-            Artista contemporânea baseada em Portugal. Sua pesquisa visual explora cor, matéria e memória em pintura sobre tela, com gestos que oscilam entre o controle e o acaso. As obras integram coleções particulares em diferentes países e foram apresentadas em mostras individuais e coletivas desde 2023.
-          </p>
-          <div class="mt-5 flex flex-wrap gap-2">
-            <span class="pill">Acrílico</span>
-            <span class="pill">Óleo</span>
-            <span class="pill">Mista</span>
-            <span class="pill">Abstração</span>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Barra de filtros minimal (pills discretas) -->
-    <div class="toolbar">
-      <div class="container py-3 flex flex-wrap items-center justify-between gap-3">
-        <div class="filters flex flex-wrap items-center gap-2 text-sm">
-          <button class="pill filter" data-filter="all">Todas</button>
-          <button class="pill filter" data-filter="mar-e-ceu">Mar & Céu</button>
-          <button class="pill filter" data-filter="raizes">Raízes</button>
-          <button class="pill filter" data-filter="abstracoes">Abstrações</button>
-        </div>
-        <div class="text-sm flex items-center gap-2">
-          <span style="color:var(--muted)">Ordenar</span>
-          <select id="sortSelect" class="pill bg-white">
-            <option value="recent">Mais recentes</option>
-            <option value="alpha">A–Z</option>
-            <option value="size">Por dimensão</option>
+        <div class="flex items-center gap-5">
+          <nav class="hidden md:flex items-center gap-5 text-sm text-gray-500">
+            <a href="#about" class="hover:text-black transition-colors" data-i18n="navAbout">About</a>
+            <a href="#gallery" class="hover:text-black transition-colors" data-i18n="navWorks">Artworks</a>
+            <a href="#exhibitions" class="hover:text-black transition-colors" data-i18n="navExhibitions">Exhibitions</a>
+            <a href="#contact" class="hover:text-black transition-colors" data-i18n="navContact">Contact</a>
+          </nav>
+          <select id="langSwitcher" class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-black transition cursor-pointer">
+            <option value="en">EN</option>
+            <option value="pt">PT</option>
+            <option value="es">ES</option>
           </select>
         </div>
       </div>
-    </div>
+    </header>
 
-    <!-- Galeria (cards simplificados, sem CTA dentro) -->
-    <section id="galeria" class="py-10">
-      <div class="container">
-        <h2 class="text-2xl font-medium mb-5">Obras</h2>
-        <ul id="gallery" role="list" aria-label="Galeria de obras" class="grid-art">
-          <li role="listitem" class="art-item card overflow-hidden" data-collection="mar-e-ceu" data-title="Horizonte Atlântico" data-year="2024" data-size="100x80">
-            <button class="open-modal block text-left">
-              <img loading="lazy" src="assets/obra-01.jpg" alt="Horizonte Atlântico (2024)" class="w-full h-64 md:h-72 object-cover" />
-              <div class="p-4 art-caption">
-                <div>
-                  <div class="font-medium">Horizonte Atlântico</div>
-                  <div>100×80 cm · 2024 · Acrílico</div>
-                </div>
-              </div>
-            </button>
-          </li>
-          <li role="listitem" class="art-item card overflow-hidden" data-collection="raizes" data-title="Terra Vermelha" data-year="2023" data-size="80x60">
-            <button class="open-modal block text-left">
-              <img loading="lazy" src="assets/obra-02.jpg" alt="Terra Vermelha (2023)" class="w-full h-64 md:h-72 object-cover" />
-              <div class="p-4 art-caption">
-                <div>
-                  <div class="font-medium">Terra Vermelha</div>
-                  <div>80×60 cm · 2023 · Óleo</div>
-                </div>
-              </div>
-            </button>
-          </li>
-          <li role="listitem" class="art-item card overflow-hidden" data-collection="abstracoes" data-title="Luz que Respira" data-year="2025" data-size="120x90">
-            <button class="open-modal block text-left">
-              <img loading="lazy" src="assets/obra-03.jpg" alt="Luz que Respira (2025)" class="w-full h-64 md:h-72 object-cover" />
-              <div class="p-4 art-caption">
-                <div>
-                  <div class="font-medium">Luz que Respira</div>
-                  <div>120×90 cm · 2025 · Mista</div>
-                </div>
-              </div>
-            </button>
-          </li>
-        </ul>
+    <!-- ═══════════════════════════════════════════════
+         HERO
+    ═══════════════════════════════════════════════ -->
+    <section class="relative overflow-hidden bg-gray-900" style="height:68vh;min-height:320px;">
+      <img src="assets/img/Acrylique Pluie.png" alt="Magna — Acrylique Pluie"
+           class="w-full h-full object-cover opacity-85" style="object-position:center 30%;">
+      <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.1) 60%, transparent 100%);"></div>
+      <div class="absolute bottom-0 left-0 right-0 container pb-10 md:pb-14">
+        <p class="text-white/60 text-xs uppercase tracking-widest mb-2" data-i18n="heroTag">Recent Series · 2024–2025</p>
+        <h2 class="text-white text-3xl md:text-5xl font-light serif" style="letter-spacing:.03em;">Acrylique Pluie</h2>
+        <p class="text-white/70 text-sm mt-2 font-light" data-i18n="heroSub">Acrylic on canvas · Magna Leite · Portugal</p>
       </div>
     </section>
 
-    <!-- Lightbox (informações/CTA só aqui) -->
-    <div id="lightbox" class="lb-backdrop" role="dialog" aria-modal="true" aria-labelledby="lbTitle" aria-hidden="true" tabindex="-1">
-      <div class="lb-panel">
-        <div class="lb-head">
-          <h3 id="lbTitle" class="font-medium">Título</h3>
-          <button id="lbClose" class="btn" aria-label="Fechar">Fechar</button>
+    <!-- ═══════════════════════════════════════════════
+         ABOUT
+    ═══════════════════════════════════════════════ -->
+    <section id="about" class="py-16 bg-white">
+      <div class="container grid md:grid-cols-5 gap-12 items-start">
+        <div class="md:col-span-2">
+          <img src="assets/img/magna-portrait.jpg" alt="Magna" class="w-full object-cover rounded-sm shadow-md" style="aspect-ratio:4/5;">
         </div>
-        <div class="lb-body">
-          <img id="lbImage" src="" alt="" class="lb-img" />
-          <div id="lbMeta" class="mt-3 text-gray-600 text-sm">Técnica · Dimensões · Ano</div>
-          <div class="mt-4 flex flex-wrap gap-2">
-            <a href="#contato" class="btn">Tenho interesse</a>
-            <a href="#contato" class="btn">Solicitar ficha técnica</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Exposições -->
-    <section id="exposicoes" class="py-12">
-      <div class="container">
-        <h2 class="text-2xl font-medium mb-5">Exposições & Destaques</h2>
-        <ul class="grid md:grid-cols-2 gap-6">
-          <li class="card p-5">
-            <h3 class="font-medium">Exposição Principal — Julho 2025</h3>
-            <p class="text-sm text-gray-600">Forte de [Nome], [Cidade], Portugal</p>
-            <p class="mt-2 text-sm">Mostra individual com curadoria de [Nome], apresentando a série <em>[nome da série]</em>.</p>
-          </li>
-          <li class="card p-5">
-            <h3 class="font-medium">Coletiva — 2024</h3>
-            <p class="text-sm text-gray-600">Galeria [Nome], [Cidade]</p>
-            <p class="mt-2 text-sm">Participação com as obras “[Título]” e “[Título]”.</p>
-          </li>
-        </ul>
-      </div>
-    </section>
-
-    <!-- Contato minimal -->
-    <section id="contato" class="py-12">
-      <div class="container">
-        <div class="card p-6">
-          <h2 class="text-2xl font-medium">Contato</h2>
-          <p class="text-gray-600 mt-2">Aquisição de obras, catálogo em PDF ou visitas ao ateliê.</p>
-          <div class="mt-4 flex flex-wrap gap-2 text-sm">
-            <a href="mailto:contato@magna-arte.com" class="btn" aria-label="Enviar email">Email</a>
-            <a href="https://wa.me/351910000000" target="_blank" rel="noopener" class="btn" aria-label="Abrir WhatsApp">WhatsApp</a>
-            <a href="https://www.instagram.com/" target="_blank" rel="noopener" class="btn" aria-label="Abrir Instagram">Instagram</a>
+        <div class="md:col-span-3">
+          <h2 class="text-3xl serif mb-6" data-i18n="aboutTitle">About Magna</h2>
+          <p class="text-gray-600 leading-relaxed text-base font-light mb-4" data-i18n="aboutText">Contemporary artist based in Portugal...</p>
+          <p class="text-gray-500 leading-relaxed text-base italic mb-6 border-l-2 border-gray-200 pl-4" data-i18n="aboutTestimonial">I use painting to fill everyone's hearts...</p>
+          <div class="flex flex-wrap gap-2 text-xs uppercase tracking-wider text-gray-400">
+            <span class="border border-gray-200 px-3 py-1 rounded-full">Acrylic</span>
+            <span class="border border-gray-200 px-3 py-1 rounded-full">Oil</span>
+            <span class="border border-gray-200 px-3 py-1 rounded-full">Mixed Media</span>
+            <span class="border border-gray-200 px-3 py-1 rounded-full">Acrylique Pluie</span>
           </div>
         </div>
       </div>
     </section>
 
-    <footer class="py-10 border-t" style="border-color:var(--line)">
-      <div class="container flex flex-col md:flex-row items-center justify-between gap-4 text-sm" style="color:var(--muted)">
-        <p>© <span id="year"></span> Magna. Todos os direitos reservados.</p>
-        <p>Portfólio & catálogo — versão híbrida minimal</p>
+    <!-- ═══════════════════════════════════════════════
+         FILTER TOOLBAR
+    ═══════════════════════════════════════════════ -->
+    <div class="toolbar">
+      <div class="container py-2.5">
+        <div class="filter-scroll flex items-center gap-2 pb-0.5">
+          <button class="pill active filter-btn flex-shrink-0" data-filter="all" data-i18n="filterAll">All</button>
+          <button class="pill filter-btn flex-shrink-0" data-filter="setubal" data-i18n="filterSetubal">Setúbal</button>
+          <button class="pill filter-btn flex-shrink-0" data-filter="concept" data-i18n="filterConcept">Concept</button>
+          <button class="pill filter-btn flex-shrink-0" data-filter="nature" data-i18n="filterNature">Nature</button>
+          <div class="ml-auto flex items-center gap-2 flex-shrink-0 pl-3">
+            <select id="sortSelect" class="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 focus:outline-none focus:border-black cursor-pointer">
+              <option value="recent" data-i18n="sortRecent">Newest</option>
+              <option value="alpha">A–Z</option>
+              <option value="priceLow" data-i18n="sortPriceLow">Price ↑</option>
+              <option value="priceHigh" data-i18n="sortPriceHigh">Price ↓</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         GALLERY
+    ═══════════════════════════════════════════════ -->
+    <section id="gallery" class="py-10" style="background:#f9f9f7;">
+      <div class="container">
+        <div id="galleryGrid" class="gallery-grid">
+          <div class="skeleton" style="height:320px;"></div>
+          <div class="skeleton" style="height:320px;"></div>
+          <div class="skeleton" style="height:320px;"></div>
+        </div>
+        <p id="noResults" class="hidden text-center text-gray-400 py-20 text-sm" data-i18n="noResults">No works found.</p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         EXHIBITIONS
+    ═══════════════════════════════════════════════ -->
+    <section id="exhibitions" class="py-16 bg-white">
+      <div class="container max-w-4xl">
+        <h2 class="text-2xl font-medium mb-8 border-b pb-3" data-i18n="exhibTitle">Exhibitions</h2>
+        <div id="exhibitionsList" class="space-y-8">
+          <p class="text-gray-400 text-sm">Loading exhibitions...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         CONTACT / FOOTER
+    ═══════════════════════════════════════════════ -->
+    <footer id="contact" class="py-14 bg-gray-50 border-t border-gray-200">
+      <div class="container text-center">
+        <h2 class="text-2xl serif mb-3" data-i18n="contactTitle">Contact & Acquisitions</h2>
+        <p class="text-gray-500 mb-6 max-w-md mx-auto text-sm" data-i18n="contactText">For inquiries about original artworks, limited prints, or studio visits.</p>
+        <div class="flex justify-center gap-3 mb-10 flex-wrap">
+          <button onclick="openEmailModal()" class="bg-black text-white px-6 py-2.5 rounded-full text-sm hover:bg-gray-800 transition font-medium">Email</button>
+          <a id="whatsappBtn" href="#" class="border border-gray-300 px-6 py-2.5 rounded-full text-sm hover:bg-white transition font-medium text-gray-700">WhatsApp</a>
+        </div>
+        <div class="flex flex-col items-center mb-8">
+          <a href="qrcode.html" target="_blank">
+            <div id="siteQrCode" class="w-20 h-20 mb-2 p-1 bg-white border border-gray-200 shadow-sm hover:opacity-80 transition"></div>
+          </a>
+          <p class="text-xs uppercase tracking-widest text-gray-400" data-i18n="qrVisitLabel">Visit on Mobile</p>
+        </div>
+        <div class="text-xs text-gray-400 pt-6 border-t border-gray-200 flex justify-between items-center">
+          <span>&copy; 2025 Magna Studio</span>
+          <span class="opacity-40">Magna · Brainboxmed Project</span>
+        </div>
       </div>
     </footer>
 
+    <!-- ═══════════════════════════════════════════════
+         LIGHTBOX MODAL
+    ═══════════════════════════════════════════════ -->
+    <div id="lightbox" class="lightbox" onclick="handleLightboxBackdrop(event)">
+      <div class="lightbox__inner" id="lightboxInner">
+
+        <!-- Image panel -->
+        <div class="lightbox__img-panel">
+          <button class="lightbox__arrow lightbox__arrow--prev" onclick="navigateLightbox(-1)" title="Previous">&#8592;</button>
+          <img id="lbImage" src="" alt="" style="max-height:72vh;">
+          <button class="lightbox__arrow lightbox__arrow--next" onclick="navigateLightbox(1)" title="Next">&#8594;</button>
+          <span id="lbSoldBadge" class="sold-badge hidden">Sold</span>
+        </div>
+
+        <!-- Detail panel -->
+        <div class="lightbox__detail">
+          <button class="lightbox__close" onclick="closeLightbox()">✕</button>
+
+          <div>
+            <div class="flex items-start justify-between gap-2 mb-2">
+              <h2 id="lbTitle" class="lightbox__title"></h2>
+              <span id="lbStatus" class="text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1"></span>
+            </div>
+            <p id="lbMeta" class="lightbox__meta"></p>
+          </div>
+
+          <p id="lbStory" class="lightbox__story"></p>
+
+          <hr class="lightbox__divider">
+
+          <!-- Pricing -->
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2" data-i18n="pricingLabel">Pricing</p>
+            <div id="lbPricing"></div>
+          </div>
+
+          <!-- Buy buttons -->
+          <div id="lbButtons" class="space-y-2"></div>
+
+          <!-- Provenance -->
+          <div class="provenance-block">
+            <div class="provenance-block__label" data-i18n="provLabel">Provenance</div>
+            <div class="provenance-block__row">
+              <span data-i18n="locLabel">Location</span>
+              <span id="lbLocation" class="font-medium text-gray-800"></span>
+            </div>
+            <div class="provenance-block__hash" id="lbHash"></div>
+          </div>
+
+          <a id="lbFullLink" href="#" class="text-xs text-center text-gray-400 hover:text-black underline transition" data-i18n="viewFullPage">View full artwork page →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         EMAIL MODAL
+    ═══════════════════════════════════════════════ -->
+    <div id="emailOverlay" class="email-overlay" onclick="handleEmailBackdrop(event)">
+      <div class="email-box">
+        <div class="flex justify-between items-start mb-4">
+          <div>
+            <h3 class="text-xl serif" data-i18n="emailModalTitle">Get in Touch</h3>
+            <p class="text-sm text-gray-500 mt-1" data-i18n="emailModalSub">Send a message to Magna Studio.</p>
+          </div>
+          <button onclick="closeEmailModal()" class="text-gray-400 hover:text-black text-xl">✕</button>
+        </div>
+        <form id="emailForm" class="space-y-3">
+          <div>
+            <label class="block text-xs font-bold uppercase text-gray-400 mb-1" data-i18n="labelName">Name</label>
+            <input type="text" name="from_name" required class="w-full border border-gray-200 rounded-md p-2.5 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-gray-400 mb-1" data-i18n="labelEmail">Email</label>
+            <input type="email" name="from_email" required class="w-full border border-gray-200 rounded-md p-2.5 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase text-gray-400 mb-1" data-i18n="labelMessage">Message</label>
+            <textarea name="message" rows="4" required class="w-full border border-gray-200 rounded-md p-2.5 text-sm focus:border-black focus:outline-none focus:ring-1 focus:ring-black resize-none"></textarea>
+          </div>
+          <button type="submit" class="w-full bg-black text-white py-3 rounded-md font-medium text-sm hover:bg-gray-800 transition" data-i18n="sendBtn">Send Message</button>
+          <p id="formStatus" class="text-xs text-center h-4"></p>
+        </form>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         JAVASCRIPT
+    ═══════════════════════════════════════════════ -->
     <script>
-      document.getElementById('year').textContent = new Date().getFullYear();
+      // ── CONFIG ──
+      // Auto-detect environment — works on both local and production
+      const IS_DEV        = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+      const BASE_URL      = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
+      const EMAIL_PUBLIC_KEY  = "HWTMdAMNN0xr1HflZ";
+      const EMAIL_SERVICE_ID  = "service_u52vj5f";
+      const EMAIL_TEMPLATE_ID = "template_6tvxcd9";
+      const WHATSAPP_PHONE    = "351917478907";
 
-      // Lightbox
-      const lb = document.getElementById('lightbox');
-      const lbImage = document.getElementById('lbImage');
-      const lbTitle = document.getElementById('lbTitle');
-      const lbMeta  = document.getElementById('lbMeta');
-      const lbClose = document.getElementById('lbClose');
-      let lastFocus = null;
+      (function(){ if(EMAIL_PUBLIC_KEY !== "SUA_PUBLIC_KEY_AQUI") emailjs.init(EMAIL_PUBLIC_KEY); })();
 
-      function openLb(){lb.classList.add('is-open');lb.setAttribute('aria-hidden','false');lb.focus();lbClose.focus({preventScroll:true});}
-      function closeLb(){lb.classList.remove('is-open');lb.setAttribute('aria-hidden','true');if(lastFocus&&lastFocus.focus) lastFocus.focus({preventScroll:true});}
+      // ── TRANSLATIONS ──
+      const T = {
+        en: {
+          siteSubtitle:"Artworks & Exhibitions", navAbout:"About", navWorks:"Artworks",
+          navExhibitions:"Exhibitions", navContact:"Contact",
+          heroTag:"Recent Series · 2024–2025", heroSub:"Acrylic on canvas · Magna Leite · Portugal",
+          aboutTitle:"About Magna",
+          aboutText:"Magna Leite is a visual artist based in Portugal. Her acrylic paintings on canvas stand out for their unique strokes and vibrant neon color palette, which give her works a strong visual impact. Her signature technique, 'Acrylique Pluie', showcases expressive and unusual compositions, in which chromatic extravagance asserts itself as a poetic language and strategy.",
+          aboutTestimonial:"I use painting to fill everyone's hearts and create impactful experiences, adding extravagance to the places where they are. My art reveals itself in unusual strokes and a palette of neon colors, worked in the 'Acrylique Pluie' technique.",
+          filterAll:"All", filterSetubal:"Setúbal", filterConcept:"Concept", filterNature:"Nature",
+          sortRecent:"Newest", sortPriceLow:"Price ↑", sortPriceHigh:"Price ↓",
+          exhibTitle:"Selected Exhibitions", contactTitle:"Contact & Acquisitions",
+          contactText:"For inquiries about original artworks, limited prints, or studio visits, please contact us directly.",
+          qrVisitLabel:"Visit on Mobile", pricingLabel:"Pricing", provLabel:"Provenance",
+          locLabel:"Location", viewFullPage:"View full artwork page →",
+          emailModalTitle:"Get in Touch", emailModalSub:"Send a message to Magna Studio.",
+          labelName:"Name", labelEmail:"Email", labelMessage:"Message", sendBtn:"Send Message",
+          noResults:"No works found for this filter.",
+          priceOriginalLabel:"Original (unique)", priceGalleryLabel:"Gallery Print",
+          priceCollectorLabel:"Collector Print", priceDigitalLabel:"Digital Download",
+          acquireBtn:"Acquire Original", buyGalleryBtn:"Buy Gallery Print",
+          buyCollectorBtn:"Buy Collector Print", buyDigitalBtn:"Buy Digital",
+          soldLabel:"SOLD", availableLabel:"Available"
+        },
+        pt: {
+          siteSubtitle:"Obras & Exposições", navAbout:"Sobre", navWorks:"Obras",
+          navExhibitions:"Exposições", navContact:"Contato",
+          heroTag:"Série Recente · 2024–2025", heroSub:"Acrílico sobre tela · Magna Leite · Portugal",
+          aboutTitle:"Sobre Magna",
+          aboutText:"Magna Leite é uma artista plástica radicada em Portugal. Sua produção em pintura acrílica sobre tela destaca-se por traços únicos e uma paleta de cores neon vibrantes, que conferem forte impacto visual às obras. A técnica autoral 'Acrylique Pluie' evidencia composições expressivas e inusitadas, nas quais a extravagância cromática se afirma como linguagem e estratégia poética.",
+          aboutTestimonial:"Uso a pintura para encher o coração de todos e criar experiências impactantes, acrescentando extravagância aos lugares onde elas estiverem. Minha arte revela-se em traços inusitados e em uma paleta de cores neon, trabalhada na técnica 'Acrylique Pluie'.",
+          filterAll:"Todas", filterSetubal:"Setúbal", filterConcept:"Conceito", filterNature:"Natureza",
+          sortRecent:"Recentes", sortPriceLow:"Preço ↑", sortPriceHigh:"Preço ↓",
+          exhibTitle:"Exposições Selecionadas", contactTitle:"Contato & Aquisições",
+          contactText:"Para consultas sobre obras originais, prints limitados ou visitas ao ateliê, entre em contato conosco.",
+          qrVisitLabel:"Visitar no Celular", pricingLabel:"Preços", provLabel:"Procedência",
+          locLabel:"Localização", viewFullPage:"Ver página completa da obra →",
+          emailModalTitle:"Fale Conosco", emailModalSub:"Envie uma mensagem ao Magna Studio.",
+          labelName:"Nome", labelEmail:"Email", labelMessage:"Mensagem", sendBtn:"Enviar Mensagem",
+          noResults:"Nenhuma obra encontrada.",
+          priceOriginalLabel:"Original (única)", priceGalleryLabel:"Print Galeria",
+          priceCollectorLabel:"Print Colecionador", priceDigitalLabel:"Download Digital",
+          acquireBtn:"Adquirir Original", buyGalleryBtn:"Comprar Print Galeria",
+          buyCollectorBtn:"Comprar Print Colecionador", buyDigitalBtn:"Comprar Digital",
+          soldLabel:"VENDIDA", availableLabel:"Disponível"
+        },
+        es: {
+          siteSubtitle:"Obras y Exposiciones", navAbout:"Sobre", navWorks:"Obras",
+          navExhibitions:"Exposiciones", navContact:"Contacto",
+          heroTag:"Serie Reciente · 2024–2025", heroSub:"Acrílico sobre lienzo · Magna Leite · Portugal",
+          aboutTitle:"Sobre Magna",
+          aboutText:"Magna Leite es una artista visual radicada en Portugal. Sus pinturas acrílicas sobre lienzo destacan por sus trazos únicos y su vibrante paleta de colores neón, que confieren a sus obras un fuerte impacto visual. Su técnica distintiva, 'Acrylique Pluie', presenta composiciones expresivas e inusuales, en las que la extravagancia cromática se impone como lenguaje y estrategia poética.",
+          aboutTestimonial:"Uso la pintura para llenar el corazón de todos y crear experiencias impactantes, añadiendo extravagancia a los lugares donde se encuentran. Mi arte se revela en trazos inusuales y en una paleta de colores neón, trabajada en la técnica 'Acrylique Pluie'.",
+          filterAll:"Todas", filterSetubal:"Setúbal", filterConcept:"Concepto", filterNature:"Naturaleza",
+          sortRecent:"Recientes", sortPriceLow:"Precio ↑", sortPriceHigh:"Precio ↓",
+          exhibTitle:"Exposiciones Seleccionadas", contactTitle:"Contacto y Adquisiciones",
+          contactText:"Para consultas sobre obras originales, impresiones limitadas o visitas al estudio, contáctenos directamente.",
+          qrVisitLabel:"Visitar en Móvil", pricingLabel:"Precios", provLabel:"Procedencia",
+          locLabel:"Ubicación", viewFullPage:"Ver página completa →",
+          emailModalTitle:"Contáctenos", emailModalSub:"Envíe un mensaje a Magna Studio.",
+          labelName:"Nombre", labelEmail:"Email", labelMessage:"Mensaje", sendBtn:"Enviar Mensaje",
+          noResults:"No se encontraron obras.",
+          priceOriginalLabel:"Original (única)", priceGalleryLabel:"Print Galería",
+          priceCollectorLabel:"Print Coleccionista", priceDigitalLabel:"Descarga Digital",
+          acquireBtn:"Adquirir Original", buyGalleryBtn:"Comprar Print Galería",
+          buyCollectorBtn:"Comprar Print Coleccionista", buyDigitalBtn:"Comprar Digital",
+          soldLabel:"VENDIDA", availableLabel:"Disponible"
+        }
+      };
 
-      document.querySelectorAll('.open-modal').forEach(btn=>{
-        btn.addEventListener('click', e=>{
-          const card = e.currentTarget.closest('.art-item');
-          const img  = card.querySelector('img');
-          const { title, year, size } = card.dataset;
-          lbImage.src = img.src; lbImage.alt = img.alt || '';
-          lbTitle.textContent = title || '';
-          lbMeta.textContent = `Dimensões: ${size || '—'} · Ano: ${year || '—'} · Técnica: ver descrição`;
-          lastFocus = document.activeElement; openLb();
+      // ── STATE ──
+      let allArtworks   = [];
+      let currentLang   = 'en';
+      let currentSlug   = null;
+      let filteredSlugs = [];
+
+      function t(key) { return (T[currentLang]?.[key]) || (T.en[key]) || key; }
+
+      function getInitialLang() {
+        const s = localStorage.getItem('magna_lang');
+        if (s) return s;
+        const bl = navigator.language.substring(0,2);
+        return (bl==='pt'||bl==='es') ? bl : 'en';
+      }
+
+      function setLanguage(lang) {
+        currentLang = lang;
+        localStorage.setItem('magna_lang', lang);
+        document.documentElement.lang = lang;
+        document.getElementById('langSwitcher').value = lang;
+        applyTranslations();
+        if (allArtworks.length > 0) {
+          const f = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+          renderGallery(f, document.getElementById('sortSelect').value);
+        }
+        loadExhibitions();
+      }
+
+      function applyTranslations() {
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+          const k = el.getAttribute('data-i18n');
+          if (T[currentLang]?.[k]) el.textContent = T[currentLang][k];
         });
+      }
+
+      // ── GALLERY ──
+      async function loadGalleryData() {
+        try {
+          const res = await fetch('artworks.json');
+          if (!res.ok) throw new Error('Failed to load artworks.json');
+          const data = await res.json();
+          allArtworks = Object.entries(data).map(([slug, work]) => ({ ...work, slug }));
+          renderGallery();
+        } catch(err) {
+          console.error(err);
+          document.getElementById('galleryGrid').innerHTML =
+            '<p class="col-span-3 text-center text-red-400 py-16 text-sm">Could not load gallery. Please refresh.</p>';
+        }
+      }
+
+      function renderGallery(filter='all', sort='recent') {
+        const grid = document.getElementById('galleryGrid');
+        const noResults = document.getElementById('noResults');
+        grid.innerHTML = '';
+
+        let items = allArtworks.filter(a => filter==='all' || a.collection===filter);
+        items.sort((a,b) => {
+          if (sort==='recent')    return (b.year||0)-(a.year||0);
+          if (sort==='alpha')     return a.title.localeCompare(b.title);
+          if (sort==='priceLow')  return (a.priceDisplay?.original||0)-(b.priceDisplay?.original||0);
+          if (sort==='priceHigh') return (b.priceDisplay?.original||0)-(a.priceDisplay?.original||0);
+          return 0;
+        });
+
+        filteredSlugs = items.map(a => a.slug);
+
+        if (items.length === 0) { noResults.classList.remove('hidden'); return; }
+        noResults.classList.add('hidden');
+
+        items.forEach((art, i) => {
+          const tech  = art.technique?.[currentLang] || art.technique?.en || '';
+          const price = art.priceDisplay?.original;
+          const isSold = art.status !== 'available';
+
+          const card = document.createElement('div');
+          card.className = 'art-card';
+          card.style.animationDelay = `${i * 55}ms`;
+          card.onclick = () => window.location.href = `artwork.html?id=${art.slug}`;
+
+          card.innerHTML = `
+            <div class="art-card__img-wrap">
+              <img loading="lazy" src="${art.image}" alt="${art.title}"
+                   onerror="this.src='assets/img/placeholder.jpg'">
+            </div>
+            ${isSold ? `<span class="sold-badge">${t('soldLabel')}</span>` : ''}
+            <div class="art-card__info">
+              <div class="art-card__title">${art.title}</div>
+              <div class="art-card__meta">${art.year} · ${art.dimensions} · ${tech}</div>
+              ${price ? `
+                <div class="art-card__price">€${price.toLocaleString('de-DE')}</div>
+                <div class="art-card__prints">Prints from €${(art.priceDisplay?.printCollector||0).toLocaleString('de-DE')}</div>
+              ` : ''}
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      }
+
+      // ── LIGHTBOX ──
+      function openLightbox(slug) {
+        currentSlug = slug;
+        populateLightbox(slug);
+        const lb = document.getElementById('lightbox');
+        lb.classList.add('open');
+        requestAnimationFrame(() => { lb.classList.add('visible'); });
+        document.body.style.overflow = 'hidden';
+      }
+
+      function closeLightbox() {
+        const lb = document.getElementById('lightbox');
+        lb.classList.remove('visible');
+        setTimeout(() => { lb.classList.remove('open'); document.body.style.overflow = ''; }, 300);
+      }
+
+      function handleLightboxBackdrop(e) {
+        if (e.target === document.getElementById('lightbox')) closeLightbox();
+      }
+
+      function navigateLightbox(dir) {
+        const idx = filteredSlugs.indexOf(currentSlug);
+        if (idx === -1) return;
+        const next = (idx + dir + filteredSlugs.length) % filteredSlugs.length;
+        currentSlug = filteredSlugs[next];
+        populateLightbox(currentSlug);
+      }
+
+      function populateLightbox(slug) {
+        const art = allArtworks.find(a => a.slug === slug);
+        if (!art) return;
+
+        const isSold = art.status !== 'available';
+        const lang   = currentLang;
+        const tech   = art.technique?.[lang] || art.technique?.en || '';
+        const story  = art.story?.[lang] || art.story?.en || '';
+        const loc    = typeof art.location==='object' ? (art.location[lang]||art.location.en) : art.location;
+        const pd     = art.priceDisplay || {};
+
+        document.getElementById('lbImage').src = art.image;
+        document.getElementById('lbImage').alt = art.title;
+        document.getElementById('lbTitle').textContent = art.title;
+        document.getElementById('lbMeta').textContent  = `${art.year} · ${tech} · ${art.dimensions}`;
+        document.getElementById('lbStory').textContent = `"${story}"`;
+        document.getElementById('lbLocation').textContent = loc || '—';
+        document.getElementById('lbHash').textContent = art.originalHash || '';
+        document.getElementById('lbFullLink').href = `artwork.html?id=${slug}`;
+        document.getElementById('lbFullLink').textContent = t('viewFullPage');
+
+        const soldBadge = document.getElementById('lbSoldBadge');
+        isSold ? soldBadge.classList.remove('hidden') : soldBadge.classList.add('hidden');
+        soldBadge.textContent = t('soldLabel');
+
+        const statusEl = document.getElementById('lbStatus');
+        if (isSold) {
+          statusEl.textContent = t('soldLabel');
+          statusEl.className = 'text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1 status-sold';
+        } else {
+          statusEl.textContent = t('availableLabel');
+          statusEl.className = 'text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1 status-available';
+        }
+
+        // Pricing rows
+        const pricingEl = document.getElementById('lbPricing');
+        pricingEl.innerHTML = '';
+        [
+          { label: t('priceOriginalLabel'), val: pd.original,        note: 'Unique · Signed' },
+          { label: t('priceGalleryLabel'),  val: pd.printGallery,    note: '70 × 100 cm' },
+          { label: t('priceCollectorLabel'),val: pd.printCollector,  note: '50 × 70 cm' },
+          { label: t('priceDigitalLabel'),  val: pd.digital,         note: 'High-res file' },
+        ].forEach(row => {
+          if (!row.val) return;
+          pricingEl.innerHTML += `
+            <div class="price-row">
+              <div><span class="price-row__label">${row.label}</span><span class="price-row__note">${row.note}</span></div>
+              <span class="price-row__amount">€${row.val.toLocaleString('de-DE')}</span>
+            </div>`;
+        });
+
+        // Buttons
+        const btnsEl = document.getElementById('lbButtons');
+        btnsEl.innerHTML = '';
+        if (!isSold && art.priceOriginal?.live) {
+          btnsEl.innerHTML += `<a href="${art.priceOriginal.live}" target="_blank" rel="noopener" class="btn-acquire">${t('acquireBtn')} — €${(pd.original||0).toLocaleString('de-DE')}</a>`;
+        }
+        if (art.pricePrintGallery?.live) {
+          btnsEl.innerHTML += `<a href="${art.pricePrintGallery.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyGalleryBtn')} — €${(pd.printGallery||0).toLocaleString('de-DE')}</a>`;
+        }
+        if (art.pricePrintCollector?.live) {
+          btnsEl.innerHTML += `<a href="${art.pricePrintCollector.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyCollectorBtn')} — €${(pd.printCollector||0).toLocaleString('de-DE')}</a>`;
+        }
+        if (art.priceDigital?.live) {
+          btnsEl.innerHTML += `<a href="${art.priceDigital.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyDigitalBtn')} — €${(pd.digital||0).toLocaleString('de-DE')}</a>`;
+        }
+      }
+
+      // Keyboard navigation
+      document.addEventListener('keydown', e => {
+        if (e.key === 'Escape')      closeLightbox();
+        if (e.key === 'ArrowRight')  navigateLightbox(1);
+        if (e.key === 'ArrowLeft')   navigateLightbox(-1);
       });
 
-      lbClose.addEventListener('click', closeLb);
-      lb.addEventListener('click', e=>{ if(e.target===lb) closeLb(); });
-      document.addEventListener('keydown', e=>{ if(e.key==='Escape' && lb.classList.contains('is-open')) closeLb();});
+      // Touch swipe on lightbox
+      let touchStartX = 0;
+      document.getElementById('lightbox').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
+      document.getElementById('lightbox').addEventListener('touchend',   e => {
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(dx) > 50) navigateLightbox(dx < 0 ? 1 : -1);
+      }, {passive:true});
 
-      // Filtros/Ordenação
-      const filters = document.querySelectorAll('.filter');
-      const gallery = document.getElementById('gallery');
-      const items = ()=> Array.from(gallery.querySelectorAll('.art-item'));
+      // ── EXHIBITIONS ──
+      async function loadExhibitions() {
+        try {
+          const res  = await fetch('exhibitions.json');
+          const data = await res.json();
+          const list = document.getElementById('exhibitionsList');
+          list.innerHTML = '';
+          Object.entries(data).forEach(([slug, exhib]) => {
+            const desc = exhib.description?.[currentLang] || exhib.description?.en || '';
+            const item = document.createElement('div');
+            item.className = 'group cursor-pointer border-b border-gray-100 pb-6 last:border-0 hover:bg-gray-50 transition p-4 rounded-lg -mx-4';
+            item.onclick = () => window.location.href = `exhibition.html?id=${slug}`;
+            item.innerHTML = `
+              <div class="flex flex-col md:flex-row gap-5 items-start">
+                <div class="w-full md:w-44 flex-shrink-0 rounded bg-gray-100 overflow-hidden min-h-40 flex items-center justify-center">
+                  <img src="${exhib.image}" onerror="this.src='https://via.placeholder.com/300x400?text=Flyer';"
+                       alt="${exhib.title}" class="w-full h-auto max-h-72 object-contain group-hover:scale-105 transition duration-700">
+                </div>
+                <div>
+                  <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${exhib.date}</span>
+                  <h3 class="text-lg serif font-medium mt-1 mb-1 group-hover:text-black transition">${exhib.title}</h3>
+                  <p class="text-gray-700 text-sm font-medium mb-2">${exhib.location}</p>
+                  <p class="text-gray-500 text-sm leading-relaxed line-clamp-3">${desc}</p>
+                </div>
+              </div>`;
+            list.appendChild(item);
+          });
+        } catch(err) { console.error('Exhibitions error:', err); }
+      }
 
-      filters.forEach(b=> b.addEventListener('click', ()=>{
-        const f = b.dataset.filter;
-        items().forEach(c=> c.classList.toggle('hidden', f!=='all' && c.dataset.collection!==f));
-      }));
+      // ── EMAIL MODAL ──
+      function openEmailModal() {
+        const el = document.getElementById('emailOverlay');
+        el.classList.add('open');
+        requestAnimationFrame(() => el.classList.add('visible'));
+      }
+      function closeEmailModal() {
+        const el = document.getElementById('emailOverlay');
+        el.classList.remove('visible');
+        setTimeout(() => el.classList.remove('open'), 300);
+      }
+      function handleEmailBackdrop(e) {
+        if (e.target === document.getElementById('emailOverlay')) closeEmailModal();
+      }
 
-      document.getElementById('sortSelect').addEventListener('change', e=>{
-        const val = e.target.value; const list = items();
-        list.sort((a,b)=>{
-          if(val==='alpha') return a.dataset.title.localeCompare(b.dataset.title, 'pt');
-          if(val==='size'){
-            const sa=parseInt(a.dataset.size.split('x')[0],10)||0; const sb=parseInt(b.dataset.size.split('x')[0],10)||0; return sb-sa;
-          }
-          return (parseInt(b.dataset.year,10)||0)-(parseInt(a.dataset.year,10)||0);
+      document.getElementById('emailForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const btn    = this.querySelector('button[type="submit"]');
+        const status = document.getElementById('formStatus');
+        btn.textContent = '...'; btn.disabled = true;
+        emailjs.sendForm(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, this)
+          .then(() => {
+            status.textContent = currentLang==='pt' ? 'Mensagem enviada!' : 'Message sent!';
+            status.className = 'text-xs text-center mt-1 text-green-600 font-bold';
+            setTimeout(() => { closeEmailModal(); btn.textContent=t('sendBtn'); btn.disabled=false; status.textContent=''; this.reset(); }, 2000);
+          }, err => {
+            console.error(err);
+            status.textContent = currentLang==='pt' ? 'Erro. Tente novamente.' : 'Error. Try again.';
+            status.className = 'text-xs text-center mt-1 text-red-500';
+            btn.textContent = t('sendBtn'); btn.disabled = false;
+          });
+      });
+
+      // ── WHATSAPP ──
+      document.getElementById('whatsappBtn').addEventListener('click', e => {
+        e.preventDefault();
+        const msgs = {
+          pt: 'Olá! Gostaria de informações sobre as obras da Magna.',
+          es: '¡Hola! Me gustaría información sobre las obras de Magna.',
+          en: 'Hello! I would like information about Magna\'s artworks.'
+        };
+        window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msgs[currentLang]||msgs.en)}`, '_blank', 'noopener');
+      });
+
+      // ── QR CODE ──
+      function generateQR() {
+        const el = document.getElementById('siteQrCode');
+        if (!el || typeof QRCode === 'undefined') return;
+        new QRCode(el, { text: BASE_URL, width:72, height:72, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.M });
+      }
+
+      // ── FILTERS & SORT ──
+      function initFilters() {
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderGallery(btn.dataset.filter, document.getElementById('sortSelect').value);
+          });
         });
-        list.forEach(el=> gallery.appendChild(el));
+        document.getElementById('sortSelect').addEventListener('change', e => {
+          const f = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+          renderGallery(f, e.target.value);
+        });
+        document.getElementById('langSwitcher').addEventListener('change', e => setLanguage(e.target.value));
+      }
+
+      // ── INIT ──
+      document.addEventListener('DOMContentLoaded', () => {
+        setLanguage(getInitialLang());
+        loadGalleryData();
+        loadExhibitions();
+        initFilters();
+        generateQR();
       });
     </script>
   </body>

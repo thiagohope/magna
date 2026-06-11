@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna - Certificate of Authenticity</title>
+    <meta name="robots" content="noindex, nofollow">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body { background: #e5e5e5; color: #1a1a1a; font-family: 'Inter', sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .serif { font-family: 'Playfair Display', serif; }
+        .official { font-family: 'Cinzel', serif; }
+        .text-gold { color: #b49b57; }
+        .border-gold { border-color: #b49b57; }
+        .bg-gold { background-color: #b49b57; }
+        
+        .paper-texture {
+            background-color: #fdfbf7;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
+            box-shadow: 0 20px 50px -12px rgba(0,0,0,0.15);
+        }
+        .stamp-border { border: 8px double #b49b57; }
+        .watermark {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 8rem; opacity: 0.03; font-family: 'Playfair Display', serif; 
+            pointer-events: none; white-space: nowrap; text-transform: uppercase; font-weight: bold; color: #b49b57;
+        }
+
+        @media print {
+            @page { size: A4 portrait; margin: 0; }
+            body { background: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+            .no-print { display: none !important; }
+            .paper-texture {
+                width: 210mm; height: 296mm; max-width: none; margin: 0; box-shadow: none;
+                border: 6px double #b49b57; padding: 40px !important;
+                page-break-after: avoid; page-break-inside: avoid;
+            }
+            h1 { font-size: 2.2rem !important; }
+            h2 { font-size: 2rem !important; }
+            .watermark { font-size: 6rem; }
+        }
+    </style>
+</head>
+<body class="py-10 px-4 min-h-screen flex flex-col items-center justify-center">
+
+    <div class="no-print w-full max-w-[900px] mb-6">
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-4 flex flex-col md:flex-row gap-3 md:items-end md:justify-between">
+            <div class="flex flex-col gap-2 w-full">
+                <label class="text-xs font-bold uppercase tracking-widest text-gray-500">Artwork (Admin Select)</label>
+                <select id="artSelect" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white cursor-pointer hover:border-black transition">
+                    <option value="">Loading database…</option>
+                </select>
+            </div>
+
+            <div class="flex gap-2 md:justify-end md:items-end w-full md:w-auto">
+                <a id="viewArtworkBtn" href="#" class="px-4 py-2 bg-white rounded shadow text-sm font-bold text-gray-700 hover:bg-gray-50 hover:text-black transition border border-gray-200 whitespace-nowrap flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    View Artwork Page
+                </a>
+                
+                <button onclick="window.print()" class="px-4 py-2 bg-black text-white rounded shadow text-sm font-bold uppercase tracking-wide hover:bg-gray-800 transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Print Cert
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <main class="paper-texture bg-white w-full max-w-[800px] p-8 md:p-16 relative overflow-hidden stamp-border">
+        <div class="watermark">Magna Original</div>
+
+        <header class="text-center mb-8 border-b-2 border-gold pb-6">
+            <img src="assets/icons/M02.png" alt="Magna" class="h-20 mx-auto mb-4 object-contain">
+            <h1 class="official text-3xl md:text-4xl uppercase tracking-widest mb-2 text-gray-900">Certificate of Authenticity</h1>
+            <p class="text-[10px] uppercase tracking-[0.4em] text-gold font-bold">Official Provenance Record · BrainboxMed Registry</p>
+        </header>
+
+        <div id="loading" class="text-center py-10 text-gray-400">Verifying blockchain record...</div>
+        
+        <div id="content" class="hidden relative z-10 flex flex-col h-full justify-between">
+            <div class="grid grid-cols-3 gap-8 items-start mb-6">
+                <div class="col-span-1 flex flex-col items-center">
+                    <div class="p-2 border border-gray-100 bg-white shadow-md mb-4 w-full rotate-1 hover:rotate-0 transition duration-500 print:shadow-none print:border-gray-300">
+                        <img id="artImage" src="" alt="Artwork" class="w-full h-auto object-cover">
+                    </div>
+                    <div class="flex flex-col items-center mt-2">
+                        <div class="p-1 bg-white border border-gray-400 w-24 h-24 flex items-center justify-center">
+                            <img id="qrcode" src="" class="w-full h-full object-contain">
+                        </div>
+                        <p class="text-[8px] text-gray-400 mt-1 uppercase tracking-wide text-center">Digital ID Verification</p>
+                    </div>
+                </div>
+
+                <div class="col-span-2 pl-4">
+                    <h2 id="artTitle" class="serif text-4xl italic mb-1 text-black leading-tight">...</h2>
+                    <p class="text-xs text-gold font-bold mb-6 tracking-wide uppercase">Original Artwork by Magna</p>
+
+                    <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm py-4 border-t border-b border-gray-100">
+                        <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Creation Year</span><span id="artYear" class="font-serif text-lg">...</span></div>
+                        <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Dimensions</span><span id="artDimensions" class="font-serif text-lg">...</span></div>
+                        <div class="col-span-2"><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Technique</span><span id="artTechnique" class="font-medium">...</span></div>
+                    </div>
+
+                    <div class="mt-4 bg-yellow-50 p-3 rounded border border-yellow-100 print:bg-transparent print:border-gray-200">
+                        <span class="block text-[9px] text-yellow-700 uppercase tracking-wide font-bold mb-1 print:text-gray-500">Unique Digital Hash (UUID)</span>
+                        <code id="artHash" class="block font-mono text-[9px] text-black break-all">...</code>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 flex-grow">
+                <h3 class="official text-xs font-bold uppercase border-b border-gray-300 inline-block mb-4 text-gold">Provenance & History</h3>
+                <ul id="historyList" class="relative border-l-2 border-gray-200 ml-2 space-y-4 pb-2"></ul>
+            </div>
+
+            <footer class="mt-8 pt-6 flex justify-between items-end border-t-2 border-gold">
+                <div class="text-center">
+                    <img src="assets/icons/magna-sign.png" alt="Magna Signature" class="h-20 mx-auto mb-1 opacity-90 mix-blend-multiply" style="transform: rotate(-2deg);">
+                    <div class="h-px w-20 bg-gold mx-auto"></div>
+                    <p class="text-[9px] uppercase mt-1 tracking-widest text-gray-500">Artist Signature</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs font-bold" id="currentDate">Date</p>
+                    <p class="text-[9px] text-gray-400 uppercase mt-1">Certified by Magna Ecosystem</p>
+                </div>
+            </footer>
+        </div>
+    </main>
+
+    <script>
+        const JSON_PATH = 'artworks.json';
+
+        function getSlugFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('id');
+        }
+
+        function setSlugInUrl(slug) {
+            const url = new URL(window.location.href);
+            url.searchParams.set('id', slug);
+            window.history.replaceState({}, "", url.toString());
+        }
+
+        async function loadDB() {
+            const res = await fetch(JSON_PATH);
+            if (!res.ok) throw new Error("Failed to load artworks.json");
+            return await res.json();
+        }
+
+        function fillSelect(db, currentSlug) {
+            const sel = document.getElementById('artSelect');
+            sel.innerHTML = '<option value="">Select Artwork...</option>';
+
+            Object.entries(db).forEach(([slug, art]) => {
+                const opt = document.createElement('option');
+                opt.value = slug;
+                opt.textContent = `${art.title || slug}`;
+                sel.appendChild(opt);
+            });
+
+            if (currentSlug && db[currentSlug]) {
+                sel.value = currentSlug;
+            } else {
+                const firstSlug = Object.keys(db)[0];
+                if (firstSlug) sel.value = firstSlug;
+            }
+        }
+
+        function resetUIForReload() {
+            document.getElementById('historyList').innerHTML = '';
+            document.getElementById('content').classList.add('hidden');
+            const loading = document.getElementById('loading');
+            loading.style.display = 'block';
+            loading.classList.remove('text-red-500');
+            loading.textContent = 'Verifying blockchain record...';
+        }
+
+        async function renderCertificate(db, slug) {
+            const loading = document.getElementById('loading');
+            const content = document.getElementById('content');
+
+            if (!slug || !db[slug]) {
+                loading.textContent = "Error: Artwork ID not found.";
+                return;
+            }
+
+            try {
+                const art = db[slug];
+
+                // 1. Dados Básicos
+                document.title = `Certificate - ${art.title || slug}`;
+                document.getElementById('artImage').src = art.image || "";
+                document.getElementById('artTitle').textContent = art.title || slug;
+                document.getElementById('artYear').textContent = art.year || "";
+                document.getElementById('artDimensions').textContent = art.dimensions || "";
+
+                // 2. Técnica
+                const tech = (art.technique && art.technique.en) ? art.technique.en :
+                             (art.technique && art.technique.pt) ? art.technique.pt : "Mixed Media";
+                document.getElementById('artTechnique').textContent = tech;
+
+                // 3. Hash e Data
+                document.getElementById('artHash').textContent = art.originalHash || "Pending Registration";
+                document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+
+                // 4. Link "View Artwork"
+                const artPageUrl = `artwork.html?id=${slug}`;
+                document.getElementById('viewArtworkBtn').href = artPageUrl;
+
+                // 5. GERAR QR CODE (API Otimizada)
+                // Substitui 'certificate.html' por 'verify-original.html' na URL atual
+                const publicVerifyUrl = window.location.href.replace('certificate.html', 'verify-original.html');
+
+                // ecc=L (Menos densidade), margin=2 (Espaço branco), 200px (Alta resolução)
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&ecc=L&margin=2&data=${encodeURIComponent(publicVerifyUrl)}`;
+                
+                document.getElementById("qrcode").src = qrUrl;
+
+                // 6. Timeline
+                const historyList = document.getElementById('historyList');
+                const history = (art.history && art.history.length > 0)
+                    ? art.history
+                    : [{ date: art.year || "", event: "Creation", location: "Magna Studio", details: "Artwork completed." }];
+
+                const eventColors = {
+                    "Creation": "bg-yellow-400 border-yellow-500 print:border-gray-400 print:bg-gray-200",
+                    "Exhibition": "bg-purple-500 border-purple-600 print:border-gray-400 print:bg-gray-300",
+                    "Transfer": "bg-blue-500 border-blue-600 print:border-gray-600 print:bg-gray-400",
+                    "Restoration": "bg-red-400 border-red-500 print:border-gray-400 print:bg-gray-200",
+                    "Certification": "bg-gray-800 border-black print:border-black print:bg-black"
+                };
+
+                history.forEach((item) => {
+                    const li = document.createElement('li');
+                    li.className = "pl-6 relative group";
+                    const dotClass = eventColors[item.event] || "bg-gray-400 border-gray-500";
+
+                    li.innerHTML = `
+                        <span class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm ${dotClass}"></span>
+                        <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
+                            <span class="text-xs font-bold text-gray-900 w-20 shrink-0">${item.date || ""}</span>
+                            <div>
+                                <span class="text-xs font-bold uppercase tracking-wide text-black">${item.event || ""}</span>
+                                <span class="text-xs text-gray-500 mx-1 print:hidden">&middot;</span>
+                                <span class="text-xs text-gray-600 block sm:inline">${item.location || ""}</span>
+                                ${item.details ? `<p class="text-[9px] text-gray-500 italic mt-0.5">${item.details}</p>` : ''}
+                            </div>
+                        </div>
+                    `;
+                    historyList.appendChild(li);
+                });
+
+                loading.style.display = 'none';
+                content.classList.remove('hidden');
+
+            } catch (err) {
+                console.error(err);
+                loading.style.display = 'block';
+                loading.classList.remove('text-gray-400');
+                loading.classList.add('text-red-500');
+                loading.textContent = "Error loading data.";
+            }
+        }
+
+        (async function init() {
+            const db = await loadDB();
+
+            let slug = getSlugFromUrl();
+            if (!slug || !db[slug]) {
+                slug = Object.keys(db)[0];
+                if (slug) setSlugInUrl(slug);
+            }
+
+            fillSelect(db, slug);
+
+            document.getElementById('artSelect').addEventListener('change', async (e) => {
+                const newSlug = e.target.value;
+                if (!newSlug) return;
+                setSlugInUrl(newSlug);
+                resetUIForReload();
+                await renderCertificate(db, newSlug);
+            });
+
+            await renderCertificate(db, slug);
+        })();
+    </script>
+</body>
+</html>

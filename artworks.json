@@ -1,0 +1,361 @@
+{
+"choco": {
+    "title": "O Choco",
+    "year": "2025",
+    "technique": {
+        "pt": "Acrílico sobre tela",
+        "en": "Acrylic on canvas",
+        "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "150 x 100 cm (H x W)",
+    "image": "assets/choco-2025.jpg",
+    "collection": "setubal",
+    "priceDisplay": {
+        "original": 1200,
+        "printGallery": 300,
+        "printCollector": 150,
+        "digital": 30
+    },
+    "story": {
+        "pt": "Entre cores neon e formas extravagantes, o Choco impõe-se ao olhar — é impossível não reparar. O principal símbolo de Setúbal navega entre o sal e a identidade.",
+        "en": "Between neon colors and extravagant shapes, \"O Choco\"(The Cuddlefish) stands out — it's impossible not to notice. The main symbol of Setúbal navigates between salt and identity.",
+        "es": "Entre colores neón y formas extravagantes, \"O Choco\" (La Sepia) destaca; es imposible no notarlo. El principal símbolo de Setúbal se mueve entre la sal y la identidad."
+    },
+    "status": "available",
+    "location": {
+        "pt": "Setubal, Portugal",
+        "en": "Setubal",
+        "es": "Setubal"
+    },
+    "originalHash": "be7703e6-c1f7-4c77-9527-380fac4d8ae0",
+    "editionsSold": {
+        "gallery": 0,
+        "collector": 0,
+        "digital": 0
+    },
+    "priceOriginal": {
+        "test": "https://buy.stripe.com/test_00w14n1PF2Qt0sh0pva7C0c",
+        "live": "https://buy.stripe.com/eVqdRagiddn3dG81kH2VG0c"
+    },
+    "pricePrintGallery": {
+        "test": "https://buy.stripe.com/test_5kQ14n8e3aiV1wl5JPa7C0d",
+        "live": "https://buy.stripe.com/bJedRa4zv5UBby01kH2VG0d"
+    },
+    "pricePrintCollector": {
+        "test": "https://buy.stripe.com/test_5kQ14nbqf9eR7UJ1tza7C0e",
+        "live": "https://buy.stripe.com/aFa28s8PLfvbatW4wT2VG0e"
+    },
+    "priceDigital": {
+        "test": "https://buy.stripe.com/test_14AaEXcuj9eR0sh8W1a7C0f",
+        "live": "https://buy.stripe.com/dRmaEY3vrciZ45y2oL2VG0f"
+    },
+    "history": [
+        {
+            "date": "2025-12-17",
+            "event": "Certification",
+            "location": "Atelier",
+            "details": ""
+        }
+    ]
+},
+
+"figueirinha": {
+    "title": "A Figueirinha",
+    "year": "2025",
+    "technique": {
+        "pt": "Acrílico sobre tela",
+        "en": "Acrylic on canvas",
+        "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "155 x 200 cm (H x W)",
+    "image": "assets/figueirinha-2025.jpg",
+    "collection": "setubal",
+    "priceDisplay": {
+        "original": 1200,
+        "printGallery": 300,
+        "printCollector": 150,
+        "digital": 30
+    },
+    "story": {
+        "pt": "A Figueirinha provoca uma certa inquietude, porque nos faz tentar perceber o que, afinal, está ali a ser mostrado. As cores fortes e os gestos soltos sugerem luz, calor e movimento. A paisagem move-se entre o real e o abstrato, pedindo tempo e atenção. Serra, sol e praia aparecem misturados, sem limites claros, confundindo o olhar. Onde está o mar? Não precisamos de saber. Não é uma representação literal da Praia da Figueirinha, mas da forma como ela é sentida.",
+        "en": "A Figueirinha (The Little Fig Tree) evokes a certain unease, as it makes us try to understand what is actually being shown there. The intense colors and loose gestures suggest light, warmth and movement. The landscape moves between the real and the abstract, demanding time and attention. Mountains, sun and beach appear mixed, without clear boundaries, confusing the eye. Where is the sea? We don't need to know. It's not a literal representation of Figueirinha beach, but of how it is felt.",
+        "es": "A Figueirinha (La Pequeña Higuera) evoca cierta inquietud, pues nos lleva a intentar comprender qué es lo que, en definitiva, se muestra allí. Los colores intensos y los gestos sueltos sugieren luz, calidez y movimiento. El paisaje oscila entre lo real y lo abstracto, exigiendo tiempo y atención. Montañas, sol y playa aparecen mezclados, sin límites claros, confundiendo la vista. ¿Dónde está el mar? No necesitamos saberlo. No es una representación literal de la playa de Figueirinha, sino de cómo se siente."
+    },
+    "status": "available",
+    "location": {
+        "pt": "Setubal",
+        "en": "Setubal",
+        "es": "Setubal"
+    },
+    "originalHash": "facb019e-daa4-4b44-90ef-a86ceb1130dc",
+    "editionsSold": {
+        "gallery": 0,
+        "collector": 0,
+        "digital": 0
+    },
+    "priceOriginal": {
+        "test": "https://buy.stripe.com/test_6oU4gz2TJ8aN0shdcha7C04",
+        "live": "https://buy.stripe.com/fZubJ29TPciZ9pS6F12VG04"
+    },
+    "pricePrintGallery": {
+        "test": "https://buy.stripe.com/test_7sY6oH2TJ8aN5MB5JPa7C05",
+        "live": "https://buy.stripe.com/9B6bJ21nj0AhdG82oL2VG07"
+    },
+    "pricePrintCollector": {
+        "test": "https://buy.stripe.com/test_4gMbJ13XNfDf1wl0pva7C06",
+        "live": "https://buy.stripe.com/14AfZi2rn2Ip59C5AX2VG06"
+    },
+    "priceDigital": {
+        "test": "https://buy.stripe.com/test_9B63cv3XNaiVb6V4FLa7C07",
+        "live": "https://buy.stripe.com/14AcN6aXTfvbcC44wT2VG05"
+    },
+    "history": [
+        {
+            "date": "2025-12-17",
+            "event": "Certification",
+            "location": "Atelier",
+            "details": ""
+        }
+    ]
+},
+
+"forte-albarquel": {
+    "title": "A Guarita",
+    "year": "2025",
+    "technique": {
+        "pt": "Acrílico sobre tela",
+        "en": "Acrylic on canvas",
+        "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "150 x 100 cm (H x W)",
+    "image": "assets/forte-albarquel-2025.jpeg",
+    "collection": "setubal",
+    "priceDisplay": {
+        "original": 1200,
+        "printGallery": 300,
+        "printCollector": 150,
+        "digital": 30
+    },
+    "story": {
+        "pt": "As cores neon e a técnica Acrylique Pluie intensificam a paisagem do Forte de Albarquel, transformando-o num espaço que, para alguns, evoca o presente e, para outros, o passado. Pelos seus traços orgânicos e cores imprevisíveis, ninguém passa pela obra sem parar. Ela capta o olhar e provoca uma reflexão sobre a relação entre quem observa e o que é observado. A guarita solitária olha para o mar infinito.",
+        "en": "Neon colors and the Acrylique Pluie technique intensify the landscape of the Albarquel Fort, transforming it into a space that, for some, evokes the present and, for others, the past. With its organic lines and unpredictable colors, no one passes by the artwork without stopping. It captures the eye and provokes reflection on the relationship between the observer and what is observed. The solitary guardhouse gazes out at the infinite sea.",
+        "es": "Los colores neón y la técnica Acrylique Pluie intensifican el paisaje del Fuerte de Albarquel, transformándolo en un espacio que, para algunos, evoca el presente y, para otros, el pasado. Con sus líneas orgánicas y colores impredecibles, nadie pasa por delante de la obra sin detenerse. Capta la mirada y provoca una reflexión sobre la relación entre el observador y lo observado. El solitario cuerpo de guardia contempla el mar infinito."
+    },
+    "status": "available",
+    "location": {
+        "pt": "Setubal",
+        "en": "Setubal",
+        "es": "Setubal"
+    },
+    "originalHash": "ab4b0216-b6e7-4eae-a8f7-45fdd7fd7c21",
+    "editionsSold": {
+        "gallery": 0,
+        "collector": 0,
+        "digital": 0
+    },
+    "priceOriginal": {
+        "test": "https://buy.stripe.com/test_3cI5kD0LB4YB5MB3BHa7C08",
+        "live": "https://buy.stripe.com/fZu5kE5DzciZgSk6F12VG08"
+    },
+    "pricePrintGallery": {
+        "test": "https://buy.stripe.com/test_fZu8wPdyn1Mp6QF0pva7C09",
+        "live": "https://buy.stripe.com/14A4gA3vr96N59C8N92VG09"
+    },
+    "pricePrintCollector": {
+        "test": "https://buy.stripe.com/test_eVq3cvamb9eR7UJgota7C0a",
+        "live": "https://buy.stripe.com/fZu5kE4zvciZ7hKd3p2VG0a"
+    },
+    "priceDigital": {
+        "test": "https://buy.stripe.com/test_14A14n51R4YB0sh8W1a7C0b",
+        "live": "https://buy.stripe.com/7sYaEY3vr1El6dG1kH2VG0b"
+    },
+    "history": [
+        {
+            "date": "2025-12-17",
+            "event": "Certification",
+            "location": "Atelier",
+            "details": ""
+        }
+    ]
+},
+
+"trabalho": {
+    "title": "O Futuro do Trabalho",
+    "year": "2025",
+    "technique": {
+        "pt": "Acrílico sobre tela",
+        "en": "Acrylic on canvas",
+        "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "140 x 185 cm (H x W)",
+    "image": "assets/futuro-do-trabalho-2025.jpeg",
+    "collection": "concept",
+    "priceDisplay": {
+        "original": 1200,
+        "printGallery": 300,
+        "printCollector": 150,
+        "digital": 30
+    },
+    "story": {
+        "pt": "As cores neon e a técnica Acrylique Pluie despertam fascínio, curiosidade e desconforto. Na obra, humanos e não humanos, com traços mecânicos, surgem no ecrã sendo avaliados por um motivo conhecido apenas pelos presentes, refletindo o caráter imprevisível do futuro do trabalho. Ninguém passa por ela sem parar para olhar. É uma estética extravagante que, inevitavelmente, impacta e provoca.",
+        "en": "The neon colors and the Acrylique Pluie technique evoke fascination, curiosity, and discomfort. In the work, humans and non-humans, with mechanical features, appear on the screen, being evaluated for a reason known only to those present, reflecting the unpredictable nature of the future of work. No one passes by it without stopping to look. It is an extravagant aesthetic that inevitably impacts and provokes.",
+        "es": "Los colores neón y la técnica Acrylique Pluie evocan fascinación, curiosidad e incomodidad. En la obra, humanos y no humanos, con rasgos mecánicos, aparecen en la pantalla, siendo evaluados por una razón que solo conocen los presentes, lo que refleja la naturaleza impredecible del futuro del trabajo. Nadie pasa sin detenerse a observar. Es una estética extravagante que inevitablemente impacta y provoca."
+    },
+    "status": "available",
+    "location": {
+        "pt": "Setubal, Portugal",
+        "en": "Setubal",
+        "es": "Setubal"
+    },
+    "originalHash": "af44f726-bfd2-4d34-96d1-bc24f6e41b45",
+    "editionsSold": {
+        "gallery": 0,
+        "collector": 0,
+        "digital": 0
+    },
+    "priceOriginal": {
+        "test": "https://buy.stripe.com/test_cNifZh51R8aNej7dcha7C0k",
+        "live": "https://buy.stripe.com/00waEY8PLfvb8lOe7t2VG0k"
+    },
+    "pricePrintGallery": {
+        "test": "https://buy.stripe.com/test_3cIdR9gKz9eRcaZ1tza7C0l",
+        "live": "https://buy.stripe.com/4gM28s8PL82J8lO3sP2VG0l"
+    },
+    "pricePrintCollector": {
+        "test": "https://buy.stripe.com/test_cNi6oHgKzdv7caZegla7C0m",
+        "live": "https://buy.stripe.com/8x23cwgider7atW4wT2VG0m"
+    },
+    "priceDigital": {
+        "test": "https://buy.stripe.com/test_eVqcN53XN76J5MBfkpa7C0n",
+        "live": "https://buy.stripe.com/28E6oI7LHciZ45y3sP2VG0n"
+    },
+    "history": [
+        {
+            "date": "2025-12-17",
+            "event": "Certification",
+            "location": "Atelier",
+            "details": ""
+        }
+    ]
+},
+
+"coral": {
+    "title": "O Coral",
+    "year": "2025",
+    "technique": {
+        "pt": "Acrílico sobre tela",
+        "en": "Acrylic on canvas",
+        "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "120 x 120 cm (H x W)",
+    "image": "assets/coral-2025.jpeg",
+    "collection": "nature",
+    "priceDisplay": {
+        "original": 1200,
+        "printGallery": 300,
+        "printCollector": 150,
+        "digital": 30
+    },
+    "story": {
+        "pt": "O Coral nasceu de um mergulho imaginário e extravagante. Quis sentir o fundo do mar à minha frente. Fui lançando cor como quem espalha vida, para esse caos bonito que habita os corais. No meio de tudo isso, apareceu um polvo. Não o planejei — simplesmente surgiu da mancha. Amo quando a pintura decide o que quer ser. 'O CORAL' é sobre isso — movimento, cor que respira e, obviamente, imprevisibilidade.",
+        "en": "O Coral (The Coral) was born from an imaginary and extravagant dive. I wanted to feel the seabed before me. I threw color around as if spreading life, into that beautiful chaos that inhabits the corals. In the midst of all this, an octopus appeared. I didn't plan it—it simply emerged from the stain. I love when a painting decides what it wants to be. \"The Coral\" is about that—movement, color that breathes, and, obviously, unpredictability.",
+        "es": "O Coral (El Coral) nació de una inmersión imaginaria y extravagante. Quería sentir el fondo marino ante mí. Lancé color como si infundiera vida en ese hermoso caos que habita los corales. En medio de todo esto, apareció un pulpo. No lo planeé; simplemente emergió de la mancha. Me encanta cuando una pintura decide lo que quiere ser. \"El Coral\" trata de eso: movimiento, color que respira y, obviamente, imprevisibilidad."
+    },
+    "status": "available",
+    "location": {
+        "pt": "Setubal, Portugal",
+        "en": "Setubal",
+        "es": "Setubal"
+    },
+    "originalHash": "4e677b2b-540e-4b8c-84a2-cf7d26662506",
+    "editionsSold": {
+        "gallery": 0,
+        "collector": 0,
+        "digital": 0
+    },
+    "priceOriginal": {
+        "test": "https://buy.stripe.com/test_bJebJ1eCr0Ila2Rb49a7C0g",
+        "live": "https://buy.stripe.com/9B614o7LH1EldG82oL2VG0g"
+    },
+    "pricePrintGallery": {
+        "test": "https://buy.stripe.com/test_bJebJ1fGvfDf0shdcha7C0h",
+        "live": "https://buy.stripe.com/cNiaEY1njer7fOg3sP2VG0i"
+    },
+    "pricePrintCollector": {
+        "test": "https://buy.stripe.com/test_bJeaEX79Z1Mp3Eta05a7C0i",
+        "live": "https://buy.stripe.com/8x2cN6c1XciZ31ue7t2VG0j"
+    },
+    "priceDigital": {
+        "test": "https://buy.stripe.com/test_eVq14ncuj3Uxdf31tza7C0j",
+        "live": "https://buy.stripe.com/00w8wQfe996N7hK4wT2VG0h"
+    },
+    "history": [
+        {
+            "date": "2025-12-17",
+            "event": "Certification",
+            "location": "Atelier",
+            "details": ""
+        }
+    ]
+},
+
+"anfora": {
+    "title": "A Ânfora",
+    "year": "2025",
+    "technique": {
+        "pt": "Acrílico sobre tela",
+        "en": "Acrylic on canvas",
+        "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "150 x 100 cm (H x W)",
+    "image": "assets/anfora-2025.jpeg",
+    "collection": "nature",
+    "priceDisplay": {
+        "original": 1200,
+        "printGallery": 300,
+        "printCollector": 150,
+        "digital": 30
+    },
+    "story": {
+        "pt": "É arqueologia em cor: o passado ainda pulsando. 'A Ânfora' nasceu de uma escavação imaginária, guardando vinho, viagens e memória.\nQuis tocar o tempo, deixando que a cor revelasse seus vestígios.",
+        "en": "It's archaeology in color: the past still pulsating. 'A Ânfora' ('The Amphora') was born from an imaginary excavation, preserving wine, travels, and memories.",
+        "es": "Es arqueología a todo color: el pasado aún late. 'A Ânfora' ('El Ánfora') nació de una excavación imaginaria, preservando vino, viajes y recuerdos."
+    },
+    "status": "available",
+    "location": {
+        "pt": "Setubal, Portugal",
+        "en": "Setubal",
+        "es": "Setubal"
+    },
+    "originalHash": "710a9ce6-7d0c-4f5c-a048-a33a0db299ea",
+    "editionsSold": {
+        "gallery": 0,
+        "collector": 0,
+        "digital": 0
+    },
+    "priceOriginal": {
+        "test": "https://buy.stripe.com/test_7sYbJ151R4YBcaZegla7C0o",
+        "live": "https://buy.stripe.com/8x214oea5beV9pS1kH2VG0o"
+    },
+    "pricePrintGallery": {
+        "test": "https://buy.stripe.com/test_dRm5kDfGv8aN1wl8W1a7C0p",
+        "live": "https://buy.stripe.com/4gMdRa1njer70Tm9Rd2VG0p"
+    },
+    "pricePrintCollector": {
+        "test": "https://buy.stripe.com/test_eVq9AT9i7cr31wla05a7C0q",
+        "live": "https://buy.stripe.com/bJe3cwc1XbeVgSke7t2VG0q"
+    },
+    "priceDigital": {
+        "test": "https://buy.stripe.com/test_28EeVdamb0Ilgrf4FLa7C0r",
+        "live": "https://buy.stripe.com/8x2eVe0jf4Qx1Xq5AX2VG0r"
+    },
+    "history": [
+        {
+            "date": "2025-12-18",
+            "event": "Certification",
+            "location": "Studio",
+            "details": ""
+        }
+    ]
+}
+}

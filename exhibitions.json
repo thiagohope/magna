@@ -1,0 +1,57 @@
+{
+"2025-vinhos-arte": {
+    "title": "8a. Edição Vinhos com Arte de São Sebastião",
+    "date": "Sep 2025",
+    "location": "Casa Episcopal, Setubal, Portugal",
+    "image": "assets/exhibition_flyers/2025-8_ed_vinhos.png",
+    "description": {
+        "pt": "",
+        "en": "",
+        "es": ""
+    },
+    "gallery": [
+        "assets/exhibition_img/2025-ChocoChique/foto01.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/foto02.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique03.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique04.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique05.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique06.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique07.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique08.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique09.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique09b.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique10.jpeg",
+        "assets/exhibition_img/2025-ChocoChique/Chocochique11.jpeg"
+    ],
+    "artworks": [
+        "choco"
+    ]
+},
+"lasa": {
+    "title": "Festa LASA de Artes e Letras 2025",
+    "date": "Dec 2025",
+    "location": "Galeria Municipal do Onze. Setubal, Portugal",
+    "image": "assets/exhibition_flyers/2025-1a_ed_LASA.png",
+    "description": {
+        "pt": "",
+        "en": "",
+        "es": ""
+    },
+    "gallery": [
+        "assets/exhibition_img/2025-LASA/foto03.jpeg",
+        "assets/exhibition_img/2025-LASA/foto04.jpeg",
+        "assets/exhibition_img/2025-LASA/foto05.jpeg",
+        "assets/exhibition_img/2025-LASA/foto06.jpeg",
+        "assets/exhibition_img/2025-LASA/foto07.jpeg",
+        "assets/exhibition_img/2025-LASA/foto08.jpeg",
+        "assets/exhibition_img/2025-LASA/foto09.jpeg",
+        "assets/exhibition_img/2025-LASA/foto11.jpeg",
+        "assets/exhibition_img/2025-LASA/foto12.jpeg",
+        "assets/exhibition_img/2025-LASA/foto10.jpeg",
+        "assets/exhibition_img/2025-LASA/foto13.jpeg"
+    ],
+    "artworks": [
+        "coral"
+    ]
+}
+}

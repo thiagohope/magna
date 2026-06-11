@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna — Artwork</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+
+    <style>
+        body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+
+        .canvas-floating {
+            border: 4px solid #ffffff;
+            box-shadow: 0 30px 60px -15px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+            margin: 0 auto;
+            background-color: #e5e5e5;
+        }
+
+        .zoom-container {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: crosshair;
+            position: relative;
+        }
+        .zoom-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 0.15s ease-out;
+            transform-origin: center center;
+        }
+
+        .fullscreen-overlay {
+            position: fixed; inset: 0; background: black; z-index: 50;
+            display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .fullscreen-overlay.active { display: flex; opacity: 1; }
+        .fullscreen-img { max-height: 95vh; max-width: 95vw; object-fit: contain; }
+
+        .btn-primary {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 0.85rem 1rem;
+            border-radius: 10px; text-align: left;
+            font-weight: 600; font-size: 0.875rem;
+            transition: all 0.2s; text-decoration: none;
+        }
+
+        .price-tag {
+            font-weight: 700; font-size: 1rem; color: #0f172a;
+        }
+
+        .test-badge {
+            position: fixed; bottom: 10px; left: 10px;
+            background: #fbbf24; color: black;
+            padding: 4px 8px; font-size: 10px; font-weight: bold;
+            border-radius: 4px; z-index: 100; pointer-events: none; opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sandboxIndicator" class="test-badge hidden">SANDBOX MODE</div>
+
+    <!-- NAV -->
+    <nav class="sticky top-0 bg-white/90 backdrop-blur border-b border-gray-100 z-40 py-4 px-6">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <a href="index.html" onclick="goBack(event)" class="flex items-center gap-2 text-sm text-gray-500 hover:text-black transition cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                <span data-i18n="backBtn">Back to Gallery</span>
+            </a>
+            <span class="serif text-xl tracking-widest">MAGNA</span>
+        </div>
+    </nav>
+
+    <!-- MAIN -->
+    <main class="max-w-6xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-2 gap-12 mt-4">
+
+        <!-- LEFT: Image -->
+        <div class="flex flex-col items-center justify-start">
+            <div id="canvasContainer" class="canvas-floating rotate-1 hover:rotate-0 transition duration-700 w-full">
+                <div class="zoom-container" id="zoomContainer" onclick="toggleFullscreen()">
+                    <img id="mainImage" src="" alt="Artwork" class="zoom-img">
+                </div>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-6 uppercase tracking-widest opacity-60">
+                Hover to Zoom · Click to Expand
+            </p>
+        </div>
+
+        <!-- RIGHT: Details -->
+        <div class="flex flex-col gap-6">
+
+            <!-- Title & Meta -->
+            <div class="border-b border-gray-200 pb-5">
+                <h1 id="artTitle" class="serif text-4xl mb-3 leading-tight">...</h1>
+                <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                    <span><strong data-i18n="yearLabel">Year:</strong> <span id="artYear">...</span></span>
+                    <span><strong data-i18n="techLabel">Technique:</strong> <span id="artTech">...</span></span>
+                    <span><strong data-i18n="dimLabel">Dimensions:</strong> <span id="artDim">...</span></span>
+                </div>
+            </div>
+
+            <!-- Artist's Vision -->
+            <div>
+                <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-2" data-i18n="storyLabel">Artist's Vision</h3>
+                <p id="artStory" class="text-gray-700 leading-relaxed italic text-lg font-serif">...</p>
+            </div>
+
+            <!-- Status & Provenance -->
+            <div class="bg-gray-50 p-5 rounded-xl border border-gray-100">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400" data-i18n="provLabel">Status & Provenance</h3>
+                    <span id="statusBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-gray-200 text-gray-600">...</span>
+                </div>
+                <div class="space-y-2 text-sm mb-4">
+                    <div class="flex justify-between">
+                        <span class="text-gray-500" data-i18n="locLabel">Current Location:</span>
+                        <span id="artLocation" class="font-medium text-gray-800">...</span>
+                    </div>
+                    <div class="flex justify-between items-start gap-2">
+                        <span class="text-gray-500 flex-shrink-0">Registry ID:</span>
+                        <span id="artHash" class="font-mono text-xs text-gray-500 break-all text-right max-w-[200px]">...</span>
+                    </div>
+                </div>
+                <!-- QR Code — self-hosted, no api.qrserver.com -->
+                <div class="flex items-center gap-4 pt-3 border-t border-gray-200">
+                    <div id="provenanceQR" class="bg-white p-1 border border-gray-200 shadow-sm flex-shrink-0 w-20 h-20 flex items-center justify-center overflow-hidden"></div>
+                    <p class="text-xs text-gray-500 leading-snug" data-i18n="qrHint">
+                        Scan to access the certified provenance registry of this artwork.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Pricing & Purchase -->
+            <div class="border-t border-gray-100 pt-5">
+                <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-4" data-i18n="pricingLabel">Pricing & Acquisition</h3>
+
+                <!-- Original -->
+                <a id="btnOriginal" href="#" class="btn-primary bg-black text-white hover:bg-gray-800 mb-3 hidden shadow-md">
+                    <div>
+                        <span data-i18n="btnOriginal" class="block">Acquire Original Artwork</span>
+                        <span class="text-[10px] opacity-60 font-normal uppercase tracking-widest">Unique · Signed · With Certificate</span>
+                    </div>
+                    <span id="priceOriginalTag" class="price-tag text-white ml-4 flex-shrink-0"></span>
+                </a>
+
+                <!-- Prints -->
+                <div class="space-y-2">
+                    <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2" data-i18n="editionsLabel">Available Editions</p>
+
+                    <a id="btnPrintGallery" href="#" class="btn-primary border border-gray-200 text-gray-800 hover:bg-gray-50">
+                        <div>
+                            <span class="font-semibold block" data-i18n="printGalleryLabel">Gallery Print</span>
+                            <span class="text-xs text-gray-400">70 × 100 cm · Hahnemühle 308g</span>
+                        </div>
+                        <span id="priceGalleryTag" class="price-tag flex-shrink-0 ml-4"></span>
+                    </a>
+
+                    <a id="btnPrintCollector" href="#" class="btn-primary border border-gray-200 text-gray-800 hover:bg-gray-50">
+                        <div>
+                            <span class="font-semibold block" data-i18n="printCollectorLabel">Collector Print</span>
+                            <span class="text-xs text-gray-400">50 × 70 cm · Hahnemühle 308g</span>
+                        </div>
+                        <span id="priceCollectorTag" class="price-tag flex-shrink-0 ml-4"></span>
+                    </a>
+
+                    <a id="btnDigital" href="#" class="btn-primary bg-indigo-50 text-indigo-900 border border-indigo-100 hover:bg-indigo-100">
+                        <div>
+                            <span class="font-semibold block" data-i18n="digitalLabel">Digital Download</span>
+                            <span class="text-xs text-indigo-500">High-res · 4K · with digital certificate</span>
+                        </div>
+                        <span id="priceDigitalTag" class="price-tag text-indigo-900 flex-shrink-0 ml-4"></span>
+                    </a>
+                </div>
+
+                <p class="text-center text-xs text-gray-400 mt-3" data-i18n="certDisclaimer">
+                    All items include a Magna Certificate of Authenticity.
+                </p>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Fullscreen Overlay -->
+    <div id="fsOverlay" class="fullscreen-overlay" onclick="toggleFullscreen()">
+        <img id="fsImage" src="" class="fullscreen-img">
+        <div class="absolute top-4 right-4 text-white text-sm bg-black/50 px-3 py-1 rounded cursor-pointer" data-i18n="closeHint">Click to close</div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CONFIG
+        // ============================================================
+        // Auto-detect environment — no manual switching needed
+        const IS_DEV      = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        const IS_TEST_MODE = IS_DEV;
+        const JSON_PATH    = 'artworks.json';
+        const BASE_URL     = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
+
+        if (IS_TEST_MODE) document.getElementById('sandboxIndicator').classList.remove('hidden');
+
+        // ============================================================
+        // TRANSLATIONS
+        // ============================================================
+        const translations = {
+            en: {
+                backBtn: "Back to Gallery", yearLabel: "Year:", techLabel: "Technique:", dimLabel: "Dimensions:",
+                storyLabel: "Artist's Vision", provLabel: "Status & Provenance", locLabel: "Current Location:",
+                qrHint: "Scan to access the certified provenance registry of this artwork.",
+                pricingLabel: "Pricing & Acquisition", editionsLabel: "Available Editions",
+                btnOriginal: "Acquire Original Artwork",
+                printGalleryLabel: "Gallery Print", printCollectorLabel: "Collector Print", digitalLabel: "Digital Download",
+                certDisclaimer: "All items include a Magna Certificate of Authenticity.",
+                closeHint: "Click to close",
+                statusAvailable: "Available", statusSoldPrivate: "Sold · Private Collection", statusSoldPublic: "Public Exhibition"
+            },
+            pt: {
+                backBtn: "Voltar à Galeria", yearLabel: "Ano:", techLabel: "Técnica:", dimLabel: "Dimensões:",
+                storyLabel: "Visão da Artista", provLabel: "Status & Procedência", locLabel: "Localização Atual:",
+                qrHint: "Scan para aceder ao registro certificado de procedência desta obra.",
+                pricingLabel: "Preços & Aquisição", editionsLabel: "Edições Disponíveis",
+                btnOriginal: "Adquirir Obra Original",
+                printGalleryLabel: "Print Galeria", printCollectorLabel: "Print Colecionador", digitalLabel: "Download Digital",
+                certDisclaimer: "Todos os itens acompanham Certificado de Autenticidade Magna.",
+                closeHint: "Clique para fechar",
+                statusAvailable: "Disponível", statusSoldPrivate: "Vendida · Coleção Particular", statusSoldPublic: "Em Exposição Pública"
+            },
+            es: {
+                backBtn: "Volver a la Galería", yearLabel: "Año:", techLabel: "Técnica:", dimLabel: "Dimensiones:",
+                storyLabel: "Visión del Artista", provLabel: "Estado & Procedencia", locLabel: "Ubicación Actual:",
+                qrHint: "Escanear para acceder al registro certificado de procedencia de esta obra.",
+                pricingLabel: "Precios & Adquisición", editionsLabel: "Ediciones Disponibles",
+                btnOriginal: "Adquirir Obra Original",
+                printGalleryLabel: "Print Galería", printCollectorLabel: "Print Coleccionista", digitalLabel: "Descarga Digital",
+                certDisclaimer: "Todos los artículos incluyen Certificado de Autenticidad Magna.",
+                closeHint: "Clic para cerrar",
+                statusAvailable: "Disponible", statusSoldPrivate: "Vendida · Colección Privada", statusSoldPublic: "Exposición Pública"
+            }
+        };
+
+        function getInitialLang() {
+            const saved = localStorage.getItem('magna_lang');
+            if (saved) return saved;
+            const bl = navigator.language.substring(0,2);
+            return (bl === 'pt' || bl === 'es') ? bl : 'en';
+        }
+
+        const currentLang = getInitialLang();
+        const T = translations[currentLang] || translations['en'];
+
+        function applyTranslations() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (T[key]) el.textContent = T[key];
+            });
+        }
+
+        function getPaymentLink(priceObj) {
+            if (!priceObj) return '#';
+            if (typeof priceObj === 'string') return priceObj;
+            return IS_TEST_MODE ? (priceObj.test || priceObj.live || '#') : (priceObj.live || '#');
+        }
+
+        function formatPrice(val) {
+            if (!val) return '';
+            return `€${Number(val).toLocaleString('de-DE')}`;
+        }
+
+        // ============================================================
+        // SMART BACK
+        // ============================================================
+        function goBack(e) {
+            if (document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
+                e.preventDefault();
+                history.back();
+            }
+        }
+
+        // ============================================================
+        // ZOOM
+        // ============================================================
+        function setupZoom() {
+            const container = document.getElementById('zoomContainer');
+            const img       = document.getElementById('mainImage');
+            container.addEventListener('mousemove', function(e) {
+                const { left, top, width, height } = this.getBoundingClientRect();
+                const x = (e.clientX - left) / width * 100;
+                const y = (e.clientY - top) / height * 100;
+                img.style.transformOrigin = `${x}% ${y}%`;
+                img.style.transform = 'scale(2.2)';
+            });
+            container.addEventListener('mouseleave', function() {
+                img.style.transform = 'scale(1)';
+                img.style.transformOrigin = 'center center';
+            });
+        }
+
+        function toggleFullscreen() {
+            document.getElementById('fsOverlay').classList.toggle('active');
+        }
+
+        // ============================================================
+        // INIT
+        // ============================================================
+        async function init() {
+            applyTranslations();
+
+            try {
+                const res = await fetch(JSON_PATH);
+                if (!res.ok) throw new Error('Failed to fetch artworks.json');
+                const artworksDB = await res.json();
+
+                const params = new URLSearchParams(window.location.search);
+                const slug   = params.get('id');
+                const art    = slug ? artworksDB[slug] : artworksDB[Object.keys(artworksDB)[0]];
+
+                if (!art) {
+                    document.getElementById('artTitle').textContent = 'Artwork not found';
+                    return;
+                }
+
+                // Page title
+                document.title = `Magna — ${art.title}`;
+
+                // Canvas proportions
+                const dimMatch = art.dimensions.match(/(\d+)\s*x\s*(\d+)/i);
+                if (dimMatch) {
+                    const h = parseInt(dimMatch[1]);
+                    const w = parseInt(dimMatch[2]);
+                    document.getElementById('canvasContainer').style.aspectRatio = `${w} / ${h}`;
+                }
+
+                // Images: try thumbnail first, fall back to original
+                const imgEl       = document.getElementById('mainImage');
+                const fsImg       = document.getElementById('fsImage');
+                const origPath    = art.image.startsWith('/') ? art.image.substring(1) : art.image;
+                const thumbPath   = origPath.replace('assets/', 'assets/thumbnails/');
+
+                fsImg.src  = origPath;
+                imgEl.src  = thumbPath;
+                imgEl.onerror = function() { this.src = origPath; this.onerror = null; };
+
+                setupZoom();
+
+                // Text data
+                document.getElementById('artTitle').textContent    = art.title;
+                document.getElementById('artYear').textContent     = art.year;
+                document.getElementById('artTech').textContent     = art.technique?.[currentLang] || art.technique?.en || '';
+                document.getElementById('artDim').textContent      = art.dimensions;
+                document.getElementById('artStory').textContent    = `"${art.story?.[currentLang] || art.story?.en || ''}"`;
+                document.getElementById('artLocation').textContent = (typeof art.location === 'object') ? (art.location[currentLang] || art.location.en) : (art.location || '');
+                document.getElementById('artHash').textContent     = art.originalHash || '—';
+
+                // Status badge
+                const badge = document.getElementById('statusBadge');
+                if (art.status === 'available') {
+                    badge.textContent  = T.statusAvailable;
+                    badge.className    = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-green-100 text-green-800 border border-green-200';
+                } else if (art.status === 'sold_private') {
+                    badge.textContent  = T.statusSoldPrivate;
+                    badge.className    = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-red-100 text-red-800 border border-red-200';
+                } else {
+                    badge.textContent  = T.statusSoldPublic;
+                    badge.className    = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-blue-100 text-blue-800 border border-blue-200';
+                }
+
+                // Price display
+                const pd = art.priceDisplay || {};
+                document.getElementById('priceOriginalTag').textContent  = formatPrice(pd.original);
+                document.getElementById('priceGalleryTag').textContent   = formatPrice(pd.printGallery);
+                document.getElementById('priceCollectorTag').textContent = formatPrice(pd.printCollector);
+                document.getElementById('priceDigitalTag').textContent   = formatPrice(pd.digital);
+
+                // Payment links
+                const btnOriginal = document.getElementById('btnOriginal');
+                if (art.status === 'available' && art.priceOriginal) {
+                    btnOriginal.href = getPaymentLink(art.priceOriginal);
+                    btnOriginal.classList.remove('hidden');
+                }
+                document.getElementById('btnPrintGallery').href    = getPaymentLink(art.pricePrintGallery);
+                document.getElementById('btnPrintCollector').href  = getPaymentLink(art.pricePrintCollector);
+                document.getElementById('btnDigital').href         = getPaymentLink(art.priceDigital);
+
+                // QR Code — self-hosted, points to verify page
+                const verifyUrl = `${BASE_URL}/verify.html?id=${slug || Object.keys(artworksDB)[0]}`;
+                const qrContainer = document.getElementById('provenanceQR');
+                qrContainer.innerHTML = '';
+                new QRCode(qrContainer, {
+                    text: verifyUrl,
+                    width: 72, height: 72,
+                    colorDark: '#000000', colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+
+            } catch(err) {
+                console.error('Error loading artwork:', err);
+                document.getElementById('artTitle').textContent = 'Error loading artwork.';
+            }
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

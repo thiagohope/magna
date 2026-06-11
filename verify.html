@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna - Print Verification</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+        .lang-switch { position: absolute; top: 1rem; right: 1rem; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-10 px-4 flex items-center justify-center relative">
+
+    <div class="lang-switch">
+        <select id="langSelector" onchange="changeLanguage(this.value)" class="bg-white border border-gray-300 rounded px-2 py-1 text-xs font-bold uppercase cursor-pointer hover:border-black focus:outline-none shadow-sm">
+            <option value="en">EN</option>
+            <option value="pt">PT</option>
+            <option value="es">ES</option>
+        </select>
+    </div>
+
+    <div class="max-w-2xl w-full bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
+        
+        <div class="bg-green-50 border-b border-green-100 p-4 flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            <span class="text-green-800 font-bold text-xs uppercase tracking-widest" data-i18n="headerTitle">Official Registered Print</span>
+        </div>
+
+        <div class="p-8 pb-6 text-center">
+            
+            <div class="flex justify-center mb-6">
+                <div id="imgContainer" class="relative bg-gray-100 rounded shadow-sm overflow-hidden mx-auto transition-all duration-500" style="width: 100%; max-width: 100%; max-height: 50vh;">
+                    <img id="artImage" src="" alt="Artwork" class="w-full h-full object-cover opacity-0 transition-opacity duration-500">
+                    <div id="imgLoader" class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">Loading Image...</div>
+                </div>
+            </div>
+            
+            <h1 id="artTitle" class="serif text-3xl mb-2">Loading...</h1>
+            <p class="text-gray-500 italic mb-6">by Magna Leite</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left bg-gray-50 p-6 rounded-lg border border-gray-100">
+                
+                <div>
+                    <h3 class="text-xs font-bold uppercase text-gray-400 mb-3 border-b pb-1" data-i18n="secPrint">This Item (Reproduction)</h3>
+                    
+                    <div class="mb-3">
+                        <span class="block text-xs text-gray-500" data-i18n="lblEdition">Edition Number</span>
+                        <span id="editionNum" class="font-bold text-lg text-blue-900">--</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="block text-xs text-gray-500" data-i18n="lblType">Print Type</span>
+                        <span id="printType" class="text-sm font-medium">Fine Art Giclée</span>
+                    </div>
+                    <div class="mb-4">
+                        <span class="block text-xs text-gray-500" data-i18n="lblHash">Verification Hash</span>
+                        <span id="hashId" class="font-mono text-[10px] bg-white border px-1 py-0.5 rounded break-all text-gray-600">Pending</span>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 rounded p-2 text-[9px] leading-tight text-amber-800">
+                        <strong class="block mb-1">⚠️ <span data-i18n="discTitle">DISCLAIMER</span></strong>
+                        <span data-i18n="discText">This certificate validates a Limited Edition copy. It implies NO ownership of the original unique artwork.</span>
+                    </div>
+                </div>
+
+                <div class="border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6 flex flex-col">
+                    <h3 class="text-xs font-bold uppercase text-gray-400 mb-3 border-b pb-1" data-i18n="secOriginal">Original Masterpiece</h3>
+                    
+                    <div class="mb-3">
+                        <span class="block text-xs text-gray-500" data-i18n="lblTech">Technique</span>
+                        <span id="origTech" class="text-sm font-medium">...</span>
+                    </div>
+                    <div class="mb-4">
+                        <span class="block text-xs text-gray-500" data-i18n="lblYear">Original Year</span>
+                        <span id="origYear" class="text-sm font-medium">...</span>
+                    </div>
+
+                    <div class="mt-auto flex items-center gap-3 bg-white p-2 rounded border border-gray-200 shadow-sm">
+                        <div id="qrOriginal" class="w-16 h-16 flex-shrink-0 flex items-center justify-center bg-white">
+                            </div>
+                        <div class="flex-grow">
+                            <span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold mb-1" data-i18n="lblTrace">Trace Original</span>
+                            <a id="artworkLink" href="#" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 border border-blue-100 bg-blue-50 rounded px-2 py-1 w-fit">
+                                <span data-i18n="btnView">View Page</span> &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 text-sm text-gray-500 leading-relaxed px-4 italic">
+                <p data-i18n="footerText">"This page certifies that the print associated with the ID above is a genuine Limited Edition Giclée produced by Magna Studio."</p>
+            </div>
+        </div>
+
+        <div class="bg-gray-900 text-gray-400 text-center py-4 text-xs uppercase tracking-widest">
+            Magna &middot; Provenance Ledger
+        </div>
+    </div>
+
+    <script>
+        // Auto-detect environment
+        const IS_DEV   = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        const BASE_URL = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
+        const JSON_PATH = 'artworks.json';
+        let currentArt = null;
+        
+        const translations = {
+            en: {
+                headerTitle: "Official Registered Print",
+                secPrint: "This Item (Reproduction)",
+                lblEdition: "Edition Number",
+                lblType: "Print Type",
+                lblHash: "Verification Hash",
+                discTitle: "DISCLAIMER",
+                discText: "This certificate validates a Limited Edition copy. It implies NO ownership of the original unique artwork.",
+                secOriginal: "Original Masterpiece",
+                lblTech: "Technique",
+                lblYear: "Original Year",
+                lblTrace: "Original Certificate",
+                btnView: "View Artwork",
+                footerText: "\"This page certifies that the print associated with the ID above is a genuine Limited Edition Giclée produced by Magna Studio.\"",
+                typeGallery: "Gallery Print (70x100cm)",
+                typeCollector: "Collector Print (50x70cm)"
+            },
+            pt: {
+                headerTitle: "Impressão Registada Oficial",
+                secPrint: "Este Item (Reprodução)",
+                lblEdition: "Número da Edição",
+                lblType: "Tipo de Impressão",
+                lblHash: "Hash de Verificação",
+                discTitle: "AVISO LEGAL",
+                discText: "Este certificado valida uma cópia de Edição Limitada. NÃO confere propriedade da obra original única.",
+                secOriginal: "Obra-Prima Original",
+                lblTech: "Técnica",
+                lblYear: "Ano Original",
+                lblTrace: "Certificado Original",
+                btnView: "Ver Obra",
+                footerText: "\"Esta página certifica que a impressão associada ao ID acima é um Giclée de Edição Limitada genuíno produzido pelo Magna Studio.\"",
+                typeGallery: "Print Galeria (70x100cm)",
+                typeCollector: "Print Colecionador (50x70cm)"
+            },
+            es: {
+                headerTitle: "Impresión Registrada Oficial",
+                secPrint: "Este Artículo (Reproducción)",
+                lblEdition: "Número de Edición",
+                lblType: "Tipo de Impresión",
+                lblHash: "Hash de Verificación",
+                discTitle: "AVISO LEGAL",
+                discText: "Este certificado valida una copia de Edición Limitada. NO otorga la propiedad de la obra original única.",
+                secOriginal: "Obra Maestra Original",
+                lblTech: "Técnica",
+                lblYear: "Año Original",
+                lblTrace: "Certificado Original",
+                btnView: "Ver Obra",
+                footerText: "\"Esta página certifica que la impresión asociada con el ID anterior es un Giclée de Edición Limitada genuino producido por Magna Studio.\"",
+                typeGallery: "Print Galería (70x100cm)",
+                typeCollector: "Print Coleccionista (50x70cm)"
+            }
+        };
+
+        function getLang() {
+            return localStorage.getItem('magna_lang') || 'en';
+        }
+
+        function changeLanguage(lang) {
+            localStorage.setItem('magna_lang', lang);
+            applyTranslations(lang);
+            if (currentArt) renderData(currentArt);
+        }
+
+        function applyTranslations(lang) {
+            const t = translations[lang];
+            document.getElementById('langSelector').value = lang;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+        }
+
+        async function init() {
+            const lang = getLang();
+            applyTranslations(lang);
+
+            const params = new URLSearchParams(window.location.search);
+            const artSlug = params.get('art') || params.get('id');
+            
+            if (!artSlug) {
+                document.getElementById('artTitle').innerText = "Error: Artwork ID missing";
+                return;
+            }
+
+            try {
+                const response = await fetch(JSON_PATH);
+                const db = await response.json();
+                const art = db[artSlug];
+
+                if (!art) {
+                    document.getElementById('artTitle').innerText = "Artwork Not Found";
+                    return;
+                }
+
+                currentArt = art;
+                renderData(art);
+
+            } catch (error) {
+                console.error("Erro:", error);
+                document.getElementById('artTitle').innerText = "System Error";
+            }
+        }
+
+        function renderData(art) {
+            const lang = localStorage.getItem('magna_lang') || 'en';
+            const t = translations[lang];
+            const params = new URLSearchParams(window.location.search);
+            const artSlug = params.get('art') || params.get('id'); 
+
+            // === 1. IMAGEM (Aspect Ratio Real) ===
+            const imgContainer = document.getElementById('imgContainer');
+            const dimRegex = /(\d+)\s*x\s*(\d+)/i;
+            const match = art.dimensions.match(dimRegex);
+            
+            if (match) {
+                const width = match[1];
+                const height = match[2];
+                // Aplica a proporção exata da obra ao container
+                imgContainer.style.aspectRatio = `${width} / ${height}`;
+            }
+
+            let imgPath = art.image;
+            let thumbPath = imgPath.replace('assets/', 'assets/thumbnails/');
+            const imgEl = document.getElementById('artImage');
+            
+            imgEl.src = thumbPath;
+            imgEl.onload = () => {
+                imgEl.classList.remove('opacity-0');
+                document.getElementById('imgLoader').style.display = 'none';
+            };
+            imgEl.onerror = function() { 
+                this.src = imgPath; 
+                this.onerror = null; 
+            };
+            
+            // === 2. DADOS ===
+            document.getElementById('artTitle').textContent = art.title;
+            document.getElementById('editionNum').textContent = `${params.get('edition') || '--'} / ${params.get('total') || '50'}`;
+            document.getElementById('hashId').textContent = params.get('hash') || (params.get('art') ? params.get('id') : 'Pending');
+            
+            const type = params.get('type');
+            if(type === 'gallery') document.getElementById('printType').textContent = t.typeGallery;
+            else if(type === 'collector') document.getElementById('printType').textContent = t.typeCollector;
+            else document.getElementById('printType').textContent = "Fine Art Giclée";
+
+            const tech = art.technique[lang] || art.technique['en'] || "Mixed Media";
+            document.getElementById('origTech').textContent = tech;
+            document.getElementById('origYear').textContent = art.year;
+
+            // === 3. LINKS DINÂMICOS ===
+            // Botão "View Page" -> artwork.html
+            const artworkUrl = `${BASE_URL}/artwork.html?id=${artSlug}`;
+            document.getElementById('artworkLink').href = artworkUrl;
+
+            // QR Code -> verify-original.html — self-hosted, no external dependency
+            const certOriginalUrl = `${BASE_URL}/verify-original.html?id=${artSlug}`;
+            const qrContainer = document.getElementById('qrOriginal');
+            qrContainer.innerHTML = '';
+            new QRCode(qrContainer, {
+                text: certOriginalUrl,
+                width: 64, height: 64,
+                colorDark: '#000000', colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

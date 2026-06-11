@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna - Acquisition Confirmed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+        .fade-in { animation: fadeIn 1s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4 md:p-6">
+
+    <div class="max-w-2xl w-full bg-white p-8 md:p-10 rounded-xl shadow-2xl border border-gray-100 fade-in relative overflow-hidden">
+        
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-600 via-yellow-400 to-yellow-600"></div>
+
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 mx-auto bg-green-50 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h1 class="serif text-3xl md:text-4xl mb-2 text-gray-900" data-i18n="pageTitle">Acquisition Confirmed</h1>
+            <p class="text-gray-500 uppercase tracking-widest text-xs font-bold" data-i18n="subtitle">ORIGINAL ARTWORK · UNIQUE PIECE</p>
+        </div>
+
+        <div class="flex items-center gap-5 bg-gray-50 p-4 rounded-lg mb-8 border border-gray-100">
+            <img id="artImage" src="" class="w-24 h-24 object-cover rounded shadow-sm border border-white bg-gray-200">
+            <div>
+                <h2 id="artTitle" class="serif text-2xl mb-1">...</h2>
+                <span class="inline-block bg-black text-white text-[10px] px-3 py-1 rounded uppercase tracking-wider font-bold" data-i18n="soldBadge">Sold to You</span>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-xs font-bold uppercase text-gray-400 mb-3 tracking-widest border-b pb-1" data-i18n="shippingHeader">Shipping & Contact Info</h3>
+            
+            <div class="space-y-4 text-sm">
+                <div class="bg-gray-50 p-3 rounded border border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                        <div>
+                            <span class="block text-[10px] text-gray-500 uppercase font-bold">Email Registered</span>
+                            <span id="displayEmail" class="font-medium text-gray-900">...</span>
+                        </div>
+                    </div>
+                    <span class="text-green-600 text-xs font-bold">✓ Verified</span>
+                </div>
+
+                <div class="bg-gray-50 p-3 rounded border border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <div>
+                            <span class="block text-[10px] text-gray-500 uppercase font-bold" data-i18n="addrLabel">Delivery Address & Phone</span>
+                            <span class="font-medium text-gray-900 italic" data-i18n="secureData">Securely received via Stripe Checkout</span>
+                        </div>
+                    </div>
+                    <span class="text-green-600 text-xs font-bold">✓ Locked</span>
+                </div>
+            </div>
+            
+            <p class="text-[10px] text-gray-400 mt-2 text-right">* Your private data is stored securely by Stripe and sent to Magna.</p>
+        </div>
+
+        <div class="bg-green-50 border-l-4 border-green-500 p-5 mb-8 rounded-r shadow-sm">
+            <div class="flex gap-4">
+                <svg class="w-8 h-8 text-green-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-8.683-2.031-.967-.272-.297-.471-.446-.916-.446-.445 0-.967.173-1.463.718-.496.544-1.881 1.832-1.881 4.453s1.931 5.146 2.203 5.518c.272.371 3.763 6.096 9.278 8.355 3.398 1.391 4.757 1.295 5.599 1.121.842-.174 1.758-.718 2.006-1.412.248-.694.248-1.289.173-1.412z"/></svg>
+                <div>
+                    <h4 class="font-bold text-green-900 text-sm uppercase mb-1" data-i18n="waTitle">Next Step: Double Confirmation</h4>
+                    <p class="text-green-800 text-sm leading-relaxed" data-i18n="waText">
+                        <strong>Magna's team will contact you shortly via WhatsApp</strong> to personally confirm your address, insurance details, and arrange the specialized shipping.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center pt-6 border-t border-gray-100">
+            <p class="text-xs text-gray-400 mb-4" data-i18n="emailSent">A receipt has been sent to your email.</p>
+            <a href="index.html" class="inline-block px-8 py-3 bg-black text-white text-sm font-bold rounded hover:bg-gray-800 transition shadow-lg" data-i18n="backBtn">
+                Return to Gallery
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const JSON_PATH = 'artworks.json'; 
+
+        const translations = {
+            en: {
+                pageTitle: "Acquisition Confirmed",
+                subtitle: "ORIGINAL ARTWORK · UNIQUE PIECE",
+                soldBadge: "Sold to You",
+                shippingHeader: "Shipping & Contact Info",
+                addrLabel: "Delivery Address & Phone",
+                secureData: "Securely received via Stripe Checkout",
+                waTitle: "Next Step: Double Confirmation",
+                waText: "Magna's team will contact you shortly via WhatsApp to personally confirm your address, insurance details, and arrange the specialized shipping.",
+                emailSent: "A receipt has been sent to your email.",
+                backBtn: "Return to Gallery"
+            },
+            pt: {
+                pageTitle: "Aquisição Confirmada",
+                subtitle: "OBRA ORIGINAL · PEÇA ÚNICA",
+                soldBadge: "Vendido para Você",
+                shippingHeader: "Dados de Envio e Contato",
+                addrLabel: "Endereço e Telefone",
+                secureData: "Recebido com segurança via Stripe Checkout",
+                waTitle: "Próximo Passo: Dupla Confirmação",
+                waText: "A equipa da Magna entrará em contato em breve via WhatsApp para confirmar pessoalmente o endereço, seguro e detalhes do transporte especializado.",
+                emailSent: "Um recibo foi enviado para o seu e-mail.",
+                backBtn: "Voltar à Galeria"
+            },
+            es: {
+                pageTitle: "Adquisición Confirmada",
+                subtitle: "OBRA ORIGINAL · PIEZA ÚNICA",
+                soldBadge: "Vendido a Usted",
+                shippingHeader: "Datos de Envío y Contacto",
+                addrLabel: "Dirección y Teléfono",
+                secureData: "Recibido de forma segura vía Stripe Checkout",
+                waTitle: "Próximo Paso: Doble Confirmación",
+                waText: "El equipo de Magna le contactará pronto por WhatsApp para confirmar personalmente la dirección, el seguro y los detalles del envío.",
+                emailSent: "Se ha enviado un recibo a su correo electrónico.",
+                backBtn: "Volver a la Galería"
+            }
+        };
+
+        function getLang() {
+            const saved = localStorage.getItem('magna_lang');
+            if (saved) return saved;
+            const nav = navigator.language.substring(0, 2);
+            return (nav === 'pt' || nav === 'es') ? nav : 'en';
+        }
+
+        const lang = getLang();
+        const t = translations[lang];
+
+        async function init() {
+            // 1. Traduções
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            // 2. Dados da URL
+            const params = new URLSearchParams(window.location.search);
+            const artId = params.get('art'); 
+            const email = params.get('customer_email') || "Confirmed via Stripe";
+            
+            document.getElementById('displayEmail').textContent = email;
+
+            if (!artId) return;
+
+            try {
+                // 3. Busca Dados da Obra
+                const response = await fetch(JSON_PATH);
+                const data = await response.json();
+                const art = data[artId];
+
+                if (art) {
+                    document.getElementById('artTitle').textContent = art.title;
+
+                    // --- LÓGICA DE THUMBNAIL (Otimização) ---
+                    const imgEl = document.getElementById('artImage');
+                    
+                    // 1. Caminho Base (remove barra inicial se houver)
+                    let originalPath = art.image.startsWith('/') ? art.image.substring(1) : art.image;
+                    
+                    // 2. Cria caminho do Thumbnail: "assets/coral.jpg" -> "assets/thumbnails/coral.jpg"
+                    let thumbPath = originalPath.replace('assets/', 'assets/thumbnails/');
+
+                    // 3. Tenta carregar o Thumbnail
+                    imgEl.src = thumbPath;
+
+                    // 4. Se falhar, tenta a original
+                    imgEl.onerror = function() {
+                        console.log("Thumbnail não encontrado, tentando original...");
+                        this.src = originalPath;
+                        
+                        // 5. Se falhar também a original, mostra imagem cinza
+                        this.onerror = function() {
+                            this.src = 'https://via.placeholder.com/150?text=Magna+Art';
+                        }
+                    };
+                }
+
+            } catch (error) {
+                console.error("Erro ao processar dados:", error);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

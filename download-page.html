@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna - Digital Download</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+        .fade-in { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .download-btn {
+            background: linear-gradient(to right, #4f46e5, #4338ca);
+            transition: all 0.3s ease;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(79, 70, 229, 0.5);
+        }
+        /* Estilo para botão desabilitado enquanto procura */
+        .download-btn.loading {
+            opacity: 0.7;
+            pointer-events: none;
+            cursor: wait;
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-6">
+
+    <div class="max-w-xl w-full bg-white p-8 md:p-12 rounded-xl shadow-2xl border border-gray-100 text-center fade-in relative overflow-hidden">
+        
+        <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500"></div>
+
+        <div class="mb-8">
+            <div class="w-16 h-16 mx-auto bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            </div>
+            <h1 class="serif text-3xl md:text-4xl mb-2 text-gray-900" data-i18n="pageTitle">...</h1>
+            <p class="text-gray-500 uppercase tracking-widest text-xs font-bold" data-i18n="subtitle">...</p>
+        </div>
+
+        <div class="flex items-center gap-5 bg-gray-50 p-4 rounded-lg mb-8 border border-gray-100 text-left">
+            <img id="artImage" src="" class="w-20 h-20 object-cover rounded shadow-sm border border-white">
+            <div>
+                <h2 id="artTitle" class="serif text-xl mb-1">...</h2>
+                <div class="flex gap-2 text-xs">
+                    <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded font-medium">High-Res</span>
+                    <span id="fileTypeLabel" class="bg-gray-200 text-gray-600 px-2 py-0.5 rounded font-mono">...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-8">
+            <a id="downloadBtn" href="#" class="download-btn w-full block py-4 rounded-lg text-white font-bold text-lg flex items-center justify-center gap-2 loading">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"></path></svg>
+                <span id="btnText" data-i18n="btnText">Searching File...</span>
+            </a>
+            <p class="text-xs text-gray-400 mt-3" data-i18n="licenseNote">
+                * For personal use only. Commercial reproduction is prohibited.
+            </p>
+        </div>
+
+        <div class="border-t border-gray-100 pt-6">
+            <p class="text-sm text-gray-600 mb-4" data-i18n="helpText">
+                Issues with the download?
+            </p>
+            <a href="index.html" class="text-sm font-bold hover:underline" data-i18n="backBtn">Return to Gallery</a>
+        </div>
+
+    </div>
+
+    <script>
+        // --- CONFIGURAÇÃO ---
+        const JSON_PATH = 'artworks.json'; 
+        const DOWNLOAD_FOLDER = 'assets/downloads/'; 
+        // Lista de extensões que o sistema vai tentar procurar (na ordem)
+        const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+
+        const translations = {
+            en: {
+                pageTitle: "Your Digital Artwork",
+                subtitle: "READY FOR DOWNLOAD",
+                btnText: "Download High-Res File",
+                btnSearching: "Locating File...",
+                btnError: "File Not Found",
+                licenseNote: "* Personal use only. Resale or NFT minting prohibited.",
+                helpText: "Need help? Contact support@brainboxmed.com",
+                backBtn: "Return to Gallery"
+            },
+            pt: {
+                pageTitle: "Sua Obra Digital",
+                subtitle: "PRONTO PARA DOWNLOAD",
+                btnText: "Baixar Arquivo Alta Res.",
+                btnSearching: "Localizando Arquivo...",
+                btnError: "Arquivo Indisponível",
+                licenseNote: "* Uso pessoal apenas. Revenda ou mintagem proibida.",
+                helpText: "Problemas com o download? Contate suporte.",
+                backBtn: "Voltar à Galeria"
+            },
+            es: {
+                pageTitle: "Su Obra Digital",
+                subtitle: "LISTO PARA DESCARGAR",
+                btnText: "Descargar Archivo Alta Res.",
+                btnSearching: "Buscando Archivo...",
+                btnError: "Archivo No Encontrado",
+                licenseNote: "* Uso personal solamente. Prohibida la reventa.",
+                helpText: "¿Problemas con la descarga? Contacte soporte.",
+                backBtn: "Volver a la Galería"
+            }
+        };
+
+        function getLang() {
+            const saved = localStorage.getItem('magna_lang');
+            if (saved) return saved;
+            const nav = navigator.language.substring(0, 2);
+            return (nav === 'pt' || nav === 'es') ? nav : 'en';
+        }
+
+        const lang = getLang();
+        const t = translations[lang];
+
+        // Função Detetive: Testa qual arquivo existe
+        async function findFile(baseName) {
+            const btn = document.getElementById('downloadBtn');
+            const btnLabel = document.getElementById('btnText');
+            const typeLabel = document.getElementById('fileTypeLabel');
+
+            // Feedback visual de busca
+            btnLabel.textContent = t.btnSearching;
+
+            for (const ext of ALLOWED_EXTENSIONS) {
+                const fileName = `${baseName}.${ext}`;
+                const path = `${DOWNLOAD_FOLDER}${fileName}`;
+
+                try {
+                    // Tenta acessar apenas o cabeçalho do arquivo (leve e rápido)
+                    const response = await fetch(path, { method: 'HEAD' });
+                    
+                    if (response.ok) {
+                        // ACHOU! Configura o botão e para de procurar
+                        console.log(`Arquivo encontrado: ${fileName}`);
+                        
+                        btn.href = path;
+                        btn.setAttribute('download', fileName);
+                        
+                        // Atualiza visual
+                        btn.classList.remove('loading');
+                        btnLabel.textContent = t.btnText;
+                        typeLabel.textContent = `.${ext.toUpperCase()}`;
+                        
+                        return; // Sai da função
+                    }
+                } catch (e) {
+                    // Ignora erro e tenta o próximo
+                }
+            }
+
+            // Se o loop acabar e não achar nada:
+            console.error(`Nenhum arquivo encontrado para ${baseName} com as extensões: ${ALLOWED_EXTENSIONS.join(', ')}`);
+            btnLabel.textContent = t.btnError;
+            btn.style.background = "#9ca3af"; // Cinza
+            btn.style.cursor = "not-allowed";
+        }
+
+        async function init() {
+            // 1. Tradução
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (t[key]) el.textContent = t[key];
+            });
+
+            // 2. ID da URL
+            const params = new URLSearchParams(window.location.search);
+            const artId = params.get('art');
+
+            if (!artId) return;
+
+            try {
+                // 3. Carrega Dados para Preview
+                const response = await fetch(JSON_PATH);
+                const data = await response.json();
+                
+                let art;
+                if (Array.isArray(data)) {
+                    art = data.find(item => item.id === artId);
+                } else {
+                    art = data[artId];
+                }
+
+                if (art) {
+                    const titleText = (typeof art.title === 'object') ? (art.title[lang] || art.title.en) : art.title;
+                    document.getElementById('artTitle').textContent = titleText;
+                    document.getElementById('artImage').src = art.image || "assets/img/placeholder.jpg";
+                    
+                    // 4. Inicia a busca do arquivo real
+                    // Ele vai procurar por: anfora-print.jpg, anfora-print.jpeg, anfora-print.png...
+                    const baseFileName = `${artId}-print`;
+                    findFile(baseFileName);
+                }
+
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

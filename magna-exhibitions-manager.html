@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna Manager v3.1 (Path Fix)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        body { background: #f8fafc; font-family: 'Inter', sans-serif; color: #334155; }
+        
+        label { display: block; font-size: 0.65rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem; letter-spacing: 0.05em; }
+        input, select, textarea { 
+            width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; 
+            border-radius: 0.5rem; background: #fff; font-size: 0.875rem; transition: all 0.2s;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #0f172a; ring: 1px solid #0f172a; }
+        
+        .section-header { 
+            font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #0f172a; font-weight: 600;
+            margin: 2rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+
+        .custom-select-btn {
+            display: flex; align-items: center; justify-content: space-between;
+            width: 100%; padding: 0.75rem; background: white; border: 1px solid #cbd5e1;
+            border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;
+        }
+        .custom-select-btn:hover { border-color: #000; }
+        
+        .custom-options {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem;
+            margin-top: 0.5rem; max-height: 300px; overflow-y: auto;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 50; display: none;
+        }
+        .custom-options.open { display: block; }
+        
+        .option-item {
+            display: flex; align-items: center; gap: 1rem; padding: 0.75rem;
+            cursor: pointer; border-bottom: 1px solid #f1f5f9;
+        }
+        .option-item:hover { background: #f8fafc; }
+        .option-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+        
+        .drop-zone {
+            border: 2px dashed #cbd5e1; border-radius: 0.5rem; padding: 1.5rem;
+            text-align: center; cursor: pointer; transition: all 0.2s; background: #f8fafc;
+            position: relative;
+        }
+        .drop-zone:hover { border-color: #94a3b8; background: #e2e8f0; }
+
+        #loginScreen { position: fixed; inset: 0; background: #0f172a; z-index: 100; display: flex; align-items: center; justify-content: center; }
+        #adminContent { display: none; }
+        
+        /* Destaque para onde os caminhos corretos aparecem */
+        .path-preview { font-family: monospace; font-size: 0.7rem; color: #059669; margin-top: 4px; }
+    </style>
+</head>
+<body class="min-h-screen pb-20">
+
+    <div id="loginScreen">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+            <h1 class="font-serif text-3xl mb-2 text-black">Magna Manager</h1>
+            <p class="text-gray-400 text-xs uppercase tracking-widest mb-8">v3.1 · Exhibitions Paths Fix</p>
+            <input type="password" id="passwordInput" placeholder="Senha" class="text-center mb-4 border-gray-300">
+            <button onclick="checkLogin()" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:opacity-80 transition">ENTRAR</button>
+            <p id="errorMsg" class="text-red-500 text-xs mt-4 hidden">Senha incorreta</p>
+        </div>
+    </div>
+
+    <div id="adminContent" class="max-w-6xl mx-auto p-4 md:p-8">
+        
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="font-serif text-2xl font-bold text-gray-900">Magna Exhibitions Manager</h1>
+                <p class="text-sm text-gray-500">Garante os caminhos corretos das pastas.</p>
+            </div>
+            
+            <div class="w-full md:w-auto relative group">
+                <input type="file" id="jsonLoader" accept=".json" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                <div id="dropZone" class="flex items-center gap-3 px-6 py-3 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 font-medium group-hover:bg-purple-100 transition shadow-sm cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>Carregar 'exhibitions.json'</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+            
+            <div class="lg:col-span-8 bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 relative">
+                
+                <div class="mb-8 relative z-50">
+                    <label>Selecione a Exposição</label>
+                    <div class="relative">
+                        <button id="selectBtn" class="custom-select-btn" onclick="toggleDropdown()">
+                            <span class="text-gray-400 italic">Carregue o arquivo JSON primeiro...</span>
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="dropdownList" class="custom-options"></div>
+                    </div>
+                </div>
+
+                <form id="exhibForm" class="opacity-50 pointer-events-none transition-opacity duration-300">
+                    
+                    <div class="section-header mt-0">
+                        <span>Informações Básicas</span>
+                        <div class="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded border border-gray-200">
+                             <span class="text-[10px] uppercase font-bold text-gray-400">ID:</span>
+                             <input type="text" id="slug" class="bg-transparent border-none p-0 w-40 font-mono text-xs focus:ring-0 text-right font-bold text-black" placeholder="nova-exposicao">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label>Título</label>
+                            <input type="text" id="title" class="font-serif text-lg font-bold">
+                        </div>
+                        <div>
+                            <label>Data</label>
+                            <input type="text" id="date">
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <label>Localização</label>
+                        <input type="text" id="location">
+                    </div>
+
+                    <div class="section-header"><span>Capa (Flyer)</span></div>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start mb-6">
+                        <div class="md:col-span-1 drop-zone bg-purple-50 border-purple-200" id="flyerDrop">
+                            <input type="file" id="flyerInput" class="hidden" accept="image/*">
+                            <p class="text-xs text-purple-800 font-bold mb-1">CAPA</p>
+                            <p class="text-[10px] text-gray-500">Arraste a imagem</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label>Arquivo da Capa</label>
+                            <input type="text" id="image" class="font-mono text-xs bg-gray-50 text-gray-600 mb-1" placeholder="exemplo: flyer-vinhos.jpg">
+                            <p class="path-preview">Será gerado como: assets/exhibition_flyers/<span>...</span></p>
+                        </div>
+                    </div>
+
+                    <div class="section-header flex justify-between">
+                        <span>Installation Views (Galeria)</span>
+                        <button type="button" onclick="clearGallery()" class="text-[10px] text-red-500 hover:underline uppercase font-bold">Limpar Lista</button>
+                    </div>
+                    
+                    <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div class="drop-zone mb-3 bg-white" id="galleryDrop">
+                            <input type="file" id="galleryInput" class="hidden" accept="image/*" multiple>
+                            <div class="pointer-events-none">
+                                <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                <p class="text-sm font-medium text-gray-700">Adicionar Fotos</p>
+                                <p class="text-xs text-gray-400 mt-1">Arraste múltiplas imagens</p>
+                            </div>
+                        </div>
+                        <label>Nomes dos Arquivos</label>
+                        <textarea id="gallery_images" rows="4" class="font-mono text-xs bg-white text-gray-600 leading-relaxed mb-1" placeholder="view1.jpg, view2.jpg..."></textarea>
+                        <p class="path-preview">Serão gerados como: assets/exhibition_img/<span>...</span></p>
+                    </div>
+                    
+                    <div class="section-header"><span>Descrições</span></div>
+                    <div class="space-y-4 mb-6">
+                        <div><label>PT</label><textarea id="desc_pt" rows="2"></textarea></div>
+                        <div><label>EN</label><textarea id="desc_en" rows="2"></textarea></div>
+                        <div><label>ES</label><textarea id="desc_es" rows="2"></textarea></div>
+                    </div>
+
+                    <div class="section-header"><span>Obras (IDs do artworks.json)</span></div>
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 mb-8">
+                        <textarea id="artworks_list" rows="3" class="font-mono text-sm bg-white border-yellow-200" placeholder="choco, figueirinha"></textarea>
+                    </div>
+
+                    <button type="button" onclick="generateJSON()" class="w-full py-4 bg-black text-white rounded-lg font-bold text-lg hover:bg-gray-800 shadow-lg transition transform hover:-translate-y-1 ring-4 ring-transparent hover:ring-purple-200">
+                        GERAR JSON ATUALIZADO
+                    </button>
+                    <p class="text-center text-xs text-gray-500 mt-2">Clique para ver os caminhos completos na caixa verde ao lado.</p>
+
+                </form>
+            </div>
+
+            <div class="lg:col-span-4 space-y-6 sticky top-8">
+                <div class="bg-gray-900 text-green-400 p-5 rounded-xl shadow-lg font-mono text-xs relative group">
+                    <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
+                        <span class="font-bold text-white">Snippet JSON Gerado</span>
+                        <button onclick="copyToClipboard()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-500 transition font-bold text-[10px] uppercase">Copiar</button>
+                    </div>
+                    <p class="text-[10px] text-gray-400 mb-3 leading-tight">
+                        Verifique se os caminhos abaixo contêm as pastas corretas antes de copiar para o seu arquivo.
+                    </p>
+                    <textarea id="output" class="w-full h-[500px] bg-transparent border-none resize-none focus:ring-0 text-green-300 p-0 font-mono text-[11px] leading-5" readonly>// O código com os caminhos corretos aparecerá aqui após clicar em GERAR.</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const HASH_TARGET = "13f020a2bf9d1113807cf1c1c78a2e8f85b31a652ea4db3ccdf1877339c8dcef"; 
+
+        let globalExhibitions = {};
+
+        async function checkLogin() {
+            const p = document.getElementById('passwordInput').value;
+            const msgBuffer = new TextEncoder().encode(p);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            if(hash === HASH_TARGET) {
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+            } else { document.getElementById('errorMsg').classList.remove('hidden'); }
+        }
+        document.getElementById('passwordInput').addEventListener('keypress', e => { if(e.key==='Enter') checkLogin(); });
+
+        // === CARREGAR JSON ===
+        const fileInput = document.getElementById('jsonLoader');
+        const dropZone = document.getElementById('dropZone');
+        fileInput.addEventListener('change', handleFile);
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    globalExhibitions = JSON.parse(evt.target.result);
+                    renderDropdown();
+                    dropZone.innerHTML = `<span class="text-green-700 font-bold">✅ Arquivo Carregado!</span>`;
+                    dropZone.className = "flex items-center gap-3 px-6 py-3 bg-green-100 border border-green-300 rounded-lg transition shadow-sm";
+                } catch(err) { alert("Erro: O arquivo não é um JSON válido."); }
+            };
+            reader.readAsText(file);
+        }
+
+        // === DROPDOWN ===
+        function toggleDropdown() {
+            if(Object.keys(globalExhibitions).length === 0) return alert("Carregue o exhibitions.json primeiro.");
+            document.getElementById('dropdownList').classList.toggle('open');
+        }
+
+        function renderDropdown() {
+            const list = document.getElementById('dropdownList');
+            list.innerHTML = `<div class="option-item" onclick="loadExhibition(null)"><div class="w-10 h-10 bg-black text-white rounded flex items-center justify-center font-bold text-lg">+</div><div class="info"><span class="title">Criar Nova Exposição</span></div></div>`;
+            
+            Object.keys(globalExhibitions).forEach(slug => {
+                const item = globalExhibitions[slug];
+                // Tenta resolver imagem para preview
+                let imgPreview = item.image || '';
+                // Se tiver caminho completo, usa. Se não, tenta adivinhar para o preview.
+                if(!imgPreview.includes('/')) imgPreview = 'assets/exhibition_flyers/' + imgPreview;
+
+                list.innerHTML += `
+                <div class="option-item" onclick="loadExhibition('${slug}')">
+                    <img src="${imgPreview}" onerror="this.src='https://via.placeholder.com/40?text=IMG'">
+                    <div class="info"><span class="title">${item.title}</span><span class="slug text-xs text-gray-400">${slug}</span></div>
+                </div>`;
+            });
+        }
+
+        // === CARREGAR DADOS ===
+        function loadExhibition(slug) {
+            document.getElementById('dropdownList').classList.remove('open');
+            document.getElementById('exhibForm').classList.remove('opacity-50', 'pointer-events-none');
+            const btn = document.getElementById('selectBtn');
+
+            if(!slug) {
+                // NOVO
+                btn.innerHTML = `<span class="font-bold text-purple-600">Nova Exposição</span>`;
+                document.getElementById('exhibForm').reset();
+                document.getElementById('slug').readOnly = false;
+                document.getElementById('output').value = "// Preencha e clique em GERAR para ver o código com os caminhos corretos.";
+                return;
+            }
+
+            // EDITAR
+            const data = globalExhibitions[slug];
+            btn.innerHTML = `<span class="font-bold">${data.title}</span>`;
+            document.getElementById('slug').value = slug;
+            document.getElementById('slug').readOnly = true;
+            
+            document.getElementById('title').value = data.title;
+            document.getElementById('date').value = data.date;
+            document.getElementById('location').value = data.location;
+            
+            // LIMPEZA DE CAMINHOS PARA OS CAMPOS DE INPUT
+            // Removemos a pasta para mostrar apenas o nome do arquivo no input.
+            document.getElementById('image').value = (data.image || "").split('/').pop();
+
+            if(data.gallery && Array.isArray(data.gallery)) {
+                const cleanNames = data.gallery.map(p => p.split('/').pop());
+                document.getElementById('gallery_images').value = cleanNames.join(', ');
+            } else {
+                document.getElementById('gallery_images').value = "";
+            }
+
+            document.getElementById('desc_pt').value = data.description?.pt || "";
+            document.getElementById('desc_en').value = data.description?.en || "";
+            document.getElementById('desc_es').value = data.description?.es || "";
+
+            if(data.artworks && Array.isArray(data.artworks)) {
+                document.getElementById('artworks_list').value = data.artworks.join(', ');
+            } else {
+                document.getElementById('artworks_list').value = "";
+            }
+            document.getElementById('output').value = "// Clique em GERAR JSON para atualizar o código.";
+        }
+
+        // === DRAG & DROP ===
+        const flyerDrop = document.getElementById('flyerDrop');
+        const flyerInput = document.getElementById('flyerInput');
+        flyerDrop.addEventListener('click', () => flyerInput.click());
+        flyerInput.addEventListener('change', (e) => { 
+            if(e.target.files[0]) document.getElementById('image').value = e.target.files[0].name; 
+        });
+        flyerDrop.addEventListener('dragover', e => { e.preventDefault(); flyerDrop.style.borderColor = '#9333ea'; });
+        flyerDrop.addEventListener('drop', e => { 
+            e.preventDefault(); flyerDrop.style.borderColor = '#cbd5e1';
+            if(e.dataTransfer.files[0]) document.getElementById('image').value = e.dataTransfer.files[0].name;
+        });
+
+        const galleryDrop = document.getElementById('galleryDrop');
+        const galleryInput = document.getElementById('galleryInput');
+        const galleryText = document.getElementById('gallery_images');
+        galleryDrop.addEventListener('click', () => galleryInput.click());
+        galleryInput.addEventListener('change', (e) => addFilesToGallery(e.target.files));
+        galleryDrop.addEventListener('dragover', e => { e.preventDefault(); galleryDrop.style.borderColor = '#9333ea'; });
+        galleryDrop.addEventListener('drop', e => { 
+            e.preventDefault(); galleryDrop.style.borderColor = '#cbd5e1';
+            addFilesToGallery(e.dataTransfer.files);
+        });
+
+        function addFilesToGallery(files) {
+            if(!files.length) return;
+            const names = Array.from(files).map(f => f.name);
+            const current = galleryText.value.trim();
+            galleryText.value = current ? current + ', ' + names.join(', ') : names.join(', ');
+        }
+        function clearGallery() { if(confirm("Limpar lista?")) document.getElementById('gallery_images').value = ""; }
+
+        // === GERAR JSON (CORREÇÃO CRÍTICA DE CAMINHOS) ===
+        function generateJSON() {
+            const slug = document.getElementById('slug').value.trim();
+            if(!slug) return alert("O ID/Slug é obrigatório.");
+
+            // 1. CAPA: Força a pasta assets/exhibition_flyers/
+            let imgFilename = document.getElementById('image').value.trim();
+            // Remove qualquer caminho anterior (resolve C:\user... ou assets/...)
+            imgFilename = imgFilename.replace(/\\/g, '/').split('/').pop();
+            const finalImg = imgFilename ? "assets/exhibition_flyers/" + imgFilename : "";
+
+            // 2. GALERIA: Força a pasta assets/exhibition_img/
+            const rawGallery = document.getElementById('gallery_images').value.split(',');
+            const finalGallery = rawGallery
+                .map(s => s.trim())
+                .filter(s => s.length > 0)
+                .map(name => {
+                    // Limpa o nome do arquivo
+                    const cleanName = name.replace(/\\/g, '/').split('/').pop();
+                    // Adiciona a pasta correta
+                    return "assets/exhibition_img/" + cleanName;
+                });
+
+            // Obras
+            const finalArtworks = document.getElementById('artworks_list').value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+
+            const jsonObj = {
+                title: document.getElementById('title').value,
+                date: document.getElementById('date').value,
+                location: document.getElementById('location').value,
+                image: finalImg, // Caminho corrigido
+                description: {
+                    pt: document.getElementById('desc_pt').value,
+                    en: document.getElementById('desc_en').value,
+                    es: document.getElementById('desc_es').value
+                },
+                gallery: finalGallery, // Caminhos corrigidos
+                artworks: finalArtworks
+            };
+
+            const jsonString = `"${slug}": ${JSON.stringify(jsonObj, null, 4)},`;
+            
+            const output = document.getElementById('output');
+            output.value = jsonString;
+            output.classList.add('bg-green-900', 'text-white');
+            setTimeout(() => output.classList.remove('bg-green-900', 'text-white'), 300);
+        }
+
+        function copyToClipboard() {
+            const copyText = document.getElementById("output");
+            copyText.select(); document.execCommand("copy");
+            alert("Código copiado! Verifique os caminhos antes de salvar.");
+        }
+    </script>
+</body>
+</html>

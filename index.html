@@ -6,15 +6,13 @@
     <title>Magna — Artworks & Exhibitions</title>
     <meta name="description" content="Portfolio and online catalog of artist Magna Leite. Contemporary acrylic paintings, limited edition prints and digital works.">
 
-    <!-- SEO off until ready to go public. Remove line below to enable. -->
-    <meta name="robots" content="noindex, nofollow">
-
     <meta property="og:type" content="website">
     <meta property="og:title" content="Magna — Artworks & Exhibitions">
     <meta property="og:description" content="Contemporary acrylic paintings by Magna Leite. Acrylique Pluie technique.">
     <meta property="og:image" content="assets/img/magna-portrait.jpg">
     <meta name="theme-color" content="#ffffff">
-
+    
+    <link rel="canonical" href="https://magnaleite.com/">
     <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Poppins:wght@400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -680,7 +678,7 @@
 
           card.innerHTML = `
             <div class="art-card__img-wrap">
-              <img loading="lazy" src="${art.image}" alt="${art.title}"
+              <img loading="lazy" src="${art.thumbnail || art.image}" alt="${art.title}"
                    onerror="this.src='assets/img/placeholder.jpg'">
             </div>
             ${isSold ? `<span class="sold-badge">${t('soldLabel')}</span>` : ''}

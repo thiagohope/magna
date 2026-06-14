@@ -178,7 +178,7 @@
   </div>
 
   <script>
-    const JSON_PATH = 'artworks.json';
+    const JSON_PATH = '../artworks.json';
     let db = null;
 
     // 1. Carregar Base de Dados
@@ -203,10 +203,9 @@
 
     // 3. Gerar o Link de Destino
     function getArtworkUrl(slug) {
-      // Calcula o caminho base relativo para evitar hardcoding
+      // Calcula o caminho base relativo (sobe um nível, pois artwork.html está na raiz)
       const base = window.location.href.replace(/\/[^\/]*$/, '/');
-      // Aponta para a página da obra
-      return `${base}artwork.html?id=${encodeURIComponent(slug)}`;
+      return `${base}../artwork.html?id=${encodeURIComponent(slug)}`;
     }
 
     // 4. Gerar o HTML de UMA Etiqueta

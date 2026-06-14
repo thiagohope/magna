@@ -1,18 +1,38 @@
-# Images — deployed directly to server, not via Git
-assets/*.jpg
-assets/*.jpeg
-assets/*.png
-assets/*.gif
-assets/*.pdf
-assets/thumbnails/
-assets/exhibition_img/
-assets/exhibition_flyers/
+# ============================================================
+# Magna Gallery — .gitignore
+# Images and large binaries are deployed via SCP, never Git.
+# Only code, JSON data, and small UI icons are tracked here.
+# ============================================================
 
-# Documents
-assets/*.docx
+# --- Artwork & exhibition images (transferred via SCP/WinSCP) ---
+assets/paintings/full/
+assets/paintings/thumbnails/
+assets/exhibition/flyers/
+assets/exhibition/img/
+assets/downloads/
 
-# Misc
-magna/
+# --- Hero / about images (large binaries, SCP only) ---
+assets/img/*.jpg
+assets/img/*.jpeg
+assets/img/*.png
+assets/img/*.webp
+# (assets/icons/ stays tracked — small favicons, signature, logo)
+
+# --- Server-generated ---
+backups/
 *.tmp
+
+# --- Node ---
+node_modules/
+npm-debug.log*
+
+# --- OS / editor cruft ---
 .DS_Store
 Thumbs.db
+*.swp
+.vscode/
+
+# --- Local dev artifacts ---
+*.local
+.env
+.env.*

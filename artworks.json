@@ -8,7 +8,8 @@
         "es": "Acrilico sobre lienzo"
     },
     "dimensions": "150 x 100 cm (H x W)",
-    "image": "assets/choco-2025.jpg",
+    "image": "assets/paintings/full/choco-2025.jpg",
+    "thumbnail": "assets/paintings/thumbnails/choco-2025.jpg",
     "collection": "setubal",
     "priceDisplay": {
         "original": 1200,
@@ -68,7 +69,8 @@
         "es": "Acrilico sobre lienzo"
     },
     "dimensions": "155 x 200 cm (H x W)",
-    "image": "assets/figueirinha-2025.jpg",
+    "image": "assets/paintings/full/figueirinha-2025.jpg",
+    "thumbnail": "assets/paintings/thumbnails/figueirinha-2025.jpg",
     "collection": "setubal",
     "priceDisplay": {
         "original": 1200,
@@ -128,7 +130,8 @@
         "es": "Acrilico sobre lienzo"
     },
     "dimensions": "150 x 100 cm (H x W)",
-    "image": "assets/forte-albarquel-2025.jpeg",
+    "image": "assets/paintings/full/forte-albarquel-2025.jpeg",
+    "thumbnail": "assets/paintings/thumbnails/forte-albarquel-2025.jpeg",
     "collection": "setubal",
     "priceDisplay": {
         "original": 1200,
@@ -188,7 +191,8 @@
         "es": "Acrilico sobre lienzo"
     },
     "dimensions": "140 x 185 cm (H x W)",
-    "image": "assets/futuro-do-trabalho-2025.jpeg",
+    "image": "assets/paintings/full/futuro-do-trabalho-2025.jpeg",
+    "thumbnail": "assets/paintings/thumbnails/futuro-do-trabalho-2025.jpeg",
     "collection": "concept",
     "priceDisplay": {
         "original": 1200,
@@ -248,7 +252,8 @@
         "es": "Acrilico sobre lienzo"
     },
     "dimensions": "120 x 120 cm (H x W)",
-    "image": "assets/coral-2025.jpeg",
+    "image": "assets/paintings/full/coral-2025.jpeg",
+    "thumbnail": "assets/paintings/thumbnails/coral-2025.jpeg",
     "collection": "nature",
     "priceDisplay": {
         "original": 1200,
@@ -308,7 +313,8 @@
         "es": "Acrilico sobre lienzo"
     },
     "dimensions": "150 x 100 cm (H x W)",
-    "image": "assets/anfora-2025.jpeg",
+    "image": "assets/paintings/full/anfora-2025.jpeg",
+    "thumbnail": "assets/paintings/thumbnails/anfora-2025.jpeg",
     "collection": "nature",
     "priceDisplay": {
         "original": 1200,

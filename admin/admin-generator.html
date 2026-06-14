@@ -147,7 +147,7 @@
         // 1. CARREGAR OBRAS AUTOMATICAMENTE AO ABRIR
         async function loadArtworks() {
             try {
-                const response = await fetch('artworks.json');
+                const response = await fetch('../artworks.json');
                 artworksData = await response.json();
                 
                 const select = document.getElementById('artSelect');
@@ -179,7 +179,7 @@
             if (!art) return;
 
             // Preenche imagem e título
-            document.getElementById('certImage').src = art.image; // Caminho já vem do JSON (ex: assets/img.jpg)
+            document.getElementById('certImage').src = art.image ? ('../' + art.image) : ''; // assets/* é relativo à raiz do projeto
             document.getElementById('certTitle').textContent = art.title;
             
             // Lógica do Tipo/Dimensão

@@ -139,7 +139,7 @@
             </div>
 
             <div class="text-center flex flex-col items-center ml-auto">
-                <img src="assets/icons/magna-sign.png" alt="Magna Signature" class="h-24 mb-2 mix-blend-multiply opacity-90" style="transform: rotate(-2deg);">
+                <img src="../assets/icons/magna-sign.png" alt="Magna Signature" class="h-24 mb-2 mix-blend-multiply opacity-90" style="transform: rotate(-2deg);">
                 <div class="w-48 border-b border-black mb-1 h-1"></div> 
                 <p class="serif text-sm">Magna</p>
                 <p class="text-[9px] uppercase tracking-widest text-gray-400">Artist Signature</p>
@@ -164,14 +164,14 @@
 
             try {
                 // 1. Buscar Dados
-                const response = await fetch('artworks.json');
+                const response = await fetch('../artworks.json');
                 const db = await response.json();
                 const art = db[slug];
 
                 if (!art) throw new Error("Obra não encontrada");
 
                 // 2. Preencher Campos
-                document.getElementById('artImage').src = art.image;
+                document.getElementById('artImage').src = art.image ? ('../' + art.image) : '';
                 document.getElementById('artTitle').textContent = art.title;
                 document.getElementById('printYear').textContent = new Date().getFullYear();
                 

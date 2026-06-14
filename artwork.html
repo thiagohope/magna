@@ -6,6 +6,7 @@
     <title>Magna — Artwork</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link rel="canonical" href="https://magnaleite.com/artwork.html">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 
     <style>
@@ -324,7 +325,15 @@
                 const params = new URLSearchParams(window.location.search);
                 const slug   = params.get('id');
                 const art    = slug ? artworksDB[slug] : artworksDB[Object.keys(artworksDB)[0]];
-
+                const effectiveSlug = slug || Object.keys(artworksDB)[0];
+                let canonicalEl = document.querySelector('link[rel="canonical"]');
+                if (!canonicalEl) {
+                    canonicalEl = document.createElement('link');
+                    canonicalEl.rel = 'canonical';
+                    document.head.appendChild(canonicalEl);
+                }
+                canonicalEl.href = `https://magnaleite.com/artwork.html?id=${effectiveSlug}`;
+                
                 if (!art) {
                     document.getElementById('artTitle').textContent = 'Artwork not found';
                     return;

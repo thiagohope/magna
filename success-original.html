@@ -6,6 +6,7 @@
     <title>Magna - Acquisition Confirmed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="canonical" href="https://magnaleite.com/success-original.html">
     
     <style>
         body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; }
@@ -169,8 +170,8 @@
                     // 1. Caminho Base (remove barra inicial se houver)
                     let originalPath = art.image.startsWith('/') ? art.image.substring(1) : art.image;
                     
-                    // 2. Cria caminho do Thumbnail: "assets/coral.jpg" -> "assets/thumbnails/coral.jpg"
-                    let thumbPath = originalPath.replace('assets/', 'assets/thumbnails/');
+                    // 2. Usa o campo thumbnail do JSON, com fallback para substituição de caminho
+                    let thumbPath = art.thumbnail || originalPath.replace('assets/paintings/full/', 'assets/paintings/thumbnails/');
 
                     // 3. Tenta carregar o Thumbnail
                     imgEl.src = thumbPath;

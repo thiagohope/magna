@@ -72,7 +72,7 @@
         <div class="watermark">Magna Original</div>
 
         <header class="text-center mb-8 border-b-2 border-gold pb-6">
-            <img src="assets/icons/M02.png" alt="Magna" class="h-20 mx-auto mb-4 object-contain">
+            <img src="../assets/icons/M02.png" alt="Magna" class="h-20 mx-auto mb-4 object-contain">
             <h1 class="official text-3xl md:text-4xl uppercase tracking-widest mb-2 text-gray-900">Certificate of Authenticity</h1>
             <p class="text-[10px] uppercase tracking-[0.4em] text-gold font-bold">Official Provenance Record · BrainboxMed Registry</p>
         </header>
@@ -117,7 +117,7 @@
 
             <footer class="mt-8 pt-6 flex justify-between items-end border-t-2 border-gold">
                 <div class="text-center">
-                    <img src="assets/icons/magna-sign.png" alt="Magna Signature" class="h-20 mx-auto mb-1 opacity-90 mix-blend-multiply" style="transform: rotate(-2deg);">
+                    <img src="../assets/icons/magna-sign.png" alt="Magna Signature" class="h-20 mx-auto mb-1 opacity-90 mix-blend-multiply" style="transform: rotate(-2deg);">
                     <div class="h-px w-20 bg-gold mx-auto"></div>
                     <p class="text-[9px] uppercase mt-1 tracking-widest text-gray-500">Artist Signature</p>
                 </div>
@@ -130,7 +130,7 @@
     </main>
 
     <script>
-        const JSON_PATH = 'artworks.json';
+        const JSON_PATH = '../artworks.json';
 
         function getSlugFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -191,7 +191,7 @@
 
                 // 1. Dados Básicos
                 document.title = `Certificate - ${art.title || slug}`;
-                document.getElementById('artImage').src = art.image || "";
+                document.getElementById('artImage').src = art.image ? ('../' + art.image) : "";
                 document.getElementById('artTitle').textContent = art.title || slug;
                 document.getElementById('artYear').textContent = art.year || "";
                 document.getElementById('artDimensions').textContent = art.dimensions || "";
@@ -206,12 +206,12 @@
                 document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
 
                 // 4. Link "View Artwork"
-                const artPageUrl = `artwork.html?id=${slug}`;
+                const artPageUrl = `../artwork.html?id=${slug}`;
                 document.getElementById('viewArtworkBtn').href = artPageUrl;
 
                 // 5. GERAR QR CODE (API Otimizada)
-                // Substitui 'certificate.html' por 'verify-original.html' na URL atual
-                const publicVerifyUrl = window.location.href.replace('certificate.html', 'verify-original.html');
+                // certificate.html está em /admin/; verify-original.html está na raiz do projeto
+                const publicVerifyUrl = window.location.href.replace('/admin/certificate.html', '/verify-original.html');
 
                 // ecc=L (Menos densidade), margin=2 (Espaço branco), 200px (Alta resolução)
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&ecc=L&margin=2&data=${encodeURIComponent(publicVerifyUrl)}`;

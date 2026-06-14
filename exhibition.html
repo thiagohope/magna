@@ -4,10 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Magna — Exhibition View</title>
-    
+
     <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <link rel="canonical" href="https://magnaleite.com/exhibition.html">
 
     <style>
       :root{ --bg:#fff; --fg:#0f172a; --muted:#64748b; --line:rgba(15,23,42,.12); }
@@ -98,9 +99,11 @@
 
     <script>
         // === CONFIGURAÇÃO DE PASTAS ===
-        const PATH_FLYERS = "assets/exhibition_flyers/";
-        const PATH_GALLERY = "assets/exhibition_img/";
-        const PATH_ARTWORKS = "assets/img/";
+        // Flyers are flat (one file per exhibition, no subfolder)
+        const PATH_FLYERS = "assets/exhibition/flyers/";
+        // Gallery photos live in a per-exhibition subfolder, named after the slug
+        const PATH_GALLERY_BASE = "assets/exhibition/img/";
+        const PATH_ARTWORKS = "assets/paintings/thumbnails/";
         
         const translations = {
             en: { backHome: "Back to Home", viewTitle: "Installation Views", worksTitle: "Featured Artworks" },
@@ -111,7 +114,8 @@
         let currentLang = localStorage.getItem('magna_lang') || 'en';
 
         // === Função que constrói o caminho ===
-        function resolvePath(filename, type) {
+        // 'slug' é necessário apenas para type === 'gallery' (pasta por exposição)
+        function resolvePath(filename, type, slug) {
             if (!filename) return "";
             
             // Decodifica URI para evitar problemas com %20
@@ -123,7 +127,7 @@
 
             // Se for apenas o nome, adiciona a pasta correta
             if (type === 'flyer') return PATH_FLYERS + clean;
-            if (type === 'gallery') return PATH_GALLERY + clean;
+            if (type === 'gallery') return PATH_GALLERY_BASE + slug + '/' + clean;
             if (type === 'artwork') return PATH_ARTWORKS + clean; 
             
             return clean;
@@ -157,6 +161,14 @@
                 window.location.href = "index.html";
                 return;
             }
+
+            let canonicalEl = document.querySelector('link[rel="canonical"]');
+            if (!canonicalEl) {
+                canonicalEl = document.createElement('link');
+                canonicalEl.rel = 'canonical';
+                document.head.appendChild(canonicalEl);
+            }
+            canonicalEl.href = `https://magnaleite.com/exhibition.html?id=${slug}`;
 
             try {
                 const [exhRes, artRes] = await Promise.all([
@@ -200,7 +212,7 @@
                     data.gallery.forEach(imgFile => {
                         const div = document.createElement('div');
                         div.className = "gallery-item relative";
-                        const src = resolvePath(imgFile, 'gallery');
+                        const src = resolvePath(imgFile, 'gallery', slug);
                         div.innerHTML = `<img src="${src}" class="w-full h-auto rounded shadow-sm hover:shadow-lg transition" loading="lazy" onerror="handleImgError(this)">`;
                         gList.appendChild(div);
                     });

@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magna - Official Verification</title>
-    <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     
@@ -230,6 +229,14 @@
                 return;
             }
 
+            let canonicalEl = document.querySelector('link[rel="canonical"]');
+            if (!canonicalEl) {
+                canonicalEl = document.createElement('link');
+                canonicalEl.rel = 'canonical';
+                document.head.appendChild(canonicalEl);
+            }
+            canonicalEl.href = `https://magnaleite.com/verify-original.html?id=${slug}`;
+
             try {
                 // AQUI ESTÁ O SEGREDO: Carrega o JSON real
                 const res = await fetch(JSON_PATH);
@@ -256,7 +263,7 @@
         function renderData(art, lang, slug) {
             // Lógica de Imagem Dinâmica
             let imgPath = art.image;
-            let thumbPath = imgPath.replace('assets/', 'assets/thumbnails/');
+            let thumbPath = art.thumbnail || imgPath.replace('assets/paintings/full/', 'assets/paintings/thumbnails/');
             const imgEl = document.getElementById('artImage');
             
             imgEl.src = thumbPath;

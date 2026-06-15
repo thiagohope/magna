@@ -457,7 +457,7 @@
         async function saveToServer() {
             const btn = document.getElementById('saveBtn');
             ensureApiSecret();
-            
+
             // Build updated data from form first
             const snippet = buildArtworkData();
             if (!snippet) return;
@@ -530,7 +530,7 @@
             Object.keys(globalArtworks).forEach(slug => {
                 const art = globalArtworks[slug];
                 const img = art.thumbnail ? ('../' + art.thumbnail) : (art.image ? ('../' + art.image) : '');
-                list.innerHTML += `<div class="option-item" onclick="loadArtwork('${slug}')"><img src="${img}" onerror="this.src='https://via.placeholder.com/40'"><div><div class="title">${art.title}</div><div class="slug">${slug}</div></div></div>`;
+                list.innerHTML += `<div class="option-item" onclick="loadArtwork('${slug}')"><img src="${img}" onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2240%22 height=%2240%22%3E%3Crect width=%2240%22 height=%2240%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E'"><div><div class="title">${art.title}</div><div class="slug">${slug}</div></div></div>`;
             });
         }
 

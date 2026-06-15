@@ -36,3 +36,6 @@ Thumbs.db
 *.local
 .env
 .env.*
+
+# Production-only config with secrets (created once on server, never committed)
+ecosystem.config.js

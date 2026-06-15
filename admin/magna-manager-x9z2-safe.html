@@ -45,6 +45,10 @@
             <h1 class="font-serif text-3xl mb-2 text-black">Magna Manager</h1>
             <p class="text-gray-400 text-xs uppercase tracking-widest mb-8">Controle de Acesso</p>
             <input type="password" id="passwordInput" placeholder="Senha" class="text-center mb-4">
+            <label class="flex items-center justify-center gap-2 text-xs text-gray-500 mb-4 cursor-pointer">
+                <input type="checkbox" id="trustDeviceCheckbox" checked class="cursor-pointer">
+                <span>Confiar neste dispositivo</span>
+            </label>
             <button onclick="checkLogin()" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:opacity-80 transition">ENTRAR</button>
             <p id="errorMsg" class="text-red-500 text-xs mt-4 hidden">Acesso Negado</p>
         </div>
@@ -55,6 +59,7 @@
 
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
+                <a href="admin-hub.html" class="inline-block text-xs text-gray-400 hover:text-black mb-2 no-underline">← Voltar ao Admin Hub</a>
                 <h1 class="font-serif text-2xl font-bold text-gray-900">Magna Manager <span class="text-sm font-normal text-gray-400">v4.0</span></h1>
                 <p class="text-sm text-gray-500">Gestão de Obras, Preços, Proveniência & Coleções</p>
             </div>
@@ -347,27 +352,69 @@
         // CONFIG — set MAGNA_API_SECRET in server env, paste same value here
         // ============================================================
         const API_ENDPOINT = 'https://brainboxmed.com/magna/api/save-artworks';
-        const API_SECRET   = prompt('API Secret (deixe em branco se não configurado ainda):') || '';
-        // Note: in a future version this can be stored in sessionStorage after login
+        let API_SECRET = sessionStorage.getItem('magna_api_secret') || '';
+
+        function ensureApiSecret() {
+            if (!API_SECRET) {
+                API_SECRET = prompt('API Secret (deixe em branco se não configurado ainda):') || '';
+                sessionStorage.setItem('magna_api_secret', API_SECRET);
+            }
+            return API_SECRET;
+        }
 
         let globalArtworks = {};
 
         // ============================================================
         // LOGIN
         // ============================================================
+// --- Device trust helpers ---
+        const TRUST_KEY = 'magna_trust_token';
+        const TRUST_EXPIRY_KEY = 'magna_trust_expiry';
+        const TRUST_DURATION_MS = 90 * 24 * 60 * 60 * 1000; // 90 dias
+
+        function isDeviceTrusted() {
+            const token = localStorage.getItem(TRUST_KEY);
+            const expiry = parseInt(localStorage.getItem(TRUST_EXPIRY_KEY) || '0', 10);
+            return !!token && Date.now() < expiry;
+        }
+
+        function trustThisDevice() {
+            const token = crypto.randomUUID();
+            localStorage.setItem(TRUST_KEY, token);
+            localStorage.setItem(TRUST_EXPIRY_KEY, String(Date.now() + TRUST_DURATION_MS));
+        }
+
+        function clearDeviceTrust() {
+            localStorage.removeItem(TRUST_KEY);
+            localStorage.removeItem(TRUST_EXPIRY_KEY);
+        }
+
+        function unlockAdmin() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+        }
+
         async function checkLogin() {
             const p = document.getElementById('passwordInput').value;
             const msgBuffer  = new TextEncoder().encode(p);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
             const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
             if (hash === "13f020a2bf9d1113807cf1c1c78a2e8f85b31a652ea4db3ccdf1877339c8dcef") {
-                document.getElementById('loginScreen').style.display = 'none';
-                document.getElementById('adminContent').style.display = 'block';
+                if (document.getElementById('trustDeviceCheckbox').checked) {
+                    trustThisDevice();
+                }
+                document.getElementById('errorMsg').classList.add('hidden');
+                unlockAdmin();
             } else {
                 document.getElementById('errorMsg').classList.remove('hidden');
             }
         }
         document.getElementById('passwordInput').addEventListener('keypress', e => { if(e.key==='Enter') checkLogin(); });
+
+        // Auto-unlock on trusted devices
+        if (isDeviceTrusted()) {
+            unlockAdmin();
+        }
 
         // ============================================================
         // LOAD FROM SERVER
@@ -409,7 +456,8 @@
         // ============================================================
         async function saveToServer() {
             const btn = document.getElementById('saveBtn');
-
+            ensureApiSecret();
+            
             // Build updated data from form first
             const snippet = buildArtworkData();
             if (!snippet) return;

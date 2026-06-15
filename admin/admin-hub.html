@@ -56,6 +56,11 @@
         placeholder="Password"
       />
 
+      <label class="flex items-center justify-center gap-2 text-xs text-gray-500 mb-4 cursor-pointer">
+        <input type="checkbox" id="trustDeviceCheckbox" checked class="cursor-pointer">
+        <span data-i18n="trustDeviceLabel">Trust this device</span>
+      </label>
+
       <button
         onclick="checkLogin()"
         class="w-full bg-black text-white py-3 rounded-lg font-bold hover:opacity-80 transition"
@@ -243,49 +248,38 @@
         enterBtn: "ENTER",
         accessDenied: "Access denied",
         samePasswordHint: "Same password as the Magna Manager.",
-
+        trustDeviceLabel: "Trust this device (skip password next time)",
         hubTitle: "Admin Hub",
         hubSubtitle: "Backoffice shortcuts to internal tools.",
         lockBtn: "Lock",
-
         // Section Headers
         secCore: "Database & Management",
         secPrint: "Print & Studio Workflow",
         secDisplay: "Display & Public Views",
-
         // Magna Manager
         mgrTitle: "Magna Manager",
         mgrDesc: "Central management of artworks database and metadata (artworks.json).",
-
         // Exhibitions Manager (NEW)
         exhibMgrTitle: "Magna Exhibitions Manager",
         exhibMgrDesc: "Manage exhibitions, dates, locations and upload flyers/installation views (exhibitions.json).",
-
         labelsTitle: "Labels (QR + Hash)",
         labelsDesc: "Print self-adhesive stickers for the back of each artwork.",
-
         genTitle: "Admin Generator",
         genDesc: "Generate admin outputs (certificates/QR) without checkout.",
-
         printCertTitle: "Print Certificate",
         printCertDesc: "Print-ready layout for Limited Editions.",
-
         exhibLabelTitle: "Exhibition Label",
         exhibLabelDesc: "Public digital wall label (QR points to Artwork Page).",
-
         pubCertTitle: "Certificate Page (Public)",
         pubCertDesc: "QA shortcut: open the public certificate page.",
-
         dbTitle: "artworks.json (Raw Data)",
         dbDesc: "Quick open of the database JSON for sanity checks.",
-
         tagCore: "Core",
         tagPrint: "Print",
         tagAdmin: "Admin",
         tagQA: "QA",
         tagData: "Data",
         tagDisplay: "Display",
-
         footerLeft: "© 2025 Magna Studio — Internal Tools",
         footerRight: "Protected via SHA-256 browser check."
       },
@@ -297,49 +291,38 @@
         enterBtn: "ENTRAR",
         accessDenied: "Acesso negado",
         samePasswordHint: "Mesma senha do Magna Manager.",
-
+        trustDeviceLabel: "Confiar neste dispositivo (não pedir senha de novo)",
         hubTitle: "Painel Admin",
         hubSubtitle: "Atalhos para ferramentas internas.",
         lockBtn: "Bloquear",
-
         // Cabeçalhos de Seção
         secCore: "Base de Dados e Gestão",
         secPrint: "Impressão e Estúdio",
         secDisplay: "Visualização e Público",
-
         // Magna Manager
         mgrTitle: "Magna Manager",
         mgrDesc: "Gestão central do banco de obras e metadados (artworks.json).",
-
         // Exhibitions Manager (NOVO)
         exhibMgrTitle: "Gestor de Exposições",
         exhibMgrDesc: "Gerir exposições, datas, locais e carregar flyers/fotos (exhibitions.json).",
-
         labelsTitle: "Etiquetas (QR + Hash)",
         labelsDesc: "Impressão de adesivos para verso das obras.",
-
         genTitle: "Gerador Admin",
         genDesc: "Gerar certificados/QR sem checkout.",
-
         printCertTitle: "Certificado (Impressão)",
         printCertDesc: "Layout para Edições Limitadas.",
-
         exhibLabelTitle: "Etiqueta Digital",
         exhibLabelDesc: "Etiqueta de parede digital (QR aponta para Obra).",
-
         pubCertTitle: "Página de Certificado",
         pubCertDesc: "Atalho QA: ver página pública do certificado.",
-
         dbTitle: "artworks.json (Dados Brutos)",
         dbDesc: "Abrir JSON cru para verificação rápida.",
-
         tagCore: "Núcleo",
         tagPrint: "Print",
         tagAdmin: "Admin",
         tagQA: "QA",
         tagData: "Dados",
         tagDisplay: "Expor",
-
         footerLeft: "© 2025 Magna Studio — Ferramentas Internas",
         footerRight: "Protegido via verificação SHA-256."
       }
@@ -379,11 +362,39 @@
       applyTranslations();
     }
 
-    async function sha256Hex(text) {
+async function sha256Hex(text) {
       const msgBuffer = new TextEncoder().encode(text);
       const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // --- Device trust helpers ---
+    const TRUST_KEY = 'magna_trust_token';
+    const TRUST_EXPIRY_KEY = 'magna_trust_expiry';
+    const TRUST_DURATION_MS = 90 * 24 * 60 * 60 * 1000; // 90 dias
+
+    function isDeviceTrusted() {
+      const token = localStorage.getItem(TRUST_KEY);
+      const expiry = parseInt(localStorage.getItem(TRUST_EXPIRY_KEY) || '0', 10);
+      return !!token && Date.now() < expiry;
+    }
+
+    function trustThisDevice() {
+      const token = crypto.randomUUID();
+      localStorage.setItem(TRUST_KEY, token);
+      localStorage.setItem(TRUST_EXPIRY_KEY, String(Date.now() + TRUST_DURATION_MS));
+    }
+
+    function clearDeviceTrust() {
+      localStorage.removeItem(TRUST_KEY);
+      localStorage.removeItem(TRUST_EXPIRY_KEY);
+    }
+
+    function unlockAdmin() {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminContent').style.display = 'block';
+      applyTranslations();
     }
 
     async function checkLogin() {
@@ -391,10 +402,11 @@
       const hash = await sha256Hex(p);
 
       if (hash === ALLOWED_HASH) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('adminContent').style.display = 'block';
+        if (document.getElementById('trustDeviceCheckbox').checked) {
+          trustThisDevice();
+        }
         document.getElementById('errorMsg').classList.add('hidden');
-        applyTranslations();
+        unlockAdmin();
       } else {
         document.getElementById('errorMsg').classList.remove('hidden');
       }
@@ -405,10 +417,16 @@
     });
 
     function lockNow() {
+      clearDeviceTrust();
       document.getElementById('adminContent').style.display = 'none';
       document.getElementById('loginScreen').style.display = 'flex';
       document.getElementById('passwordInput').value = '';
       document.getElementById('passwordInput').focus();
+    }
+
+    // Auto-unlock on trusted devices
+    if (isDeviceTrusted()) {
+      unlockAdmin();
     }
 
     applyTranslations();

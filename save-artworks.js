@@ -1,10 +1,18 @@
 /**
- * Magna Save API — save-artworks.js
+ * Magna API — save-artworks.js
  * Managed by PM2. Listens on 127.0.0.1:3100 (local only, not public).
- * Receives POST /save-artworks with JSON body, writes to artworks.json.
- * Nginx proxies /magna/api/save-artworks → this server.
  *
- * Start:  pm2 start save-artworks.js --name magna-api
+ * Endpoints:
+ *   GET  /health
+ *   POST /save-artworks            { ...artworks object... }            -> artworks.json
+ *   POST /save-exhibitions         { ...exhibitions object... }         -> exhibitions.json
+ *   POST /upload-painting-image    { filename, type, imageData }        -> assets/paintings/<full|thumbnails>/<filename>
+ *   POST /upload-exhibition-flyer  { filename, imageData }              -> assets/exhibition/flyers/<filename>
+ *   POST /upload-exhibition-gallery{ slug, filename, imageData }        -> assets/exhibition/img/<slug>/<filename>
+ *
+ * Nginx proxies /magna/api/* → this server (one location block per endpoint).
+ *
+ * Start:  pm2 start ecosystem.config.js
  * Logs:   pm2 logs magna-api
  * Stop:   pm2 stop magna-api
  */
@@ -16,10 +24,19 @@ const path = require('path');
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const PORT         = 3100;
 const HOST         = '127.0.0.1';                          // local only, never public
-const ARTWORKS_PATH = path.join(__dirname, 'artworks.json');
+const ARTWORKS_PATH    = path.join(__dirname, 'artworks.json');
+const EXHIBITIONS_PATH = path.join(__dirname, 'exhibitions.json');
 const BACKUP_DIR   = path.join(__dirname, 'backups');
+const ASSETS_DIR   = path.join(__dirname, 'assets');
+const PAINTINGS_FULL_DIR      = path.join(ASSETS_DIR, 'paintings', 'full');
+const PAINTINGS_THUMBS_DIR    = path.join(ASSETS_DIR, 'paintings', 'thumbnails');
+const EXHIBITION_FLYERS_DIR   = path.join(ASSETS_DIR, 'exhibition', 'flyers');
+const EXHIBITION_GALLERY_DIR  = path.join(ASSETS_DIR, 'exhibition', 'img');
+const MAX_JSON_SIZE  = 2 * 1024 * 1024;   // 2MB — for artworks.json / exhibitions.json bodies
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024;  // 10MB — for base64 image uploads
 const API_SECRET   = process.env.MAGNA_API_SECRET || 'CHANGE_THIS_SECRET';
-// Set secret on server: export MAGNA_API_SECRET=your_strong_secret
+// Set secret via ecosystem.config.js (not committed to git):
+//   env: { MAGNA_API_SECRET: 'your_strong_secret' }
 // Then restart: pm2 restart magna-api
 
 // ── HELPERS ─────────────────────────────────────────────────────────────────
@@ -27,19 +44,51 @@ function ensureBackupDir() {
     if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
-function makeBackup() {
+function makeBackup(filePath, prefix) {
     ensureBackupDir();
-    if (!fs.existsSync(ARTWORKS_PATH)) return;
-    const ts      = new Date().toISOString().replace(/[:.]/g, '-');
-    const dest    = path.join(BACKUP_DIR, `artworks-${ts}.json`);
-    fs.copyFileSync(ARTWORKS_PATH, dest);
+    if (!fs.existsSync(filePath)) return;
+    const ts   = new Date().toISOString().replace(/[:.]/g, '-');
+    const dest = path.join(BACKUP_DIR, `${prefix}-${ts}.json`);
+    fs.copyFileSync(filePath, dest);
 
-    // Keep only 20 most recent backups
+    // Keep only 20 most recent backups per prefix
     const files = fs.readdirSync(BACKUP_DIR)
-        .filter(f => f.startsWith('artworks-') && f.endsWith('.json'))
+        .filter(f => f.startsWith(`${prefix}-`) && f.endsWith('.json'))
         .map(f => ({ name: f, time: fs.statSync(path.join(BACKUP_DIR, f)).mtimeMs }))
         .sort((a, b) => b.time - a.time);
     files.slice(20).forEach(f => fs.unlinkSync(path.join(BACKUP_DIR, f.name)));
+}
+
+// Allowed image extensions and a strict filename pattern (no paths, no traversal)
+const FILENAME_PATTERN = /^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$/i;
+const SLUG_PATTERN     = /^[a-z0-9-]+$/;
+
+function isValidFilename(name) {
+    return typeof name === 'string' && FILENAME_PATTERN.test(name);
+}
+
+function isValidSlug(slug) {
+    return typeof slug === 'string' && SLUG_PATTERN.test(slug);
+}
+
+// Decode a base64 data URL or raw base64 string and write atomically to destPath
+function saveBase64Image(imageData, destPath) {
+    if (typeof imageData !== 'string' || imageData.length === 0) {
+        throw new Error('imageData ausente ou inválido');
+    }
+    // Strip data URL prefix if present (e.g. "data:image/jpeg;base64,...")
+    const base64 = imageData.includes(',') ? imageData.split(',')[1] : imageData;
+    const buffer = Buffer.from(base64, 'base64');
+    if (buffer.length === 0) {
+        throw new Error('Imagem decodificada está vazia');
+    }
+    if (buffer.length > MAX_IMAGE_SIZE) {
+        throw new Error(`Imagem excede o limite de ${MAX_IMAGE_SIZE / (1024*1024)}MB`);
+    }
+    const tmpPath = destPath + '.tmp';
+    fs.writeFileSync(tmpPath, buffer);
+    fs.renameSync(tmpPath, destPath);
+    return buffer.length;
 }
 
 function respond(res, status, body) {
@@ -50,6 +99,40 @@ function respond(res, status, body) {
         'Access-Control-Allow-Headers': 'Content-Type, X-Magna-Secret'
     });
     res.end(JSON.stringify(body));
+}
+
+// Reads and parses a JSON request body, enforcing a max size and calling
+// onSuccess(parsedObj) accordingly. Responds with errors itself on failure.
+function readJsonBody(req, res, maxSize, onSuccess) {
+    let body = '';
+    let tooLarge = false;
+    req.on('data', chunk => {
+        body += chunk.toString();
+        if (body.length > maxSize) {
+            tooLarge = true;
+            respond(res, 413, { error: 'Payload too large' });
+            req.destroy();
+        }
+    });
+    req.on('end', () => {
+        if (tooLarge) return;
+        try {
+            const parsed = JSON.parse(body);
+            onSuccess(parsed);
+        } catch (err) {
+            respond(res, 400, { error: 'JSON inválido: ' + err.message });
+        }
+    });
+}
+
+function checkAuth(req, res) {
+    const secret = req.headers['x-magna-secret'];
+    if (!secret || secret !== API_SECRET) {
+        respond(res, 403, { error: 'Forbidden' });
+        console.warn(`[${new Date().toISOString()}] Rejected request — bad secret (${req.url})`);
+        return false;
+    }
+    return true;
 }
 
 // ── SERVER ───────────────────────────────────────────────────────────────────
@@ -67,51 +150,152 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // Save endpoint
+    // ── SAVE ARTWORKS ────────────────────────────────────────────────────────
     if (req.method === 'POST' && req.url === '/save-artworks') {
+        if (!checkAuth(req, res)) return;
 
-        // Auth check
-        const secret = req.headers['x-magna-secret'];
-        if (!secret || secret !== API_SECRET) {
-            respond(res, 403, { error: 'Forbidden' });
-            console.warn(`[${new Date().toISOString()}] Rejected request — bad secret`);
-            return;
-        }
-
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-            if (body.length > 2 * 1024 * 1024) { // 2MB limit
-                respond(res, 413, { error: 'Payload too large' });
-                req.destroy();
-            }
-        });
-
-        req.on('end', () => {
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
             try {
-                // Validate JSON before writing
-                const parsed = JSON.parse(body);
                 if (typeof parsed !== 'object' || Array.isArray(parsed)) {
                     throw new Error('Root must be a JSON object');
                 }
 
-                // Backup current file
-                makeBackup();
+                makeBackup(ARTWORKS_PATH, 'artworks');
 
-                // Write new file (atomic: write to temp, then rename)
                 const tmpPath = ARTWORKS_PATH + '.tmp';
                 fs.writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), 'utf8');
                 fs.renameSync(tmpPath, ARTWORKS_PATH);
 
                 console.log(`[${new Date().toISOString()}] artworks.json saved — ${Object.keys(parsed).length} artworks`);
                 respond(res, 200, { success: true, artworks: Object.keys(parsed).length });
-
             } catch (err) {
-                console.error(`[${new Date().toISOString()}] Save error:`, err.message);
+                console.error(`[${new Date().toISOString()}] Save error (artworks):`, err.message);
                 respond(res, 400, { error: err.message });
             }
         });
+        return;
+    }
 
+    // ── SAVE EXHIBITIONS ─────────────────────────────────────────────────────
+    if (req.method === 'POST' && req.url === '/save-exhibitions') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    throw new Error('Root must be a JSON object');
+                }
+
+                makeBackup(EXHIBITIONS_PATH, 'exhibitions');
+
+                const tmpPath = EXHIBITIONS_PATH + '.tmp';
+                fs.writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), 'utf8');
+                fs.renameSync(tmpPath, EXHIBITIONS_PATH);
+
+                console.log(`[${new Date().toISOString()}] exhibitions.json saved — ${Object.keys(parsed).length} exhibitions`);
+                respond(res, 200, { success: true, exhibitions: Object.keys(parsed).length });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Save error (exhibitions):`, err.message);
+                respond(res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── UPLOAD PAINTING IMAGE (full or thumbnail) ───────────────────────────
+    if (req.method === 'POST' && req.url === '/upload-painting-image') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_IMAGE_SIZE * 2, (parsed) => {
+            try {
+                const { filename, type, imageData } = parsed;
+
+                if (!isValidFilename(filename)) {
+                    throw new Error('Nome de ficheiro inválido. Use apenas letras, números, "-", "_" e extensão jpg/jpeg/png/webp.');
+                }
+                if (type !== 'full' && type !== 'thumbnail') {
+                    throw new Error('Campo "type" deve ser "full" ou "thumbnail".');
+                }
+
+                const targetDir = (type === 'full') ? PAINTINGS_FULL_DIR : PAINTINGS_THUMBS_DIR;
+                if (!fs.existsSync(targetDir)) {
+                    throw new Error(`Pasta de destino não existe: ${targetDir}`);
+                }
+
+                const destPath = path.join(targetDir, filename);
+                const bytes = saveBase64Image(imageData, destPath);
+
+                const relPath = `assets/paintings/${type === 'full' ? 'full' : 'thumbnails'}/${filename}`;
+                console.log(`[${new Date().toISOString()}] Painting image saved — ${relPath} (${(bytes/1024).toFixed(0)}KB)`);
+                respond(res, 200, { success: true, path: relPath, bytes });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Upload error (painting):`, err.message);
+                respond(res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── UPLOAD EXHIBITION FLYER ──────────────────────────────────────────────
+    if (req.method === 'POST' && req.url === '/upload-exhibition-flyer') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_IMAGE_SIZE * 2, (parsed) => {
+            try {
+                const { filename, imageData } = parsed;
+
+                if (!isValidFilename(filename)) {
+                    throw new Error('Nome de ficheiro inválido. Use apenas letras, números, "-", "_" e extensão jpg/jpeg/png/webp.');
+                }
+                if (!fs.existsSync(EXHIBITION_FLYERS_DIR)) {
+                    fs.mkdirSync(EXHIBITION_FLYERS_DIR, { recursive: true });
+                }
+
+                const destPath = path.join(EXHIBITION_FLYERS_DIR, filename);
+                const bytes = saveBase64Image(imageData, destPath);
+
+                const relPath = `assets/exhibition/flyers/${filename}`;
+                console.log(`[${new Date().toISOString()}] Exhibition flyer saved — ${relPath} (${(bytes/1024).toFixed(0)}KB)`);
+                respond(res, 200, { success: true, path: relPath, bytes });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Upload error (flyer):`, err.message);
+                respond(res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── UPLOAD EXHIBITION GALLERY IMAGE ──────────────────────────────────────
+    if (req.method === 'POST' && req.url === '/upload-exhibition-gallery') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_IMAGE_SIZE * 2, (parsed) => {
+            try {
+                const { slug, filename, imageData } = parsed;
+
+                if (!isValidSlug(slug)) {
+                    throw new Error('Slug inválido. Use apenas letras minúsculas, números e "-".');
+                }
+                if (!isValidFilename(filename)) {
+                    throw new Error('Nome de ficheiro inválido. Use apenas letras, números, "-", "_" e extensão jpg/jpeg/png/webp.');
+                }
+
+                const targetDir = path.join(EXHIBITION_GALLERY_DIR, slug);
+                if (!fs.existsSync(targetDir)) {
+                    fs.mkdirSync(targetDir, { recursive: true });
+                }
+
+                const destPath = path.join(targetDir, filename);
+                const bytes = saveBase64Image(imageData, destPath);
+
+                const relPath = `assets/exhibition/img/${slug}/${filename}`;
+                console.log(`[${new Date().toISOString()}] Exhibition gallery image saved — ${relPath} (${(bytes/1024).toFixed(0)}KB)`);
+                respond(res, 200, { success: true, path: relPath, bytes });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Upload error (gallery):`, err.message);
+                respond(res, 400, { error: err.message });
+            }
+        });
         return;
     }
 
@@ -121,10 +305,15 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, HOST, () => {
     console.log(`[${new Date().toISOString()}] Magna API listening on ${HOST}:${PORT}`);
-    console.log(`  ARTWORKS_PATH: ${ARTWORKS_PATH}`);
-    console.log(`  BACKUP_DIR:    ${BACKUP_DIR}`);
+    console.log(`  ARTWORKS_PATH:          ${ARTWORKS_PATH}`);
+    console.log(`  EXHIBITIONS_PATH:       ${EXHIBITIONS_PATH}`);
+    console.log(`  BACKUP_DIR:             ${BACKUP_DIR}`);
+    console.log(`  PAINTINGS_FULL_DIR:     ${PAINTINGS_FULL_DIR}`);
+    console.log(`  PAINTINGS_THUMBS_DIR:   ${PAINTINGS_THUMBS_DIR}`);
+    console.log(`  EXHIBITION_FLYERS_DIR:  ${EXHIBITION_FLYERS_DIR}`);
+    console.log(`  EXHIBITION_GALLERY_DIR: ${EXHIBITION_GALLERY_DIR}`);
     if (API_SECRET === 'CHANGE_THIS_SECRET') {
-        console.warn('  ⚠  WARNING: Using default secret. Set MAGNA_API_SECRET env var before using in production.');
+        console.warn('  ⚠  WARNING: Using default secret. Set MAGNA_API_SECRET via ecosystem.config.js before using in production.');
     }
 });
 

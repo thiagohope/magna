@@ -371,9 +371,7 @@
       <div class="container py-2.5">
         <div class="filter-scroll flex items-center gap-2 pb-0.5">
           <button class="pill active filter-btn flex-shrink-0" data-filter="all" data-i18n="filterAll">All</button>
-          <button class="pill filter-btn flex-shrink-0" data-filter="setubal" data-i18n="filterSetubal">Setúbal</button>
-          <button class="pill filter-btn flex-shrink-0" data-filter="concept" data-i18n="filterConcept">Concept</button>
-          <button class="pill filter-btn flex-shrink-0" data-filter="nature" data-i18n="filterNature">Nature</button>
+          <!-- collection filter buttons generated dynamically by renderFilterButtons() -->
           <div class="ml-auto flex items-center gap-2 flex-shrink-0 pl-3">
             <select id="sortSelect" class="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 focus:outline-none focus:border-black cursor-pointer">
               <option value="recent" data-i18n="sortRecent">Newest</option>
@@ -607,7 +605,8 @@
       };
 
       // ── STATE ──
-      let allArtworks   = [];
+      let allArtworks     = [];
+      let allCollections  = {};   // { setubal: { en: 'Setúbal', pt: 'Setúbal' }, ... }
       let currentLang   = 'en';
       let currentSlug   = null;
       let filteredSlugs = [];
@@ -627,6 +626,13 @@
         document.documentElement.lang = lang;
         document.getElementById('langSwitcher').value = lang;
         applyTranslations();
+        // Update collection filter button labels for new language
+        document.querySelectorAll('.filter-btn[data-collection-id]').forEach(btn => {
+          const id = btn.dataset.collectionId;
+          if (allCollections[id]) {
+            btn.textContent = allCollections[id][lang] || allCollections[id].en || id;
+          }
+        });
         if (allArtworks.length > 0) {
           const f = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
           renderGallery(f, document.getElementById('sortSelect').value);
@@ -644,10 +650,25 @@
       // ── GALLERY ──
       async function loadGalleryData() {
         try {
-          const res = await fetch('artworks.json');
-          if (!res.ok) throw new Error('Failed to load artworks.json');
-          const data = await res.json();
-          allArtworks = Object.entries(data).map(([slug, work]) => ({ ...work, slug }));
+          const [artRes, colRes] = await Promise.all([
+            fetch('artworks.json'),
+            fetch('collections.json')
+          ]);
+          if (!artRes.ok) throw new Error('Failed to load artworks.json');
+          const data = await artRes.json();
+          // Normalise: convert legacy "collection" (string) → "collections" (array)
+          allArtworks = Object.entries(data).map(([slug, work]) => {
+            if (work.collection && !work.collections) {
+              work.collections = [work.collection];
+            } else if (!work.collections) {
+              work.collections = [];
+            }
+            return { ...work, slug };
+          });
+          if (colRes.ok) {
+            allCollections = await colRes.json();
+          }
+          renderFilterButtons();
           renderGallery();
         } catch(err) {
           console.error(err);
@@ -656,12 +677,44 @@
         }
       }
 
+      function renderFilterButtons() {
+        const container = document.querySelector('.filter-scroll');
+        // Remove any previously generated collection buttons
+        container.querySelectorAll('.filter-btn[data-collection-id]').forEach(b => b.remove());
+        const sortDiv = container.querySelector('#sortSelect')?.closest('div.ml-auto') || null;
+
+        // Collect unique collection ids present in artworks
+        const usedIds = new Set();
+        allArtworks.forEach(a => (a.collections || []).forEach(id => usedIds.add(id)));
+
+        // Generate one button per collection (in collections.json order, then any extras)
+        const orderedIds = [
+          ...Object.keys(allCollections).filter(id => usedIds.has(id)),
+          ...[...usedIds].filter(id => !allCollections[id])
+        ];
+
+        orderedIds.forEach(id => {
+          const label = allCollections[id]?.[currentLang] || allCollections[id]?.en || id;
+          const btn = document.createElement('button');
+          btn.className = 'pill filter-btn flex-shrink-0';
+          btn.dataset.filter = id;
+          btn.dataset.collectionId = id;
+          btn.textContent = label;
+          btn.addEventListener('click', () => {
+            container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderGallery(id, document.getElementById('sortSelect').value);
+          });
+          container.insertBefore(btn, sortDiv);
+        });
+      }
+
       function renderGallery(filter='all', sort='recent') {
         const grid = document.getElementById('galleryGrid');
         const noResults = document.getElementById('noResults');
         grid.innerHTML = '';
 
-        let items = allArtworks.filter(a => filter==='all' || a.collection===filter);
+        let items = allArtworks.filter(a => filter==='all' || (a.collections || []).includes(filter));
         items.sort((a,b) => {
           if (sort==='recent')    return (b.year||0)-(a.year||0);
           if (sort==='alpha')     return a.title.localeCompare(b.title);

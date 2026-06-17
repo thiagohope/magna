@@ -150,24 +150,6 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // ── CHECK IMAGE EXISTS ────────────────────────────────────────────────────
-    if (req.method === 'GET' && req.url.startsWith('/check-image')) {
-        if (!checkAuth(req, res)) return;
-        const urlObj = new URL(req.url, 'http://localhost');
-        const filename = urlObj.searchParams.get('filename') || '';
-        const type     = urlObj.searchParams.get('type') || '';
-
-        if (!isValidFilename(filename) || (type !== 'full' && type !== 'thumbnail')) {
-            respond(res, 400, { error: 'Parâmetros inválidos' });
-            return;
-        }
-
-        const targetDir = type === 'full' ? PAINTINGS_FULL_DIR : PAINTINGS_THUMBS_DIR;
-        const exists    = fs.existsSync(path.join(targetDir, filename));
-        respond(res, 200, { exists, filename, type });
-        return;
-    }
-    
     // ── SAVE ARTWORKS ────────────────────────────────────────────────────────
     if (req.method === 'POST' && req.url === '/save-artworks') {
         if (!checkAuth(req, res)) return;
@@ -188,6 +170,29 @@ const server = http.createServer((req, res) => {
                 respond(res, 200, { success: true, artworks: Object.keys(parsed).length });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Save error (artworks):`, err.message);
+                respond(res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── SAVE COLLECTIONS ─────────────────────────────────────────────────────
+    if (req.method === 'POST' && req.url === '/save-collections') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    throw new Error('Root must be a JSON object');
+                }
+                const colPath = path.join(__dirname, 'collections.json');
+                const tmpPath = colPath + '.tmp';
+                fs.writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), 'utf8');
+                fs.renameSync(tmpPath, colPath);
+                console.log(`[${new Date().toISOString()}] collections.json saved — ${Object.keys(parsed).length} collections`);
+                respond(res, 200, { success: true, collections: Object.keys(parsed).length });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Save error (collections):`, err.message);
                 respond(res, 400, { error: err.message });
             }
         });

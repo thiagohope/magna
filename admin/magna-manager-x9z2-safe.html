@@ -151,13 +151,20 @@
                         <div><label>Ano</label><input type="text" id="year"></div>
                         <div><label>Dimensões</label><input type="text" id="dimensions" placeholder="150 x 100 cm (H x W)"></div>
                         <div>
-                            <label>Coleção</label>
-                            <select id="collection">
-                                <option value="">— Sem coleção —</option>
-                                <option value="setubal">Setúbal</option>
-                                <option value="concept">Concept</option>
-                                <option value="nature">Nature</option>
-                            </select>
+                            <label>Coleções (pode selecionar várias)</label>
+                            <div id="collectionsCheckboxes" class="mt-1 p-2 border border-gray-200 rounded-lg bg-white min-h-[40px] space-y-1">
+                                <p class="text-xs text-gray-400 italic">Carregue os dados do servidor primeiro...</p>
+                            </div>
+                            <div id="newCollectionForm" class="hidden mt-2 p-2 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+                                <input type="text" id="newCollectionId" placeholder="ID (ex: quinta-pacheca)" class="text-xs font-mono">
+                                <input type="text" id="newCollectionPt" placeholder="Nome PT (ex: Quinta da Pacheca)" class="text-xs">
+                                <input type="text" id="newCollectionEn" placeholder="Nome EN (ex: Quinta da Pacheca)" class="text-xs">
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="addCollection()" class="flex-1 px-3 py-1.5 bg-gray-800 text-white rounded text-xs font-bold hover:bg-black transition">✓ Adicionar</button>
+                                    <button type="button" onclick="document.getElementById('newCollectionForm').classList.add('hidden')" class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 transition">✕ Cancelar</button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="document.getElementById('newCollectionForm').classList.toggle('hidden')" class="mt-1.5 text-xs text-indigo-600 hover:underline">+ Nova coleção</button>
                         </div>
                     </div>
 
@@ -434,10 +441,15 @@
         async function loadFromServer() {
             showStatus('A carregar dados do servidor...', 'info');
             try {
-                const res  = await fetch('../artworks.json?v=' + Date.now());
-                if (!res.ok) throw new Error('Falha ao carregar artworks.json');
-                globalArtworks = await res.json();
+                const [artRes, colRes] = await Promise.all([
+                    fetch('../artworks.json?v=' + Date.now()),
+                    fetch('../collections.json?v=' + Date.now())
+                ]);
+                if (!artRes.ok) throw new Error('Falha ao carregar artworks.json');
+                globalArtworks = await artRes.json();
+                if (colRes.ok) globalCollections = await colRes.json();
                 renderDropdownOptions();
+                populateCollections();
                 showStatus(`✅ ${Object.keys(globalArtworks).length} obras carregadas do servidor.`, 'success');
             } catch(err) {
                 showStatus('❌ Erro: ' + err.message, 'error');
@@ -568,6 +580,82 @@
         }
 
         // ============================================================
+        // COLLECTIONS — dinâmicas, multi-select via checkboxes
+        // ============================================================
+        let globalCollections = {};
+
+        function populateCollections(selectedValues = []) {
+            const container = document.getElementById('collectionsCheckboxes');
+            // Recolher todos os IDs conhecidos
+            const ids = new Set(Object.keys(globalCollections));
+            Object.values(globalArtworks).forEach(art => {
+                if (art.collections) art.collections.forEach(c => ids.add(c));
+                if (art.collection)  ids.add(art.collection);
+            });
+
+            if (ids.size === 0) {
+                container.innerHTML = '<p class="text-xs text-gray-400 italic">Nenhuma coleção ainda. Crie uma abaixo.</p>';
+                return;
+            }
+
+            container.innerHTML = '';
+            [...ids].sort().forEach(id => {
+                const label = globalCollections[id]?.pt || id.charAt(0).toUpperCase() + id.slice(1);
+                const checked = selectedValues.includes(id) ? 'checked' : '';
+                const div = document.createElement('label');
+                div.className = 'flex items-center gap-2 text-xs cursor-pointer hover:text-black';
+                div.innerHTML = `<input type="checkbox" class="collection-checkbox" value="${id}" ${checked}> ${label}`;
+                container.appendChild(div);
+            });
+        }
+
+        function getSelectedCollections() {
+            return [...document.querySelectorAll('.collection-checkbox:checked')].map(cb => cb.value);
+        }
+
+        async function addCollection() {
+            const idRaw = document.getElementById('newCollectionId').value.trim();
+            const pt    = document.getElementById('newCollectionPt').value.trim();
+            const en    = document.getElementById('newCollectionEn').value.trim();
+
+            if (!idRaw || !pt || !en) {
+                showStatus('⚠️ Preencha o ID, o nome em PT e o nome em EN.', 'error');
+                return;
+            }
+            const id = idRaw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            if (!id) { showStatus('⚠️ ID inválido.', 'error'); return; }
+
+            globalCollections[id] = { pt, en };
+
+            // Guardar no servidor
+            try {
+                const secret = ensureApiSecret();
+                const res = await fetch('https://brainboxmed.com/magna/api/save-collections', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': secret },
+                    body: JSON.stringify(globalCollections)
+                });
+                if (res.ok) {
+                    showStatus(`✅ Coleção "${pt}" criada e guardada.`, 'success');
+                } else {
+                    showStatus(`⚠️ Coleção "${pt}" criada localmente (erro ao guardar no servidor).`, 'error');
+                }
+            } catch(e) {
+                showStatus(`⚠️ Coleção "${pt}" criada localmente (servidor indisponível).`, 'error');
+            }
+
+            // Atualizar checkboxes mantendo seleções anteriores
+            const currentSelected = getSelectedCollections();
+            populateCollections([...currentSelected, id]);
+
+            // Limpar e fechar form
+            document.getElementById('newCollectionId').value = '';
+            document.getElementById('newCollectionPt').value = '';
+            document.getElementById('newCollectionEn').value = '';
+            document.getElementById('newCollectionForm').classList.add('hidden');
+        }
+
+        // ============================================================
         // LOAD ARTWORK INTO FORM
         // ============================================================
         function loadArtwork(slug) {
@@ -596,7 +684,9 @@
             document.getElementById('year').value      = data.year || '';
             document.getElementById('dimensions').value = data.dimensions || '';
             document.getElementById('image').value     = (data.image || '').replace('assets/paintings/full/', '');
-            document.getElementById('collection').value = data.collection || '';
+            // Support both legacy "collection" (string) and new "collections" (array)
+            const selectedCols = data.collections || (data.collection ? [data.collection] : []);
+            populateCollections(selectedCols);
             document.getElementById('status').value    = data.status || 'available';
             document.getElementById('loc_pt').value    = (typeof data.location === 'object') ? data.location.pt : (data.location || '');
             document.getElementById('originalHash').value = data.originalHash || '';
@@ -668,7 +758,7 @@
                 dimensions: document.getElementById('dimensions').value,
                 image:      'assets/paintings/full/' + document.getElementById('image').value.replace(/^assets\/(paintings\/(full|thumbnails)\/)?/, ''),
                 thumbnail:  'assets/paintings/thumbnails/' + document.getElementById('image').value.replace(/^assets\/(paintings\/(full|thumbnails)\/)?/, ''),
-                collection: document.getElementById('collection').value || null,
+                collections: getSelectedCollections(),
                 priceDisplay: {
                     original:       parseInt(document.getElementById('price_original').value)  || 0,
                     printGallery:   parseInt(document.getElementById('price_gallery').value)   || 0,

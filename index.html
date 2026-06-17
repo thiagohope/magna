@@ -705,7 +705,7 @@
           card.innerHTML = `
             <div class="art-card__img-wrap">
               <img loading="lazy" src="${art.thumbnail || art.image}" alt="${art.title}"
-                   onerror="this.src='assets/img/placeholder.jpg'">
+                   onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect width=%22400%22 height=%22400%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E'">
             </div>
             ${isSold ? `<span class="sold-badge">${t('soldLabel')}</span>` : ''}
             <div class="art-card__info">

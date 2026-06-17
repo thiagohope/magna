@@ -150,6 +150,24 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // ── CHECK IMAGE EXISTS ────────────────────────────────────────────────────
+    if (req.method === 'GET' && req.url.startsWith('/check-image')) {
+        if (!checkAuth(req, res)) return;
+        const urlObj = new URL(req.url, 'http://localhost');
+        const filename = urlObj.searchParams.get('filename') || '';
+        const type     = urlObj.searchParams.get('type') || '';
+
+        if (!isValidFilename(filename) || (type !== 'full' && type !== 'thumbnail')) {
+            respond(res, 400, { error: 'Parâmetros inválidos' });
+            return;
+        }
+
+        const targetDir = type === 'full' ? PAINTINGS_FULL_DIR : PAINTINGS_THUMBS_DIR;
+        const exists    = fs.existsSync(path.join(targetDir, filename));
+        respond(res, 200, { exists, filename, type });
+        return;
+    }
+    
     // ── SAVE ARTWORKS ────────────────────────────────────────────────────────
     if (req.method === 'POST' && req.url === '/save-artworks') {
         if (!checkAuth(req, res)) return;

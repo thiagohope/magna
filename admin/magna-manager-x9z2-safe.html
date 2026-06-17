@@ -117,23 +117,23 @@
                             <label>Imagem (nome do ficheiro)</label>
                             <div class="drop-zone-img" id="imgDropZone">
                                 <input type="file" id="imgFileInput" class="hidden" accept="image/*">
-                                <p class="text-xs text-gray-500 pointer-events-none"><span class="font-bold text-black">Clique</span> ou Arraste</p>
+                                <p id="imgDropLabel" class="text-xs text-gray-500 pointer-events-none"><span class="font-bold text-black">Clique</span> ou Arraste a imagem full-res</p>
                             </div>
                             <input type="text" id="image" class="font-mono text-xs mt-2 bg-gray-50" placeholder="Nome do ficheiro...">
 
-                            <!-- Thumbnail Generator -->
-                            <div class="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                                <label class="!mb-1">Gerar Thumbnail (Stripe / Grade)</label>
-                                <p class="text-[10px] text-gray-400 mb-2">Selecione o ficheiro de alta resolução (full-res). Será redimensionado para 800px e guardado com o mesmo nome em <code class="font-mono">paintings/thumbnails/</code>.</p>
-                                <div class="flex gap-2 items-center">
-                                    <input type="file" id="thumbSourceInput" accept="image/*" class="text-xs flex-1">
-                                    <button type="button" onclick="generateThumbnail()" class="px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition whitespace-nowrap">Gerar &amp; Guardar</button>
-                                </div>
-                                <p id="thumbStatus" class="text-[10px] mt-2 text-gray-500"></p>
+                            <!-- Upload Manager (substitui o Thumbnail Generator antigo) -->
+                            <div class="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg space-y-2">
+                                <label class="!mb-1">Enviar Imagens para o Servidor</label>
+                                <p class="text-[10px] text-gray-400">Selecione a imagem full-res acima. A thumbnail (800px) será gerada automaticamente. Ambas serão enviadas para o servidor e opcionalmente guardadas no seu disco local.</p>
+                                <button type="button" onclick="uploadImages()" class="w-full px-3 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700 transition">
+                                    ⬆ Enviar Imagens (Servidor + Local)
+                                </button>
+                                <p id="thumbStatus" class="text-[10px] mt-1 text-gray-500"></p>
                                 <canvas id="thumbCanvas" class="hidden"></canvas>
                             </div>
                         </div>
-                    </div>
+                    <div>
+                </div>
 
                     <div class="grid grid-cols-3 gap-4 mb-4">
                         <div><label>Ano</label><input type="text" id="year"></div>
@@ -741,106 +741,253 @@
         const imgDropZone  = document.getElementById('imgDropZone');
         const imgFileInput = document.getElementById('imgFileInput');
         imgDropZone.addEventListener('click',     () => imgFileInput.click());
-        imgFileInput.addEventListener('change',   e => { if(e.target.files.length) document.getElementById('image').value = e.target.files[0].name; });
+        imgFileInput.addEventListener('change',   e => { if(e.target.files.length) onFullResSelected(e.target.files[0]); });
         imgDropZone.addEventListener('dragover',  e => { e.preventDefault(); imgDropZone.classList.add('border-black'); });
         imgDropZone.addEventListener('dragleave', e => { e.preventDefault(); imgDropZone.classList.remove('border-black'); });
-        imgDropZone.addEventListener('drop',      e => { e.preventDefault(); if(e.dataTransfer.files.length) document.getElementById('image').value = e.dataTransfer.files[0].name; });
+        imgDropZone.addEventListener('drop',      e => {
+            e.preventDefault();
+            imgDropZone.classList.remove('border-black');
+            if (e.dataTransfer.files.length) {
+                imgFileInput.files = e.dataTransfer.files;
+                onFullResSelected(e.dataTransfer.files[0]);
+            }
+        });
 
-        // ============================================================
-        // THUMBNAIL GENERATOR
-        // Resizes the selected full-res image to max 800px (longest side),
-        // re-encodes as JPEG ~80% quality, and saves it locally with the
-        // same filename into a 'thumbnails' folder picked once via the
-        // File System Access API (Chrome/Edge only).
+        function onFullResSelected(file) {
+            document.getElementById('image').value = file.name;
+            document.getElementById('imgDropLabel').innerHTML =
+                `<span class="font-bold text-green-700">✓ ${file.name}</span> <span class="text-gray-400">(pronto para enviar)</span>`;
+            setThumbStatus('Imagem selecionada. Clique "Enviar Imagens" para processar.', false);
+        }
+
+// ============================================================
+        // IMAGE UPLOAD — gera thumbnail + envia para servidor + guarda local
         // ============================================================
         const THUMB_MAX_DIM = 800;
         const THUMB_QUALITY = 0.8;
-        let thumbDirHandle = null; // remembered for the session
+        const API_BASE      = 'https://brainboxmed.com/magna/api';
 
-        async function getThumbDirHandle() {
-            if (!window.showDirectoryPicker) {
-                throw new Error('O seu navegador n\u00e3o suporta grava\u00e7\u00e3o direta de ficheiros (use Chrome ou Edge).');
-            }
-            if (thumbDirHandle) return thumbDirHandle;
-            thumbDirHandle = await window.showDirectoryPicker({ id: 'magna-thumbnails', mode: 'readwrite' });
-            return thumbDirHandle;
-        }
+        // Dir handles para File System Access API (pedidos uma vez por sessão)
+        let fullDirHandle  = null;
+        let thumbDirHandle = null;
 
         function setThumbStatus(msg, isError) {
             const el = document.getElementById('thumbStatus');
+            if (!el) return;
             el.textContent = msg;
-            el.className = 'text-[10px] mt-2 ' + (isError ? 'text-red-600 font-bold' : 'text-green-600 font-bold');
+            el.className = 'text-[10px] mt-1 ' + (isError ? 'text-red-600 font-bold' : 'text-green-600 font-bold');
         }
 
-        async function generateThumbnail() {
-            const fileInput = document.getElementById('thumbSourceInput');
-            const file = fileInput.files[0];
+        // Gera thumbnail a partir de um File, devolve Blob JPEG
+        async function generateThumbBlob(file) {
+            const dataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload  = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+            const img = await new Promise((resolve, reject) => {
+                const i = new Image();
+                i.onload  = () => resolve(i);
+                i.onerror = reject;
+                i.src = dataUrl;
+            });
+            let { width, height } = img;
+            if (width > height && width > THUMB_MAX_DIM) {
+                height = Math.round(height * (THUMB_MAX_DIM / width));
+                width  = THUMB_MAX_DIM;
+            } else if (height > THUMB_MAX_DIM) {
+                width  = Math.round(width * (THUMB_MAX_DIM / height));
+                height = THUMB_MAX_DIM;
+            }
+            const canvas = document.getElementById('thumbCanvas');
+            canvas.width  = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', THUMB_QUALITY));
+        }
+
+        // Converte File ou Blob para base64 data URL
+        function toBase64(fileOrBlob) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload  = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(fileOrBlob);
+            });
+        }
+
+        // Verifica se imagem já existe no servidor
+        async function checkImageExists(filename, type) {
+            const secret = ensureApiSecret();
+            const res = await fetch(
+                `${API_BASE}/check-image?filename=${encodeURIComponent(filename)}&type=${type}`,
+                { headers: { 'X-Magna-Secret': secret } }
+            );
+            if (!res.ok) return false;
+            const data = await res.json();
+            return data.exists === true;
+        }
+
+        // Envia uma imagem (File ou Blob) para o servidor
+        async function uploadToServer(fileOrBlob, filename, type) {
+            const secret  = ensureApiSecret();
+            const base64  = await toBase64(fileOrBlob);
+            const res = await fetch(`${API_BASE}/upload-painting-image`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type':  'application/json',
+                    'X-Magna-Secret': secret
+                },
+                body: JSON.stringify({ filename, type, imageData: base64 })
+            });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${res.status}`);
+            }
+            return res.json();
+        }
+
+        // Guarda ficheiro localmente via File System Access API
+        async function saveLocalFile(fileOrBlob, filename, type) {
+            if (!window.showDirectoryPicker) {
+                throw new Error('File System Access API não suportada (use Chrome ou Edge).');
+            }
+            if (type === 'full' && !fullDirHandle) {
+                setThumbStatus('Selecione a pasta local para paintings/full/...', false);
+                fullDirHandle = await window.showDirectoryPicker({ id: 'magna-full', mode: 'readwrite' });
+            }
+            if (type === 'thumbnail' && !thumbDirHandle) {
+                setThumbStatus('Selecione a pasta local para paintings/thumbnails/...', false);
+                thumbDirHandle = await window.showDirectoryPicker({ id: 'magna-thumbnails', mode: 'readwrite' });
+            }
+            const dirHandle  = type === 'full' ? fullDirHandle : thumbDirHandle;
+            const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+            const writable   = await fileHandle.createWritable();
+            await writable.write(fileOrBlob);
+            await writable.close();
+        }
+
+        // Função principal — chamada pelo botão "Enviar Imagens"
+        async function uploadImages() {
+            const file = imgFileInput.files[0];
             if (!file) {
-                setThumbStatus('\u26a0\ufe0f Selecione primeiro um ficheiro de imagem.', true);
+                setThumbStatus('⚠️ Selecione primeiro uma imagem no drop zone.', true);
                 return;
             }
 
-            setThumbStatus('A processar...', false);
+            const filename = file.name;
+            setThumbStatus('A verificar no servidor...', false);
 
             try {
-                // 1. Load image into an <img> element
-                const dataUrl = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
+                // 1. Verificar se já existe no servidor
+                const fullExists  = await checkImageExists(filename, 'full');
+                const thumbExists = await checkImageExists(filename, 'thumbnail');
 
-                const img = await new Promise((resolve, reject) => {
-                    const i = new Image();
-                    i.onload = () => resolve(i);
-                    i.onerror = reject;
-                    i.src = dataUrl;
-                });
-
-                // 2. Compute new dimensions (longest side = THUMB_MAX_DIM, preserve aspect ratio)
-                let { width, height } = img;
-                if (width > height && width > THUMB_MAX_DIM) {
-                    height = Math.round(height * (THUMB_MAX_DIM / width));
-                    width = THUMB_MAX_DIM;
-                } else if (height > THUMB_MAX_DIM) {
-                    width = Math.round(width * (THUMB_MAX_DIM / height));
-                    height = THUMB_MAX_DIM;
+                if (fullExists || thumbExists) {
+                    const which = fullExists && thumbExists ? 'full e thumbnail' : fullExists ? 'full' : 'thumbnail';
+                    const overwrite = confirm(
+                        `⚠️ Já existe uma imagem "${filename}" no servidor (${which}).\n\nDeseja substituir?`
+                    );
+                    if (!overwrite) {
+                        setThumbStatus('Cancelado — imagem não substituída.', true);
+                        return;
+                    }
                 }
 
-                // 3. Draw resized image onto canvas
-                const canvas = document.getElementById('thumbCanvas');
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+                // 2. Gerar thumbnail
+                setThumbStatus('A gerar thumbnail...', false);
+                const thumbBlob = await generateThumbBlob(file);
+                if (!thumbBlob) throw new Error('Falha ao gerar thumbnail.');
 
-                // 4. Export as JPEG blob
-                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', THUMB_QUALITY));
-                if (!blob) throw new Error('Falha ao gerar imagem.');
+                // 3. Perguntar destino
+                const choice = await showSaveDialog(filename);
+                // choice: 'both' | 'server' | 'local' | 'cancel'
+                if (choice === 'cancel') {
+                    setThumbStatus('Cancelado.', true);
+                    return;
+                }
 
-                // 5. Save with the same filename via File System Access API
-                const dirHandle = await getThumbDirHandle();
-                const fileHandle = await dirHandle.getFileHandle(file.name, { create: true });
-                const writable = await fileHandle.createWritable();
-                await writable.write(blob);
-                await writable.close();
+                let serverOk = false;
+                let localOk  = false;
+                const errors = [];
 
-                const kb = (blob.size / 1024).toFixed(0);
-                setThumbStatus(`\u2705 ${file.name} guardado (${width}x${height}px, ${kb}KB)`, false);
+                // 4a. Enviar para servidor
+                if (choice === 'both' || choice === 'server') {
+                    setThumbStatus('A enviar para o servidor...', false);
+                    try {
+                        await uploadToServer(file,      filename, 'full');
+                        await uploadToServer(thumbBlob, filename, 'thumbnail');
+                        serverOk = true;
+                    } catch (e) {
+                        errors.push('Servidor: ' + e.message);
+                    }
+                }
 
-                // Convenience: if the artwork's image filename is empty, fill it in
-                const imageField = document.getElementById('image');
-                if (!imageField.value) imageField.value = file.name;
+                // 4b. Guardar localmente
+                if (choice === 'both' || choice === 'local') {
+                    setThumbStatus('A guardar localmente...', false);
+                    try {
+                        await saveLocalFile(file,      filename, 'full');
+                        await saveLocalFile(thumbBlob, filename, 'thumbnail');
+                        localOk = true;
+                    } catch (e) {
+                        if (e.name === 'AbortError') {
+                            errors.push('Local: cancelado pelo utilizador.');
+                        } else {
+                            errors.push('Local: ' + e.message);
+                        }
+                    }
+                }
+
+                // 5. Atualizar campos do formulário se servidor OK
+                if (serverOk) {
+                    document.getElementById('image').value = `assets/paintings/full/${filename}`;
+                    // thumbnail field é preenchido em buildArtworkData() automaticamente
+                }
+
+                // 6. Feedback final
+                const parts = [];
+                if ((choice === 'both' || choice === 'server') && serverOk) parts.push('servidor ✓');
+                if ((choice === 'both' || choice === 'local')  && localOk)  parts.push('local ✓');
+                if (errors.length) {
+                    setThumbStatus(`Parcialmente concluído (${parts.join(', ')}). Erros: ${errors.join(' | ')}`, true);
+                } else {
+                    setThumbStatus(`✅ ${filename} guardado em: ${parts.join(' e ')}.`, false);
+                }
 
             } catch (err) {
                 console.error(err);
-                if (err.name === 'AbortError') {
-                    setThumbStatus('Opera\u00e7\u00e3o cancelada.', true);
-                } else {
-                    setThumbStatus('\u274c Erro: ' + err.message, true);
-                }
+                setThumbStatus('❌ Erro: ' + err.message, true);
             }
+        }
+
+        // Diálogo de escolha do destino (servidor, local, ambos, cancelar)
+        function showSaveDialog(filename) {
+            return new Promise(resolve => {
+                // Criar modal inline
+                const overlay = document.createElement('div');
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;';
+                overlay.innerHTML = `
+                  <div style="background:white;border-radius:12px;padding:2rem;max-width:380px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                    <h3 style="font-size:1rem;font-weight:700;margin-bottom:0.5rem;">Guardar "${filename}"</h3>
+                    <p style="font-size:0.75rem;color:#64748b;margin-bottom:1.5rem;">Onde deseja guardar a imagem full-res e a thumbnail gerada?</p>
+                    <div style="display:flex;flex-direction:column;gap:0.5rem;">
+                      <button data-choice="both"   style="padding:0.6rem;background:#0f172a;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;">Ambos (Servidor + Local)</button>
+                      <button data-choice="server" style="padding:0.6rem;background:#3b82f6;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;">Só Servidor</button>
+                      <button data-choice="local"  style="padding:0.6rem;background:#6366f1;color:white;border:none;border-radius:8px;font-weight:700;font-size:0.8rem;cursor:pointer;">Só Local</button>
+                      <button data-choice="cancel" style="padding:0.6rem;background:#f1f5f9;color:#64748b;border:none;border-radius:8px;font-weight:600;font-size:0.8rem;cursor:pointer;">Cancelar</button>
+                    </div>
+                  </div>`;
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', e => {
+                    const choice = e.target.dataset.choice;
+                    if (choice) {
+                        document.body.removeChild(overlay);
+                        resolve(choice);
+                    }
+                });
+            });
         }
     </script>
 </body>

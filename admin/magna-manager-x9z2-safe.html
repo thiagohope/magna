@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magna Manager v4.0</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            safelist: [
+                'lg:col-span-4', 'lg:col-span-8', 'lg:grid-cols-12',
+                'md:grid-cols-2', 'md:grid-cols-4', 'md:col-span-2',
+                'md:flex-row', 'md:p-8', 'md:w-auto'
+            ]
+        }
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
     <style>
@@ -136,6 +145,7 @@
                                 <canvas id="thumbCanvas" class="hidden"></canvas>
                             </div>
                         </div>
+                    </div>
 
                     <div class="grid grid-cols-3 gap-4 mb-4">
                         <div><label>Ano</label><input type="text" id="year"></div>

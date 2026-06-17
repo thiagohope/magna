@@ -63,10 +63,14 @@
                 <h1 class="font-serif text-2xl font-bold text-gray-900">Magna Manager <span class="text-sm font-normal text-gray-400">v4.0</span></h1>
                 <p class="text-sm text-gray-500">Gestão de Obras, Preços, Proveniência & Coleções</p>
             </div>
-            <div class="flex gap-3 items-center">
+            <div class="flex gap-3 items-center flex-wrap justify-end">
                 <!-- Load from server -->
                 <button onclick="loadFromServer()" class="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-medium text-sm hover:bg-indigo-700 transition">
                     ↓ Carregar do Servidor
+                </button>
+                <!-- Export local copy -->
+                <button onclick="exportArtworksJson()" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition">
+                    ⬇ Exportar artworks.json
                 </button>
                 <!-- Load from file (fallback) -->
                 <div class="relative">
@@ -500,6 +504,27 @@
                     btn.className   = btn.className.replace('saving','').replace('error','') + ' bg-black';
                 }, 4000);
             }
+        }
+
+        // ============================================================
+        // EXPORT artworks.json — download cópia local
+        // ============================================================
+        function exportArtworksJson() {
+            if (!globalArtworks || Object.keys(globalArtworks).length === 0) {
+                showStatus('⚠️ Carregue os dados do servidor primeiro antes de exportar.', 'error');
+                return;
+            }
+            const json     = JSON.stringify(globalArtworks, null, 2);
+            const blob     = new Blob([json], { type: 'application/json' });
+            const url      = URL.createObjectURL(blob);
+            const a        = document.createElement('a');
+            a.href         = url;
+            a.download     = 'artworks.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showStatus('✅ artworks.json exportado para o seu disco.', 'success');
         }
 
         // ============================================================

@@ -485,5 +485,67 @@
         "details": ""
       }
     ]
+  },
+  "Time": {
+    "title": "Tempo",
+    "year": "2026",
+    "technique": {
+      "pt": "",
+      "en": "",
+      "es": ""
+    },
+    "dimensions": "100 x 100 cm",
+    "image": "assets/paintings/full/tempo.jpeg",
+    "thumbnail": "assets/paintings/thumbnails/tempo.jpeg",
+    "collections": [
+      "concept"
+    ],
+    "priceDisplay": {
+      "original": 1600,
+      "printGallery": 480,
+      "printCollector": 160,
+      "digital": 16
+    },
+    "story": {
+      "pt": "Nesta obra, há um encontro com o tempo. A ampulheta convida à reflexão: qual é a cor do seu tempo?",
+      "en": "In this work, there is an encounter with time. The hourglass invites you to reflect: what color is your time?\n",
+      "es": "En esta obra, se produce un encuentro con el tiempo. El reloj de arena invita a reflexionar: ¿de qué color es tu tiempo?"
+    },
+    "status": "available",
+    "location": {
+      "pt": "",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "3718ffa3-403e-4513-a210-ea43f44da513",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "https://buy.stripe.com/test_28E00j1PFcr3b6Vdcha7C0A",
+      "live": "https://buy.stripe.com/eVqaEY9TPer759C0gD2VG0E"
+    },
+    "pricePrintGallery": {
+      "test": "https://buy.stripe.com/test_4gM00jamb2Qt7UJ0pva7C0D",
+      "live": "https://buy.stripe.com/7sY28sea5beV31u2oL2VG0H"
+    },
+    "pricePrintCollector": {
+      "test": "https://buy.stripe.com/test_fZu5kD65VaiV1wl6NTa7C0C",
+      "live": "https://buy.stripe.com/6oU3cw1njer745y9Rd2VG0G"
+    },
+    "priceDigital": {
+      "test": "https://buy.stripe.com/test_eVq4gzeCr9eR8YNegla7C0B",
+      "live": "https://buy.stripe.com/aFa3cw4zv5UBdG84wT2VG0F"
+    },
+    "history": [
+      {
+        "date": "2026-06-18",
+        "event": "Creation",
+        "location": "",
+        "details": ""
+      }
+    ]
   }
 }

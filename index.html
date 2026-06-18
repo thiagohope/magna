@@ -63,11 +63,8 @@
 
       /* ── MASONRY-STYLE GALLERY GRID ── */
       .gallery-grid {
-        columns: 3;
-        column-gap: 1.5rem;
+        width: 100%;
       }
-      @media(max-width: 900px) { .gallery-grid { columns: 2; column-gap: 1rem; } }
-      @media(max-width: 560px) { .gallery-grid { columns: 1; column-gap: 0; } }
 
       /* ── ART CARD — masonry ── */
       .art-card {
@@ -78,10 +75,7 @@
         cursor: pointer;
         transition: box-shadow .3s ease, transform .3s ease;
         position: relative;
-        break-inside: avoid;
-        margin-bottom: 1.5rem;
       }
-      @media(max-width: 900px) { .art-card { margin-bottom: 1rem; } }
       .art-card:hover {
         box-shadow: 0 8px 32px rgba(0,0,0,.13);
         transform: translateY(-3px);
@@ -662,7 +656,7 @@
         const noResults = document.getElementById('noResults');
         grid.innerHTML = '';
 
-        let items = allArtworks.filter(a => filter==='all' || a.collection===filter);
+        let items = allArtworks.filter(a => filter==='all' || (a.collections || (a.collection ? [a.collection] : [])).includes(filter));
         items.sort((a,b) => {
           if (sort==='recent')    return (b.year||0)-(a.year||0);
           if (sort==='alpha')     return a.title.localeCompare(b.title);
@@ -676,33 +670,27 @@
         if (items.length === 0) { noResults.classList.remove('hidden'); return; }
         noResults.classList.add('hidden');
 
-        items.forEach((art, i) => {
+        // Build all cards first
+        const cards = items.map((art, i) => {
           const tech  = art.technique?.[currentLang] || art.technique?.en || '';
           const price = art.priceDisplay?.original;
           const isSold = art.status !== 'available';
 
-          // Status badge: maps artwork status -> CSS class + translated label
           let statusClass, statusText;
           switch (art.status) {
             case 'sold_private':
             case 'sold_public':
-              statusClass = 'sold';
-              statusText  = t('soldLabel');
-              break;
+              statusClass = 'sold'; statusText = t('soldLabel'); break;
             case 'reserved':
-              statusClass = 'reserved';
-              statusText  = t('reservedLabel');
-              break;
+              statusClass = 'reserved'; statusText = t('reservedLabel'); break;
             default:
-              statusClass = 'available';
-              statusText  = t('availableLabel');
+              statusClass = 'available'; statusText = t('availableLabel');
           }
 
           const card = document.createElement('div');
           card.className = 'art-card';
           card.style.animationDelay = `${i * 55}ms`;
           card.onclick = () => window.location.href = `artwork.html?id=${art.slug}`;
-
           card.innerHTML = `
             <div class="art-card__img-wrap">
               <img loading="lazy" src="${art.thumbnail || art.image}" alt="${art.title}"
@@ -719,8 +707,24 @@
               <span class="art-card__status status-${statusClass}">${statusText}</span>
             </div>
           `;
-          grid.appendChild(card);
+          return card;
         });
+
+        // Distribute cards row-by-row (left→right, top→bottom)
+        const cols = window.innerWidth <= 560 ? 1 : window.innerWidth <= 900 ? 2 : 3;
+        const gap = window.innerWidth <= 900 ? '1rem' : '1.5rem';
+        const columns = Array.from({ length: cols }, () => {
+          const col = document.createElement('div');
+          col.style.cssText = `display:flex;flex-direction:column;gap:${gap};flex:1;min-width:0;`;
+          return col;
+        });
+
+        cards.forEach((card, i) => columns[i % cols].appendChild(card));
+
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = `display:flex;gap:${gap};align-items:flex-start;`;
+        columns.forEach(col => wrapper.appendChild(col));
+        grid.appendChild(wrapper);
       }
 
       // ── LIGHTBOX ──

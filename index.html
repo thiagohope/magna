@@ -88,13 +88,15 @@
       /* Image container — uniform height, full painting visible, no crop */
       .art-card__img-wrap {
         background: #f8f8f6;
-        aspect-ratio: 4 / 3;
+        height: 220px;
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 0.75rem;
       }
+      @media(min-width: 561px) { .art-card__img-wrap { height: 240px; } }
+      @media(min-width: 900px) { .art-card__img-wrap { height: 260px; } }
       .art-card__img-wrap img {
         display: block;
         max-width: 100%;
@@ -332,13 +334,14 @@
     <!-- ═══════════════════════════════════════════════
          HERO
     ═══════════════════════════════════════════════ -->
-    <section class="relative overflow-hidden bg-gray-100" style="height:38vh;min-height:220px;">
-      <img src="assets/img/Acrylique_Pluie.jpeg" alt="Magna — Acrylique Pluie"
+    <section class="relative overflow-hidden bg-gray-100" style="height:68vh;min-height:320px;">
+      <img src="assets/img/Acrylique Pluie.png" alt="Magna — Acrylique Pluie"
            class="w-full h-full object-cover opacity-100" style="object-position:center 30%;">
       <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(0,0,0,.45) 0%, rgba(0,0,0,.05) 50%, transparent 100%);"></div>
       <div class="absolute bottom-0 left-0 right-0 container pb-16 md:pb-24">
         <p class="text-white/60 text-xs uppercase tracking-widest mb-3" data-i18n="heroTag">Expressive strokes · Neon palette · Acrylique Pluie</p>
-        <h2 class="text-black font-light serif" style="font-size:clamp(2rem,5vw,4rem);letter-spacing:.08em;">MAGNA LEITE</h2>
+        <h2 class="text-white font-light serif" style="font-size:clamp(2rem,5vw,4rem);letter-spacing:.08em;">MAGNA LEITE</h2>
+        <p class="text-white/70 text-sm mt-4 font-light tracking-wide" data-i18n="heroSub">Acrylic on canvas · Magna Leite · Portugal</p>
       </div>
     </section>
 

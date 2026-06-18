@@ -30,6 +30,7 @@ const BACKUP_DIR   = path.join(__dirname, 'backups');
 const ASSETS_DIR   = path.join(__dirname, 'assets');
 const PAINTINGS_FULL_DIR      = path.join(ASSETS_DIR, 'paintings', 'full');
 const PAINTINGS_THUMBS_DIR    = path.join(ASSETS_DIR, 'paintings', 'thumbnails');
+const DOWNLOADS_DIR           = path.join(ASSETS_DIR, 'downloads');
 const EXHIBITION_FLYERS_DIR   = path.join(ASSETS_DIR, 'exhibition', 'flyers');
 const EXHIBITION_GALLERY_DIR  = path.join(ASSETS_DIR, 'exhibition', 'img');
 const MAX_JSON_SIZE  = 2 * 1024 * 1024;   // 2MB — for artworks.json / exhibitions.json bodies
@@ -176,29 +177,6 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    // ── SAVE COLLECTIONS ─────────────────────────────────────────────────────
-    if (req.method === 'POST' && req.url === '/save-collections') {
-        if (!checkAuth(req, res)) return;
-
-        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
-            try {
-                if (typeof parsed !== 'object' || Array.isArray(parsed)) {
-                    throw new Error('Root must be a JSON object');
-                }
-                const colPath = path.join(__dirname, 'collections.json');
-                const tmpPath = colPath + '.tmp';
-                fs.writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), 'utf8');
-                fs.renameSync(tmpPath, colPath);
-                console.log(`[${new Date().toISOString()}] collections.json saved — ${Object.keys(parsed).length} collections`);
-                respond(res, 200, { success: true, collections: Object.keys(parsed).length });
-            } catch (err) {
-                console.error(`[${new Date().toISOString()}] Save error (collections):`, err.message);
-                respond(res, 400, { error: err.message });
-            }
-        });
-        return;
-    }
-
     // ── SAVE EXHIBITIONS ─────────────────────────────────────────────────────
     if (req.method === 'POST' && req.url === '/save-exhibitions') {
         if (!checkAuth(req, res)) return;
@@ -231,7 +209,7 @@ const server = http.createServer((req, res) => {
 
         readJsonBody(req, res, MAX_IMAGE_SIZE * 2, (parsed) => {
             try {
-                const { filename, type, imageData } = parsed;
+                const { filename, type, imageData, slug } = parsed;
 
                 if (!isValidFilename(filename)) {
                     throw new Error('Nome de ficheiro inválido. Use apenas letras, números, "-", "_" e extensão jpg/jpeg/png/webp.');
@@ -250,7 +228,26 @@ const server = http.createServer((req, res) => {
 
                 const relPath = `assets/paintings/${type === 'full' ? 'full' : 'thumbnails'}/${filename}`;
                 console.log(`[${new Date().toISOString()}] Painting image saved — ${relPath} (${(bytes/1024).toFixed(0)}KB)`);
-                respond(res, 200, { success: true, path: relPath, bytes });
+
+                // Auto-copy full-res to downloads/ as <slug>-print.<ext>
+                let downloadPath = null;
+                if (type === 'full' && slug && isValidSlug(slug)) {
+                    if (!fs.existsSync(DOWNLOADS_DIR)) {
+                        fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
+                    }
+                    const ext = filename.split('.').pop().toLowerCase();
+                    const downloadFilename = `${slug}-print.${ext}`;
+                    downloadPath = path.join(DOWNLOADS_DIR, downloadFilename);
+                    fs.copyFileSync(destPath, downloadPath);
+                    console.log(`[${new Date().toISOString()}] Download copy saved — assets/downloads/${downloadFilename}`);
+                }
+
+                respond(res, 200, {
+                    success: true,
+                    path: relPath,
+                    bytes,
+                    downloadPath: downloadPath ? `assets/downloads/${slug}-print.${filename.split('.').pop().toLowerCase()}` : null
+                });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Upload error (painting):`, err.message);
                 respond(res, 400, { error: err.message });

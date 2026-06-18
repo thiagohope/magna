@@ -953,16 +953,18 @@
         }
 
         // Envia uma imagem (File ou Blob) para o servidor
-        async function uploadToServer(fileOrBlob, filename, type) {
+        async function uploadToServer(fileOrBlob, filename, type, slug) {
             const secret  = ensureApiSecret();
             const base64  = await toBase64(fileOrBlob);
+            const body    = { filename, type, imageData: base64 };
+            if (type === 'full' && slug) body.slug = slug;
             const res = await fetch(`${API_BASE}/upload-painting-image`, {
                 method: 'POST',
                 headers: {
                     'Content-Type':  'application/json',
                     'X-Magna-Secret': secret
                 },
-                body: JSON.stringify({ filename, type, imageData: base64 })
+                body: JSON.stringify(body)
             });
             if (!res.ok) {
                 const err = await res.json().catch(() => ({}));
@@ -1038,9 +1040,10 @@
                 // 4a. Enviar para servidor
                 if (choice === 'both' || choice === 'server') {
                     setThumbStatus('A enviar para o servidor...', false);
+                    const currentSlug = document.getElementById('slug').value.trim();
                     try {
-                        await uploadToServer(file,      filename, 'full');
-                        await uploadToServer(thumbBlob, filename, 'thumbnail');
+                        await uploadToServer(file,      filename, 'full',      currentSlug);
+                        await uploadToServer(thumbBlob, filename, 'thumbnail', null);
                         serverOk = true;
                     } catch (e) {
                         errors.push('Servidor: ' + e.message);

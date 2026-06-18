@@ -85,19 +85,20 @@
         transform: translateY(-3px);
       }
 
-      /* Image container — white background, full painting visible */
+      /* Image container — uniform height, full painting visible, no crop */
       .art-card__img-wrap {
         background: #f8f8f6;
+        aspect-ratio: 4 / 3;
+        overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 1rem;
-        min-height: 220px;
+        padding: 0.75rem;
       }
       .art-card__img-wrap img {
         display: block;
         max-width: 100%;
-        max-height: 340px;
+        max-height: 100%;
         width: auto;
         height: auto;
         object-fit: contain;
@@ -331,14 +332,13 @@
     <!-- ═══════════════════════════════════════════════
          HERO
     ═══════════════════════════════════════════════ -->
-    <section class="relative overflow-hidden bg-gray-900" style="height:68vh;min-height:320px;">
-      <img src="assets/img/Acrylique Pluie.png" alt="Magna — Acrylique Pluie"
-           class="w-full h-full object-cover opacity-85" style="object-position:center 30%;">
-      <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,.1) 60%, transparent 100%);"></div>
-      <div class="absolute bottom-0 left-0 right-0 container pb-10 md:pb-14">
-        <p class="text-white/60 text-xs uppercase tracking-widest mb-2" data-i18n="heroTag">Expressive strokes · Neon palette · Acrylique Pluie</p>
-        <h2 class="text-white text-3xl md:text-5xl font-light serif" style="letter-spacing:.03em;">Acrylique Pluie</h2>
-        <p class="text-white/70 text-sm mt-2 font-light" data-i18n="heroSub">Acrylic on canvas · Magna Leite · Portugal</p>
+    <section class="relative overflow-hidden bg-gray-100" style="height:38vh;min-height:220px;">
+      <img src="assets/img/Acrylique Pluie.jpeg" alt="Magna — Acrylique Pluie"
+           class="w-full h-full object-cover opacity-100" style="object-position:center 30%;">
+      <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(0,0,0,.45) 0%, rgba(0,0,0,.05) 50%, transparent 100%);"></div>
+      <div class="absolute bottom-0 left-0 right-0 container pb-16 md:pb-24">
+        <p class="text-white/60 text-xs uppercase tracking-widest mb-3" data-i18n="heroTag">Expressive strokes · Neon palette · Acrylique Pluie</p>
+        <h2 class="text-black font-light serif" style="font-size:clamp(2rem,5vw,4rem);letter-spacing:.08em;">MAGNA LEITE</h2>
       </div>
     </section>
 
@@ -371,7 +371,9 @@
       <div class="container py-2.5">
         <div class="filter-scroll flex items-center gap-2 pb-0.5">
           <button class="pill active filter-btn flex-shrink-0" data-filter="all" data-i18n="filterAll">All</button>
-          <!-- collection filter buttons generated dynamically by renderFilterButtons() -->
+          <button class="pill filter-btn flex-shrink-0" data-filter="setubal" data-i18n="filterSetubal">Setúbal</button>
+          <button class="pill filter-btn flex-shrink-0" data-filter="concept" data-i18n="filterConcept">Concept</button>
+          <button class="pill filter-btn flex-shrink-0" data-filter="nature" data-i18n="filterNature">Nature</button>
           <div class="ml-auto flex items-center gap-2 flex-shrink-0 pl-3">
             <select id="sortSelect" class="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 focus:outline-none focus:border-black cursor-pointer">
               <option value="recent" data-i18n="sortRecent">Newest</option>
@@ -428,7 +430,7 @@
           <p class="text-xs uppercase tracking-widest text-gray-400" data-i18n="qrVisitLabel">Visit on Mobile</p>
         </div>
         <div class="text-xs text-gray-400 pt-6 border-t border-gray-200 flex justify-between items-center">
-          <span>&copy; 2025-2026 Magna Studio</span>
+          <span>&copy; 2025 Magna Studio</span>
           <span class="opacity-40">Magna · Brainboxmed Project</span>
         </div>
       </div>
@@ -605,8 +607,7 @@
       };
 
       // ── STATE ──
-      let allArtworks     = [];
-      let allCollections  = {};   // { setubal: { en: 'Setúbal', pt: 'Setúbal' }, ... }
+      let allArtworks   = [];
       let currentLang   = 'en';
       let currentSlug   = null;
       let filteredSlugs = [];
@@ -626,13 +627,6 @@
         document.documentElement.lang = lang;
         document.getElementById('langSwitcher').value = lang;
         applyTranslations();
-        // Update collection filter button labels for new language
-        document.querySelectorAll('.filter-btn[data-collection-id]').forEach(btn => {
-          const id = btn.dataset.collectionId;
-          if (allCollections[id]) {
-            btn.textContent = allCollections[id][lang] || allCollections[id].en || id;
-          }
-        });
         if (allArtworks.length > 0) {
           const f = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
           renderGallery(f, document.getElementById('sortSelect').value);
@@ -650,25 +644,10 @@
       // ── GALLERY ──
       async function loadGalleryData() {
         try {
-          const [artRes, colRes] = await Promise.all([
-            fetch('artworks.json'),
-            fetch('collections.json')
-          ]);
-          if (!artRes.ok) throw new Error('Failed to load artworks.json');
-          const data = await artRes.json();
-          // Normalise: convert legacy "collection" (string) → "collections" (array)
-          allArtworks = Object.entries(data).map(([slug, work]) => {
-            if (work.collection && !work.collections) {
-              work.collections = [work.collection];
-            } else if (!work.collections) {
-              work.collections = [];
-            }
-            return { ...work, slug };
-          });
-          if (colRes.ok) {
-            allCollections = await colRes.json();
-          }
-          renderFilterButtons();
+          const res = await fetch('artworks.json');
+          if (!res.ok) throw new Error('Failed to load artworks.json');
+          const data = await res.json();
+          allArtworks = Object.entries(data).map(([slug, work]) => ({ ...work, slug }));
           renderGallery();
         } catch(err) {
           console.error(err);
@@ -677,44 +656,12 @@
         }
       }
 
-      function renderFilterButtons() {
-        const container = document.querySelector('.filter-scroll');
-        // Remove any previously generated collection buttons
-        container.querySelectorAll('.filter-btn[data-collection-id]').forEach(b => b.remove());
-        const sortDiv = container.querySelector('#sortSelect')?.closest('div.ml-auto') || null;
-
-        // Collect unique collection ids present in artworks
-        const usedIds = new Set();
-        allArtworks.forEach(a => (a.collections || []).forEach(id => usedIds.add(id)));
-
-        // Generate one button per collection (in collections.json order, then any extras)
-        const orderedIds = [
-          ...Object.keys(allCollections).filter(id => usedIds.has(id)),
-          ...[...usedIds].filter(id => !allCollections[id])
-        ];
-
-        orderedIds.forEach(id => {
-          const label = allCollections[id]?.[currentLang] || allCollections[id]?.en || id;
-          const btn = document.createElement('button');
-          btn.className = 'pill filter-btn flex-shrink-0';
-          btn.dataset.filter = id;
-          btn.dataset.collectionId = id;
-          btn.textContent = label;
-          btn.addEventListener('click', () => {
-            container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderGallery(id, document.getElementById('sortSelect').value);
-          });
-          container.insertBefore(btn, sortDiv);
-        });
-      }
-
       function renderGallery(filter='all', sort='recent') {
         const grid = document.getElementById('galleryGrid');
         const noResults = document.getElementById('noResults');
         grid.innerHTML = '';
 
-        let items = allArtworks.filter(a => filter==='all' || (a.collections || []).includes(filter));
+        let items = allArtworks.filter(a => filter==='all' || a.collection===filter);
         items.sort((a,b) => {
           if (sort==='recent')    return (b.year||0)-(a.year||0);
           if (sort==='alpha')     return a.title.localeCompare(b.title);

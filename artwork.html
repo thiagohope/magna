@@ -25,16 +25,16 @@
 
         .zoom-container {
             width: 100%;
-            height: 100%;
             overflow: hidden;
             cursor: crosshair;
             position: relative;
         }
         .zoom-img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
             display: block;
+            width: 100%;
+            height: auto;
+            max-height: 75vh;
+            object-fit: contain;
             transition: transform 0.15s ease-out;
             transform-origin: center center;
         }
@@ -89,7 +89,7 @@
 
         <!-- LEFT: Image -->
         <div class="flex flex-col items-center justify-start">
-            <div id="canvasContainer" class="canvas-floating rotate-1 hover:rotate-0 transition duration-700 w-full">
+            <div id="canvasContainer" class="canvas-floating rotate-1 hover:rotate-0 transition duration-700" style="width:100%;">
                 <div class="zoom-container" id="zoomContainer" onclick="toggleFullscreen()">
                     <img id="mainImage" src="" alt="Artwork" class="zoom-img">
                 </div>

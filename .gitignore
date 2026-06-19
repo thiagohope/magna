@@ -10,6 +10,7 @@ assets/paintings/thumbnails/
 assets/exhibition/flyers/
 assets/exhibition/img/
 assets/downloads/
+artworks.json
 
 # --- Hero / about images (large binaries, SCP only) ---
 assets/img/*.jpg

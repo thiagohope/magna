@@ -262,7 +262,7 @@
 
         function renderData(art, lang, slug) {
             // Lógica de Imagem Dinâmica
-            let imgPath = art.image;
+            let imgPath = Array.isArray(art.image) ? art.image[0] : art.image;
             let thumbPath = art.thumbnail || imgPath.replace('assets/paintings/full/', 'assets/paintings/thumbnails/');
             const imgEl = document.getElementById('artImage');
             

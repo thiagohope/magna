@@ -201,7 +201,8 @@
             if (!art) return;
 
             // Preenche imagem e título
-            document.getElementById('certImage').src = art.image ? ('../' + art.image) : ''; // assets/* é relativo à raiz do projeto
+            const _img = Array.isArray(art.image) ? art.image[0] : art.image;
+            document.getElementById('certImage').src = _img ? ('../' + _img) : '';
             document.getElementById('certTitle').textContent = art.title;
             
             // Lógica do Tipo/Dimensão

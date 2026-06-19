@@ -683,7 +683,9 @@
             document.getElementById('title').value     = data.title || '';
             document.getElementById('year').value      = data.year || '';
             document.getElementById('dimensions').value = data.dimensions || '';
-            document.getElementById('image').value     = (data.image || '').replace('assets/paintings/full/', '');
+            const _imgVal = Array.isArray(data.image) ? data.image[0] : (data.image || '');
+            document.getElementById('image').value = _imgVal.replace('assets/paintings/full/', '');
+
             // Support both legacy "collection" (string) and new "collections" (array)
             const selectedCols = data.collections || (data.collection ? [data.collection] : []);
             populateCollections(selectedCols);

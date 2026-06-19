@@ -193,7 +193,8 @@
                 if (!art) throw new Error("Obra não encontrada");
 
                 // 2. Preencher Campos
-                document.getElementById('artImage').src = art.image ? ('../' + art.image) : '';
+                const _img = Array.isArray(art.image) ? art.image[0] : art.image;
+                document.getElementById('artImage').src = _img ? ('../' + _img) : '';
                 document.getElementById('artTitle').textContent = art.title;
                 document.getElementById('printYear').textContent = new Date().getFullYear();
                 

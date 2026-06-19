@@ -65,6 +65,45 @@
             padding: 4px 8px; font-size: 10px; font-weight: bold;
             border-radius: 4px; z-index: 100; pointer-events: none; opacity: 0.7;
         }
+        /* ── MULTI-IMAGE NAV ── */
+        .img-nav {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .75rem;
+            margin-top: 1rem;
+        }
+        .img-nav__btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            opacity: .35;
+            transition: opacity .2s;
+            flex-shrink: 0;
+        }
+        .img-nav__btn:hover { opacity: .7; }
+        .img-nav__thumb {
+            width: 52px;
+            height: 36px;
+            object-fit: cover;
+            border-radius: 2px;
+            border: 2px solid transparent;
+            display: block;
+            transition: border-color .2s;
+        }
+        .img-nav__btn.active { opacity: 1; }
+        .img-nav__btn.active .img-nav__thumb { border-color: #111; }
+        .img-nav__arrow {
+            font-size: 1.1rem;
+            color: #555;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: .25rem .5rem;
+            transition: color .2s;
+        }
+        .img-nav__arrow:hover { color: #111; }
     </style>
 </head>
 <body>
@@ -94,7 +133,13 @@
                     <img id="mainImage" src="" alt="Artwork" class="zoom-img">
                 </div>
             </div>
-            <p class="text-[10px] text-gray-400 mt-6 uppercase tracking-widest opacity-60">
+            <!-- Navegação multi-imagem — só aparece se houver mais de 1 imagem -->
+            <div id="imgNav" class="img-nav hidden">
+                <button class="img-nav__arrow" id="imgPrev" onclick="navigateImages(-1)">&#8592;</button>
+                <div id="imgThumbs" class="flex gap-2"></div>
+                <button class="img-nav__arrow" id="imgNext" onclick="navigateImages(1)">&#8594;</button>
+            </div>
+            <p class="text-[10px] text-gray-400 mt-3 uppercase tracking-widest opacity-60">
                 Hover to Zoom · Click to Expand
             </p>
         </div>
@@ -342,24 +387,46 @@
                 // Page title
                 document.title = `Magna — ${art.title}`;
 
-                // Canvas proportions
-                const dimMatch = art.dimensions.match(/(\d+)\s*x\s*(\d+)/i);
-                if (dimMatch) {
-                    const h = parseInt(dimMatch[1]);
-                    const w = parseInt(dimMatch[2]);
-                    document.getElementById('canvasContainer').style.aspectRatio = `${w} / ${h}`;
+                // ── IMAGES (suporte a array e string) ──
+                const imgEl  = document.getElementById('mainImage');
+                const fsImg  = document.getElementById('fsImage');
+                const images = Array.isArray(art.image) ? art.image : [art.image];
+                let currentImgIdx = 0;
+
+                function setImage(idx) {
+                    currentImgIdx = idx;
+                    const orig  = images[idx].startsWith('/') ? images[idx].substring(1) : images[idx];
+                    const thumb = orig.replace('assets/paintings/full/', 'assets/paintings/thumbnails/');
+                    imgEl.src  = thumb;
+                    imgEl.onerror = function() { this.src = orig; this.onerror = null; };
+                    fsImg.src  = orig;
+                    // Actualizar thumbnail activo
+                    document.querySelectorAll('.img-nav__btn').forEach((btn, i) => {
+                        btn.classList.toggle('active', i === idx);
+                    });
                 }
 
-                // Images: try thumbnail first, fall back to original
-                const imgEl       = document.getElementById('mainImage');
-                const fsImg       = document.getElementById('fsImage');
-                const origPath    = art.image.startsWith('/') ? art.image.substring(1) : art.image;
-                const thumbPath   = origPath.replace('assets/', 'assets/thumbnails/');
+                function navigateImages(dir) {
+                    const next = (currentImgIdx + dir + images.length) % images.length;
+                    setImage(next);
+                }
 
-                fsImg.src  = origPath;
-                imgEl.src  = thumbPath;
-                imgEl.onerror = function() { this.src = origPath; this.onerror = null; };
+                if (images.length > 1) {
+                    const nav    = document.getElementById('imgNav');
+                    const thumbs = document.getElementById('imgThumbs');
+                    nav.classList.remove('hidden');
+                    images.forEach((src, i) => {
+                        const orig  = src.startsWith('/') ? src.substring(1) : src;
+                        const thumb = orig.replace('assets/paintings/full/', 'assets/paintings/thumbnails/');
+                        const btn   = document.createElement('button');
+                        btn.className = 'img-nav__btn' + (i === 0 ? ' active' : '');
+                        btn.onclick   = () => setImage(i);
+                        btn.innerHTML = `<img src="${thumb}" class="img-nav__thumb" onerror="this.src='${orig}'">`;
+                        thumbs.appendChild(btn);
+                    });
+                }
 
+                setImage(0);
                 setupZoom();
 
                 // Text data

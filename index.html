@@ -399,7 +399,7 @@
     <!-- ═══════════════════════════════════════════════
          HEADER — solid white, always
     ═══════════════════════════════════════════════ -->
-    <header class="site-header">
+    <header class="site-header" style="position:relative;">
       <div class="container py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-full bg-gray-100 overflow-hidden flex-shrink-0 md:w-12 md:h-12">
@@ -410,18 +410,34 @@
             <p class="text-gray-400 leading-none" style="font-size:clamp(.65rem,1.2vw,.8rem);" data-i18n="siteSubtitle">Artworks & Exhibitions</p>
           </div>
         </div>
-        <div class="flex items-center gap-5">
+        <div class="flex items-center gap-3">
+          <select id="langSwitcher" class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-black transition cursor-pointer">
+            <option value="en">EN</option>
+            <option value="pt">PT</option>
+            <option value="es">ES</option>
+          </select>
           <nav class="hidden md:flex items-center gap-5 text-sm text-gray-500">
             <a href="#about" class="hover:text-black transition-colors" data-i18n="navAbout">About</a>
             <a href="#gallery" class="hover:text-black transition-colors" data-i18n="navWorks">Artworks</a>
             <a href="#exhibitions" class="hover:text-black transition-colors" data-i18n="navExhibitions">Exhibitions</a>
             <a href="#contact" class="hover:text-black transition-colors" data-i18n="navContact">Contact</a>
           </nav>
-          <select id="langSwitcher" class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-black transition cursor-pointer">
-            <option value="en">EN</option>
-            <option value="pt">PT</option>
-            <option value="es">ES</option>
-          </select>
+          <!-- Hamburger — só mobile -->
+          <button id="menuBtn" class="md:hidden flex flex-col justify-center items-center gap-1.5 w-8 h-8" onclick="toggleMenu()" aria-label="Menu">
+            <span class="block w-5 h-0.5 bg-gray-700 transition-all"></span>
+            <span class="block w-5 h-0.5 bg-gray-700 transition-all"></span>
+            <span class="block w-5 h-0.5 bg-gray-700 transition-all"></span>
+          </button>
+        </div>
+
+        <!-- Menu mobile dropdown -->
+        <div id="mobileMenu" class="hidden md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-md z-50 py-3">
+          <div class="container flex flex-col gap-1">
+            <a href="#about" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navAbout">About</a>
+            <a href="#gallery" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navWorks">Artworks</a>
+            <a href="#exhibitions" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navExhibitions">Exhibitions</a>
+            <a href="#contact" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors" data-i18n="navContact">Contact</a>
+          </div>
         </div>
       </div>
     </header>
@@ -645,6 +661,19 @@
          JAVASCRIPT
     ═══════════════════════════════════════════════ -->
     <script>
+      function toggleMenu() {
+        const m = document.getElementById('mobileMenu');
+        m.classList.toggle('hidden');
+      }
+      // Fechar menu ao clicar fora
+      document.addEventListener('click', function(e) {
+        const menu = document.getElementById('mobileMenu');
+        const btn  = document.getElementById('menuBtn');
+        if (!menu.classList.contains('hidden') && !menu.contains(e.target) && !btn.contains(e.target)) {
+          menu.classList.add('hidden');
+        }
+      });
+      
       // ── CONFIG ──
       // Auto-detect environment — works on both local and production
       const IS_DEV        = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';

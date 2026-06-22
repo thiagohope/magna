@@ -94,10 +94,11 @@ function saveBase64Image(imageData, destPath) {
     return buffer.length;
 }
 
-function respond(res, status, body) {
+function respond(req, res, status, body) {
+    const origin = req?.headers?.origin;
     res.writeHead(status, {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': req.headers.origin === 'https://magnaleite.com'
+        'Access-Control-Allow-Origin': origin === 'https://magnaleite.com'
             ? 'https://magnaleite.com'
             : 'https://brainboxmed.com',
         'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -115,7 +116,7 @@ function readJsonBody(req, res, maxSize, onSuccess) {
         body += chunk.toString();
         if (body.length > maxSize) {
             tooLarge = true;
-            respond(res, 413, { error: 'Payload too large' });
+            respond(req, res, 413, { error: 'Payload too large' });
             req.destroy();
         }
     });
@@ -125,7 +126,7 @@ function readJsonBody(req, res, maxSize, onSuccess) {
             const parsed = JSON.parse(body);
             onSuccess(parsed);
         } catch (err) {
-            respond(res, 400, { error: 'JSON inválido: ' + err.message });
+            respond(req, res, 400, { error: 'JSON inválido: ' + err.message });
         }
     });
 }
@@ -133,7 +134,7 @@ function readJsonBody(req, res, maxSize, onSuccess) {
 function checkAuth(req, res) {
     const secret = req.headers['x-magna-secret'];
     if (!secret || secret !== API_SECRET) {
-        respond(res, 403, { error: 'Forbidden' });
+        respond(req, res, 403, { error: 'Forbidden' });
         console.warn(`[${new Date().toISOString()}] Rejected request — bad secret (${req.url})`);
         return false;
     }
@@ -145,13 +146,13 @@ const server = http.createServer((req, res) => {
 
     // CORS preflight
     if (req.method === 'OPTIONS') {
-        respond(res, 204, {});
+        respond(req, res, 204, {});
         return;
     }
 
     // Health check
     if (req.method === 'GET' && req.url === '/health') {
-        respond(res, 200, { status: 'ok', time: new Date().toISOString() });
+        respond(req, res, 200, { status: 'ok', time: new Date().toISOString() });
         return;
     }
 
@@ -172,10 +173,10 @@ const server = http.createServer((req, res) => {
                 fs.renameSync(tmpPath, ARTWORKS_PATH);
 
                 console.log(`[${new Date().toISOString()}] artworks.json saved — ${Object.keys(parsed).length} artworks`);
-                respond(res, 200, { success: true, artworks: Object.keys(parsed).length });
+                respond(req, res, 200, { success: true, artworks: Object.keys(parsed).length });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Save error (artworks):`, err.message);
-                respond(res, 400, { error: err.message });
+                respond(req, res, 400, { error: err.message });
             }
         });
         return;
@@ -198,10 +199,10 @@ const server = http.createServer((req, res) => {
                 fs.renameSync(tmpPath, EXHIBITIONS_PATH);
 
                 console.log(`[${new Date().toISOString()}] exhibitions.json saved — ${Object.keys(parsed).length} exhibitions`);
-                respond(res, 200, { success: true, exhibitions: Object.keys(parsed).length });
+                respond(req, res, 200, { success: true, exhibitions: Object.keys(parsed).length });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Save error (exhibitions):`, err.message);
-                respond(res, 400, { error: err.message });
+                respond(req, res, 400, { error: err.message });
             }
         });
         return;
@@ -224,10 +225,10 @@ const server = http.createServer((req, res) => {
                 fs.renameSync(tmpPath, COLLECTIONS_PATH);
 
                 console.log(`[${new Date().toISOString()}] collections.json saved — ${Object.keys(parsed).length} collections`);
-                respond(res, 200, { success: true, collections: Object.keys(parsed).length });
+                respond(req, res, 200, { success: true, collections: Object.keys(parsed).length });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Save error (collections):`, err.message);
-                respond(res, 400, { error: err.message });
+                respond(req, res, 400, { error: err.message });
             }
         });
         return;
@@ -272,7 +273,7 @@ const server = http.createServer((req, res) => {
                     console.log(`[${new Date().toISOString()}] Download copy saved — assets/downloads/${downloadFilename}`);
                 }
 
-                respond(res, 200, {
+                respond(req, res, 200, {
                     success: true,
                     path: relPath,
                     bytes,
@@ -280,7 +281,7 @@ const server = http.createServer((req, res) => {
                 });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Upload error (painting):`, err.message);
-                respond(res, 400, { error: err.message });
+                respond(req, res, 400, { error: err.message });
             }
         });
         return;
@@ -306,10 +307,10 @@ const server = http.createServer((req, res) => {
 
                 const relPath = `assets/exhibition/flyers/${filename}`;
                 console.log(`[${new Date().toISOString()}] Exhibition flyer saved — ${relPath} (${(bytes/1024).toFixed(0)}KB)`);
-                respond(res, 200, { success: true, path: relPath, bytes });
+                respond(req, res, 200, { success: true, path: relPath, bytes });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Upload error (flyer):`, err.message);
-                respond(res, 400, { error: err.message });
+                respond(req, res, 400, { error: err.message });
             }
         });
         return;
@@ -340,10 +341,10 @@ const server = http.createServer((req, res) => {
 
                 const relPath = `assets/exhibition/img/${slug}/${filename}`;
                 console.log(`[${new Date().toISOString()}] Exhibition gallery image saved — ${relPath} (${(bytes/1024).toFixed(0)}KB)`);
-                respond(res, 200, { success: true, path: relPath, bytes });
+                respond(req, res, 200, { success: true, path: relPath, bytes });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Upload error (gallery):`, err.message);
-                respond(res, 400, { error: err.message });
+                respond(req, res, 400, { error: err.message });
             }
         });
         return;
@@ -353,23 +354,23 @@ const server = http.createServer((req, res) => {
     if (req.method === 'GET' && req.url === '/about-photos') {
         try {
             if (!fs.existsSync(ABOUT_DIR)) {
-                respond(res, 200, { photos: [] });
+                respond(req, res, 200, { photos: [] });
                 return;
             }
             const ALLOWED_EXT = /\.(jpg|jpeg|png|webp)$/i;
             const photos = fs.readdirSync(ABOUT_DIR)
                 .filter(f => ALLOWED_EXT.test(f))
                 .sort();
-            respond(res, 200, { photos });
+            respond(req, res, 200, { photos });
         } catch (err) {
             console.error(`[${new Date().toISOString()}] Error listing about photos:`, err.message);
-            respond(res, 500, { error: err.message });
+            respond(req, res, 500, { error: err.message });
         }
         return;
     }
 
     // 404 for everything else
-    respond(res, 404, { error: 'Not found' });
+    respond(req, res, 404, { error: 'Not found' });
 });
 
 server.listen(PORT, HOST, () => {

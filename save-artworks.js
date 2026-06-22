@@ -26,6 +26,7 @@ const PORT         = 3100;
 const HOST         = '127.0.0.1';                          // local only, never public
 const ARTWORKS_PATH    = path.join(__dirname, 'artworks.json');
 const EXHIBITIONS_PATH = path.join(__dirname, 'exhibitions.json');
+const COLLECTIONS_PATH = path.join(__dirname, 'collections.json');
 const BACKUP_DIR   = path.join(__dirname, 'backups');
 const ASSETS_DIR   = path.join(__dirname, 'assets');
 const PAINTINGS_FULL_DIR      = path.join(ASSETS_DIR, 'paintings', 'full');
@@ -33,6 +34,7 @@ const PAINTINGS_THUMBS_DIR    = path.join(ASSETS_DIR, 'paintings', 'thumbnails')
 const DOWNLOADS_DIR           = path.join(ASSETS_DIR, 'downloads');
 const EXHIBITION_FLYERS_DIR   = path.join(ASSETS_DIR, 'exhibition', 'flyers');
 const EXHIBITION_GALLERY_DIR  = path.join(ASSETS_DIR, 'exhibition', 'img');
+const ABOUT_DIR               = path.join(ASSETS_DIR, 'img', 'about');
 const MAX_JSON_SIZE  = 2 * 1024 * 1024;   // 2MB — for artworks.json / exhibitions.json bodies
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;  // 10MB — for base64 image uploads
 const API_SECRET   = process.env.MAGNA_API_SECRET || 'CHANGE_THIS_SECRET';
@@ -95,8 +97,10 @@ function saveBase64Image(imageData, destPath) {
 function respond(res, status, body) {
     res.writeHead(status, {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': 'https://brainboxmed.com',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Origin': req.headers.origin === 'https://magnaleite.com'
+            ? 'https://magnaleite.com'
+            : 'https://brainboxmed.com',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, X-Magna-Secret'
     });
     res.end(JSON.stringify(body));
@@ -197,6 +201,32 @@ const server = http.createServer((req, res) => {
                 respond(res, 200, { success: true, exhibitions: Object.keys(parsed).length });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Save error (exhibitions):`, err.message);
+                respond(res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── SAVE COLLECTIONS ─────────────────────────────────────────────────────
+    if (req.method === 'POST' && req.url === '/save-collections') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    throw new Error('Root must be a JSON object');
+                }
+
+                makeBackup(COLLECTIONS_PATH, 'collections');
+
+                const tmpPath = COLLECTIONS_PATH + '.tmp';
+                fs.writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), 'utf8');
+                fs.renameSync(tmpPath, COLLECTIONS_PATH);
+
+                console.log(`[${new Date().toISOString()}] collections.json saved — ${Object.keys(parsed).length} collections`);
+                respond(res, 200, { success: true, collections: Object.keys(parsed).length });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Save error (collections):`, err.message);
                 respond(res, 400, { error: err.message });
             }
         });
@@ -316,6 +346,25 @@ const server = http.createServer((req, res) => {
                 respond(res, 400, { error: err.message });
             }
         });
+        return;
+    }
+
+    // ── LIST ABOUT PHOTOS ────────────────────────────────────────────────────
+    if (req.method === 'GET' && req.url === '/about-photos') {
+        try {
+            if (!fs.existsSync(ABOUT_DIR)) {
+                respond(res, 200, { photos: [] });
+                return;
+            }
+            const ALLOWED_EXT = /\.(jpg|jpeg|png|webp)$/i;
+            const photos = fs.readdirSync(ABOUT_DIR)
+                .filter(f => ALLOWED_EXT.test(f))
+                .sort();
+            respond(res, 200, { photos });
+        } catch (err) {
+            console.error(`[${new Date().toISOString()}] Error listing about photos:`, err.message);
+            respond(res, 500, { error: err.message });
+        }
         return;
     }
 

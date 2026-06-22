@@ -35,7 +35,7 @@
       /* ── LAYOUT ── */
       .container { max-width: 1200px; margin: 0 auto; padding: 0 1.25rem; }
 
-      /* ── HEADER — fully solid, never transparent ── */
+      /* ── HEADER ── */
       .site-header {
         position: sticky; top: 0; z-index: 40;
         background: #ffffff;
@@ -54,34 +54,51 @@
 
       /* ── TOOLBAR ── */
       .toolbar {
-        position: sticky; top: 57px;
+        position: static;
         background: white;
         border-bottom: 1px solid var(--line);
-        z-index: 30;
       }
+      .collections-dropdown {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0,0,0,.1);
+        z-index: 100;
+        min-width: 180px;
+        padding: 0.4rem 0;
+        display: none;
+      }
+      .collections-dropdown.open { display: block; }
+      .collections-dropdown__item {
+        padding: 0.5rem 1rem;
+        font-size: 0.78rem;
+        cursor: pointer;
+        color: #374151;
+        transition: background .15s;
+      }
+      .collections-dropdown__item:hover { background: #f9fafb; }
+      .collections-dropdown__item.active { font-weight: 700; color: #111; }
       .filter-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
       .filter-scroll::-webkit-scrollbar { display: none; }
 
-      /* ── MASONRY-STYLE GALLERY GRID ── */
-      .gallery-grid {
-        width: 100%;
-      }
+      /* ── GALLERY GRID ── */
+      .gallery-grid { width: 100%; }
 
-      /* ── ART CARD — masonry ── */
+      /* ── ART CARD ── */
       .art-card {
         background: white;
         overflow: hidden;
         cursor: pointer;
         transition: box-shadow .3s ease, transform .3s ease;
         position: relative;
-
       }
       .art-card:hover {
         box-shadow: 0 8px 32px rgba(0,0,0,.13);
         transform: translateY(-3px);
       }
-
-      /* Image — natural proportion, no crop, max-height on mobile */
       .art-card__img-wrap {
         background: #f8f8f6;
         overflow: hidden;
@@ -95,10 +112,7 @@
         object-fit: cover;
         transition: transform .5s ease;
       }
-
       .art-card:hover .art-card__img-wrap img { transform: scale(1.03); }
-
-      /* Info below image */
       .art-card__info {
         padding: .875rem 1rem 1rem;
         border-top: 1px solid #f0f0f0;
@@ -107,8 +121,6 @@
       .art-card__meta { font-size: .72rem; color: #888; margin-bottom: .5rem; }
       .art-card__price { font-size: .85rem; font-weight: 700; color: #111; }
       .art-card__prints { font-size: .7rem; color: #aaa; margin-top: .1rem; }
-
-      /* Sold badge */
       .sold-badge {
         position: absolute; top: 10px; right: 10px;
         background: rgba(0,0,0,.75); color: white;
@@ -116,7 +128,7 @@
         font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
       }
 
-      /* ── LIGHTBOX MODAL — full Saatchi/Instagram feel ── */
+      /* ── LIGHTBOX ── */
       .lightbox {
         position: fixed; inset: 0; z-index: 1000;
         background: rgba(10,10,10,.92);
@@ -126,7 +138,6 @@
       }
       .lightbox.open { display: flex; }
       .lightbox.visible { opacity: 1; }
-
       .lightbox__inner {
         background: white;
         width: 100%; max-width: 1060px;
@@ -140,7 +151,6 @@
         position: relative;
       }
       .lightbox.visible .lightbox__inner { transform: scale(1) translateY(0); }
-
       @media(max-width: 780px) {
         .lightbox__inner {
           grid-template-columns: 1fr;
@@ -149,8 +159,6 @@
           overflow: hidden;
         }
       }
-
-      /* Left — image panel */
       .lightbox__img-panel {
         background: #f4f4f2;
         display: flex; align-items: center; justify-content: center;
@@ -162,14 +170,10 @@
       .lightbox__img-panel img {
         max-width: 100%;
         max-height: calc(90vh - 3rem);
-        width: auto;
-        height: auto;
+        width: auto; height: auto;
         object-fit: contain;
-        display: block;
-        margin: auto;
+        display: block; margin: auto;
       }
-
-      /* Nav arrows */
       .lightbox__arrow {
         position: absolute; top: 50%; transform: translateY(-50%);
         background: rgba(255,255,255,.9); border: none;
@@ -182,23 +186,14 @@
       .lightbox__arrow:hover { background: white; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
       .lightbox__arrow--prev { left: 12px; }
       .lightbox__arrow--next { right: 12px; }
-
-      /* Right — details panel */
       .lightbox__detail {
         padding: 2rem 1.75rem;
-        overflow-y: auto;
-        overflow-x: hidden;
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
+        overflow-y: auto; overflow-x: hidden;
+        display: flex; flex-direction: column; gap: 1.25rem;
         border-left: 1px solid #ebebeb;
-        height: 100%;
-        max-height: 90vh;
+        height: 100%; max-height: 90vh;
       }
-      @media(max-width: 780px) {
-        .lightbox__detail { max-height: 45vh; }
-      }
-
+      @media(max-width: 780px) { .lightbox__detail { max-height: 45vh; } }
       .lightbox__close {
         position: absolute; top: 14px; right: 14px;
         background: rgba(0,0,0,.5); color: white;
@@ -208,14 +203,12 @@
         transition: background .2s; z-index: 20;
       }
       .lightbox__close:hover { background: rgba(0,0,0,.8); }
-
       .lightbox__title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 400; line-height: 1.2; color: #111; }
       .lightbox__meta { font-size: .8rem; color: #888; line-height: 1.7; }
       .lightbox__story { font-family: 'Playfair Display', serif; font-style: italic; font-size: .95rem; color: #444; line-height: 1.7; border-left: 2px solid #e5e5e5; padding-left: .875rem; }
-
       .lightbox__divider { border: none; border-top: 1px solid #f0f0f0; }
 
-      /* Pricing table */
+      /* ── PRICING ── */
       .price-row {
         display: flex; justify-content: space-between; align-items: center;
         padding: .6rem 0; border-bottom: 1px solid #f5f5f5;
@@ -225,7 +218,7 @@
       .price-row__note { font-size: .68rem; color: #aaa; display: block; margin-top: 1px; }
       .price-row__amount { font-size: .95rem; font-weight: 700; color: #111; }
 
-      /* CTA buttons */
+      /* ── BUTTONS ── */
       .btn-acquire {
         display: block; width: 100%; padding: .9rem;
         background: #111; color: white; border: none;
@@ -244,7 +237,7 @@
       }
       .btn-secondary:hover { border-color: #111; background: #f9f9f7; }
 
-      /* Provenance */
+      /* ── PROVENANCE ── */
       .provenance-block { background: #f9f9f7; border-radius: 4px; padding: .875rem; font-size: .75rem; }
       .provenance-block__label { font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #aaa; margin-bottom: .5rem; }
       .provenance-block__row { display: flex; justify-content: space-between; margin-bottom: .3rem; color: #666; }
@@ -275,12 +268,10 @@
       }
       .email-overlay.visible .email-box { transform: translateY(0); }
 
-      /* ── MISC ── */
+      /* ── STATUS BADGES ── */
       .status-available { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
       .status-sold { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
       .status-reserved { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
-
-      /* Status badge inside the artwork grid card */
       .art-card__status {
         display: inline-block; font-size: .65rem; font-weight: 700;
         padding: .15rem .5rem; border-radius: 999px;
@@ -288,117 +279,129 @@
         margin-top: .35rem;
       }
 
-      /* ── HERO RESPONSIVE ── */
+      /* ── HERO ── */
       .hero-photo {
-        width: 100%;
-        display: block;
-        object-fit: contain;
-        background: #0f0f0f;
-        max-height: 80vh;
+        width: 100%; display: block;
+        object-fit: contain; background: #0f0f0f; max-height: 80vh;
       }
       @media (min-width: 768px) {
-        .hero-photo {
-          object-fit: cover;
-          height: 68vh;
-          max-height: none;
-        }
+        .hero-photo { object-fit: cover; height: 68vh; max-height: none; }
       }
-
-      /* ── HERO CARD ── */
       .hero-card {
-        width: calc(100% - 2.5rem);
-        max-width: 580px;
+        width: calc(100% - 2.5rem); max-width: 580px;
         margin: 0 auto;
         background: rgba(255,255,255,.55);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         border: 1px solid rgba(255,255,255,.30);
         box-shadow: 0 16px 56px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.10);
         border-radius: 2px;
         padding: 2.25rem 2.25rem 2.5rem;
-        position: relative;
-        z-index: 10;
+        position: relative; z-index: 10;
         margin-top: -4rem;
       }
-
-      /* Linha ornamentada */
-      .hero-rule {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: .6rem;
-        margin: .85rem 0;
-      }
-      .hero-rule__line {
-        width: 2.8rem;
-        height: 2px;
-        background: #c9b99a;
-        flex-shrink: 0;
-      }
-      .hero-rule__ornament {
-        font-size: .6rem;
-        color: #b8a98a;
-        line-height: 1;
-        flex-shrink: 0;
-      }
-      
-      /* ── HERO CARD MOBILE ── */
       @media (max-width: 767px) {
-        .hero-card {
-          padding: 1.5rem 1.25rem 1.75rem;
-          margin-top: -3rem;
-        }
+        .hero-card { padding: 1.5rem 1.25rem 1.75rem; margin-top: -3rem; }
       }
 
       /* ── ABOUT TYPOGRAPHY ── */
       .about-title {
         font-family: 'Plus Jakarta Sans', sans-serif;
         font-size: clamp(1.6rem, 4vw, 2.4rem);
-        font-weight: 300;
-        color: #1a1a1a;
-        letter-spacing: .01em;
-        line-height: 1.15;
+        font-weight: 300; color: #1a1a1a;
+        letter-spacing: .01em; line-height: 1.15;
         margin-bottom: 1.5rem;
       }
       .about-body {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        font-size: 1rem;
-        font-weight: 300;
-        color: #444;
-        line-height: 1.85;
-        margin-bottom: 1.25rem;
+        font-size: 1rem; font-weight: 300; color: #444;
+        line-height: 1.85; margin-bottom: 1.25rem;
       }
       .about-quote {
         font-family: 'Plus Jakarta Sans', sans-serif;
-        font-style: italic;
-        font-size: 1rem;
-        font-weight: 300;
-        color: #666;
-        line-height: 1.75;
-        border-left: 2px solid #c9b99a;
-        padding-left: 1.25rem;
-        margin-bottom: 1.75rem;
+        font-style: italic; font-size: 1rem; font-weight: 300; color: #666;
+        line-height: 1.75; border-left: 2px solid #c9b99a;
+        padding-left: 1.25rem; margin-bottom: 1.75rem;
       }
 
+      /* ── BACK TO TOP ── */
+      .back-to-top {
+        position: fixed; bottom: 2rem; right: 1.5rem;
+        width: 42px; height: 42px;
+        background: #111; color: white; border: none;
+        border-radius: 50%; font-size: 1.1rem; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 4px 16px rgba(0,0,0,.25);
+        opacity: 0; transform: translateY(12px);
+        transition: opacity .3s ease, transform .3s ease, background .2s;
+        z-index: 500; pointer-events: none;
+      }
+      .back-to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+      .back-to-top:hover { background: #333; }
+
+      /* ── ABOUT — dois painéis ── */
+      .about-section { background: #fff; padding: 5rem 0; }
+      .about-layout {
+        display: grid; grid-template-columns: 1fr 1fr;
+        gap: 4rem; align-items: center;
+      }
+      @media (max-width: 768px) {
+        .about-layout { grid-template-columns: 1fr; gap: 2.5rem; }
+      }
+      .about-slideshow {
+        position: relative; background: #f4f4f2;
+        border-radius: 2px; overflow: hidden; aspect-ratio: 4/5;
+      }
+      .about-slideshow__track {
+        display: flex; width: 100%; height: 100%;
+        transition: transform .5s cubic-bezier(.4,0,.2,1);
+      }
+      .about-slideshow__slide { flex-shrink: 0; width: 100%; height: 100%; }
+      .about-slideshow__slide img {
+        width: 100%; height: 100%; object-fit: cover; display: block;
+      }
+      .about-slideshow__arrow {
+        position: absolute; top: 50%; transform: translateY(-50%);
+        background: rgba(255,255,255,.85); border: none;
+        width: 36px; height: 36px; border-radius: 50%; font-size: 1rem;
+        cursor: pointer; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,.15); transition: all .2s; z-index: 5;
+      }
+      .about-slideshow__arrow:hover { background: white; box-shadow: 0 4px 16px rgba(0,0,0,.2); }
+      .about-slideshow__arrow--prev { left: 10px; }
+      .about-slideshow__arrow--next { right: 10px; }
+      .about-slideshow__dots {
+        position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+        display: flex; gap: 5px;
+      }
+      .about-slideshow__dot {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: rgba(255,255,255,.5); border: none;
+        cursor: pointer; transition: background .2s; padding: 0;
+      }
+      .about-slideshow__dot.active { background: white; }
+
+      /* ── EXHIBITION THUMBS ── */
+      .exhib-thumbs { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: .75rem; }
+      .exhib-thumb {
+        width: 52px; height: 52px; object-fit: cover;
+        border-radius: 3px; background: #e5e7eb; cursor: pointer;
+        transition: opacity .2s, transform .2s; flex-shrink: 0;
+      }
+      .exhib-thumb:hover { opacity: .8; transform: scale(1.05); }
+
+      /* ── GALLERY WRAPPER ── */
       .gallery-wrapper {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-        align-items: start;
+        display: grid; grid-template-columns: repeat(2, 1fr);
+        gap: 1rem; align-items: start;
       }
       @media (min-width: 1024px) {
-        .gallery-wrapper {
-          grid-template-columns: repeat(3, 1fr);
-          gap: 1.5rem;
-        }
+        .gallery-wrapper { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
       }
     </style>
   </head>
   <body>
 
-    <!-- ═══════════════════════════════════════════════
-         HEADER — solid white, always
-    ═══════════════════════════════════════════════ -->
+    <!-- HEADER -->
     <header class="site-header" style="position:relative;">
       <div class="container py-3 flex items-center justify-between">
         <div class="flex items-center gap-3">
@@ -422,15 +425,12 @@
             <a href="#exhibitions" class="hover:text-black transition-colors" data-i18n="navExhibitions">Exhibitions</a>
             <a href="#contact" class="hover:text-black transition-colors" data-i18n="navContact">Contact</a>
           </nav>
-          <!-- Hamburger — só mobile -->
           <button id="menuBtn" class="md:hidden flex flex-col justify-center items-center gap-1.5 w-8 h-8" onclick="toggleMenu()" aria-label="Menu">
             <span class="block w-5 h-0.5 bg-gray-700 transition-all"></span>
             <span class="block w-5 h-0.5 bg-gray-700 transition-all"></span>
             <span class="block w-5 h-0.5 bg-gray-700 transition-all"></span>
           </button>
         </div>
-
-        <!-- Menu mobile dropdown -->
         <div id="mobileMenu" class="hidden md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-md z-50 py-3">
           <div class="container flex flex-col gap-1">
             <a href="#about" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navAbout">About</a>
@@ -442,55 +442,24 @@
       </div>
     </header>
 
-    <!-- ═══════════════════════════════════════════════
-         HERO
-    ═══════════════════════════════════════════════ -->
+    <!-- HERO -->
     <div style="background:#0f0f0f;">
-
-      <!-- Foto da Magna: contain mobile, cover desktop -->
       <img src="assets/img/magna02.jpeg" alt="Magna Leite" class="hero-photo">
-
-      <!-- Vinheta inferior suave -->
       <div style="height:3rem;background:linear-gradient(to bottom, #0f0f0f00, #0f0f0f);margin-top:-3rem;position:relative;z-index:1;"></div>
-
     </div>
-
-    <!-- Card flutuante — fora do hero, margem negativa para subir -->
     <div style="background:#f9f9f7;padding-bottom:0;">
       <div class="hero-card">
-        
-        <h2 style="
-          font-family:Poppins,sans-serif;
-          font-size:clamp(1.25rem,5vw,2.2rem);
-          font-weight:600;
-          letter-spacing:.2em;
-          color:#111;
-          line-height:1.1;
-          text-align:center;
-          margin:0;
-        ">MAGNA LEITE</h2>
-
-        <p style="
-          font-size:.66rem;
-          color:#aaa;
-          letter-spacing:.1em;
-          text-transform:uppercase;
-          line-height:1.7;
-          text-align:center;
-          margin:0;
-        " data-i18n="heroTag">Expressive strokes · Neon palette · Acrylique Pluie</p>
-
+        <h2 style="font-family:Poppins,sans-serif;font-size:clamp(1.25rem,5vw,2.2rem);font-weight:600;letter-spacing:.2em;color:#111;line-height:1.1;text-align:center;margin:0;">MAGNA LEITE</h2>
+        <p style="font-size:.66rem;color:#aaa;letter-spacing:.1em;text-transform:uppercase;line-height:1.7;text-align:center;margin:0;" data-i18n="heroTag">Expressive strokes · Neon palette · Acrylique Pluie</p>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         ABOUT
-    ═══════════════════════════════════════════════ -->
-    <section id="about" class="bg-white" style="padding-top:3rem;padding-bottom:4rem;">
+    <!-- INTRO -->
+    <section id="intro" class="bg-white" style="padding-top:3rem;padding-bottom:3rem;">
       <div class="container">
-        <h2 class="about-title" data-i18n="aboutTitle">About</h2>
-        <p class="about-body" data-i18n="aboutText">I started painting to fill...</p>
-        <p class="about-quote" data-i18n="aboutText2"></p>
+        <h2 class="about-title" data-i18n="introTitle" style="font-weight:700;font-style:italic;font-size:clamp(2rem,5vw,3.2rem);">Life is happier with color.</h2>
+        <p class="about-body" data-i18n="introText" style="font-style:italic;">I started painting to fill...</p>
+        <p class="about-quote" data-i18n="introText2"></p>
         <div class="flex flex-wrap gap-2 text-xs uppercase tracking-wider text-gray-400">
           <span class="border border-gray-200 px-3 py-1 rounded-full">Acrylic</span>
           <span class="border border-gray-200 px-3 py-1 rounded-full">Oil</span>
@@ -500,16 +469,16 @@
       </div>
     </section>
 
-    <!-- ═══════════════════════════════════════════════
-         FILTER TOOLBAR
-    ═══════════════════════════════════════════════ -->
+    <!-- FILTER TOOLBAR -->
     <div class="toolbar">
       <div class="container py-2.5">
         <div class="filter-scroll flex items-center gap-2 pb-0.5">
           <button class="pill active filter-btn flex-shrink-0" data-filter="all" data-i18n="filterAll">All</button>
-          <button class="pill filter-btn flex-shrink-0" data-filter="setubal" data-i18n="filterSetubal">Setúbal</button>
-          <button class="pill filter-btn flex-shrink-0" data-filter="concept" data-i18n="filterConcept">Concept</button>
-          <button class="pill filter-btn flex-shrink-0" data-filter="nature" data-i18n="filterNature">Nature</button>
+          <div id="pillsContainer" class="flex items-center gap-2"></div>
+          <div class="relative flex-shrink-0" id="moreCollectionsWrap" style="display:none;">
+            <button id="moreBtn" class="pill flex-shrink-0">+ More ▾</button>
+            <div id="collectionsDropdown" class="collections-dropdown"></div>
+          </div>
           <div class="ml-auto flex items-center gap-2 flex-shrink-0 pl-3">
             <select id="sortSelect" class="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 focus:outline-none focus:border-black cursor-pointer">
               <option value="recent" data-i18n="sortRecent">Newest</option>
@@ -522,9 +491,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         GALLERY
-    ═══════════════════════════════════════════════ -->
+    <!-- GALLERY -->
     <section id="gallery" class="py-10" style="background:#f9f9f7;">
       <div class="container">
         <div id="galleryGrid" class="gallery-grid">
@@ -536,9 +503,7 @@
       </div>
     </section>
 
-    <!-- ═══════════════════════════════════════════════
-         EXHIBITIONS
-    ═══════════════════════════════════════════════ -->
+    <!-- EXHIBITIONS -->
     <section id="exhibitions" class="py-16 bg-white">
       <div class="container max-w-4xl">
         <h2 class="text-2xl font-medium mb-8 border-b pb-3" data-i18n="exhibTitle">Exhibitions</h2>
@@ -548,9 +513,26 @@
       </div>
     </section>
 
-    <!-- ═══════════════════════════════════════════════
-         CONTACT / FOOTER
-    ═══════════════════════════════════════════════ -->
+    <!-- ABOUT -->
+    <section id="about" class="about-section">
+      <div class="container">
+        <div class="about-layout">
+          <div class="about-slideshow" id="aboutSlideshow">
+            <div class="about-slideshow__track" id="aboutTrack"></div>
+            <button class="about-slideshow__arrow about-slideshow__arrow--prev" id="aboutPrev" onclick="aboutSlide(-1)">&#8592;</button>
+            <button class="about-slideshow__arrow about-slideshow__arrow--next" id="aboutNext" onclick="aboutSlide(1)">&#8594;</button>
+            <div class="about-slideshow__dots" id="aboutDots"></div>
+          </div>
+          <div>
+            <h2 class="about-title" data-i18n="aboutTitle">Magna Leite</h2>
+            <p class="about-body" data-i18n="aboutText"></p>
+            <p class="about-quote" data-i18n="aboutText2"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT / FOOTER -->
     <footer id="contact" class="py-14 bg-gray-50 border-t border-gray-200">
       <div class="container text-center">
         <h2 class="text-2xl serif mb-3" data-i18n="contactTitle">Contact & Acquisitions</h2>
@@ -572,24 +554,20 @@
       </div>
     </footer>
 
-    <!-- ═══════════════════════════════════════════════
-         LIGHTBOX MODAL
-    ═══════════════════════════════════════════════ -->
+    <!-- BACK TO TOP -->
+    <button id="backToTop" class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Voltar ao topo">&#8593;</button>
+
+    <!-- LIGHTBOX -->
     <div id="lightbox" class="lightbox" onclick="handleLightboxBackdrop(event)">
       <div class="lightbox__inner" id="lightboxInner">
-
-        <!-- Image panel -->
         <div class="lightbox__img-panel">
-          <button class="lightbox__arrow lightbox__arrow--prev" onclick="navigateLightbox(-1)" title="Previous">&#8592;</button>
+          <button class="lightbox__arrow lightbox__arrow--prev" onclick="navigateLightbox(-1)">&#8592;</button>
           <img id="lbImage" src="" alt="" style="max-height:72vh;">
-          <button class="lightbox__arrow lightbox__arrow--next" onclick="navigateLightbox(1)" title="Next">&#8594;</button>
+          <button class="lightbox__arrow lightbox__arrow--next" onclick="navigateLightbox(1)">&#8594;</button>
           <span id="lbSoldBadge" class="sold-badge hidden">Sold</span>
         </div>
-
-        <!-- Detail panel -->
         <div class="lightbox__detail">
           <button class="lightbox__close" onclick="closeLightbox()">✕</button>
-
           <div>
             <div class="flex items-start justify-between gap-2 mb-2">
               <h2 id="lbTitle" class="lightbox__title"></h2>
@@ -597,21 +575,13 @@
             </div>
             <p id="lbMeta" class="lightbox__meta"></p>
           </div>
-
           <p id="lbStory" class="lightbox__story"></p>
-
           <hr class="lightbox__divider">
-
-          <!-- Pricing -->
           <div>
             <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2" data-i18n="pricingLabel">Pricing</p>
             <div id="lbPricing"></div>
           </div>
-
-          <!-- Buy buttons -->
           <div id="lbButtons" class="space-y-2"></div>
-
-          <!-- Provenance -->
           <div class="provenance-block">
             <div class="provenance-block__label" data-i18n="provLabel">Provenance</div>
             <div class="provenance-block__row">
@@ -620,15 +590,12 @@
             </div>
             <div class="provenance-block__hash" id="lbHash"></div>
           </div>
-
           <a id="lbFullLink" href="#" class="text-xs text-center text-gray-400 hover:text-black underline transition" data-i18n="viewFullPage">View full artwork page →</a>
         </div>
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         EMAIL MODAL
-    ═══════════════════════════════════════════════ -->
+    <!-- EMAIL MODAL -->
     <div id="emailOverlay" class="email-overlay" onclick="handleEmailBackdrop(event)">
       <div class="email-box">
         <div class="flex justify-between items-start mb-4">
@@ -657,15 +624,11 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════
-         JAVASCRIPT
-    ═══════════════════════════════════════════════ -->
     <script>
+      // ── MENU ──
       function toggleMenu() {
-        const m = document.getElementById('mobileMenu');
-        m.classList.toggle('hidden');
+        document.getElementById('mobileMenu').classList.toggle('hidden');
       }
-      // Fechar menu ao clicar fora
       document.addEventListener('click', function(e) {
         const menu = document.getElementById('mobileMenu');
         const btn  = document.getElementById('menuBtn');
@@ -673,11 +636,18 @@
           menu.classList.add('hidden');
         }
       });
-      
+
+      // ── BACK TO TOP ──
+      (function() {
+        const btn = document.getElementById('backToTop');
+        window.addEventListener('scroll', () => {
+          btn.classList.toggle('visible', window.scrollY > 400);
+        }, {passive: true});
+      })();
+
       // ── CONFIG ──
-      // Auto-detect environment — works on both local and production
-      const IS_DEV        = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-      const BASE_URL      = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
+      const IS_DEV            = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+      const BASE_URL          = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
       const EMAIL_PUBLIC_KEY  = "HWTMdAMNN0xr1HflZ";
       const EMAIL_SERVICE_ID  = "service_u52vj5f";
       const EMAIL_TEMPLATE_ID = "template_6tvxcd9";
@@ -690,12 +660,12 @@
         en: {
           siteSubtitle:"Artworks & Exhibitions", navAbout:"About", navWorks:"Artworks",
           navExhibitions:"Exhibitions", navContact:"Contact",
-          heroTag:"Expressive strokes · Neon palette · Acrylique Pluie", heroSub:"Acrylic on canvas · Magna Leite · Portugal",
-          aboutTitle:"Life is happier with color.",
-          aboutText:"I started painting to fill my home with color. I wanted to create works that broke away from the obvious, with a neon palette that could impact and excite me every time I looked at them. That's how my technique, 'Acrylique Pluie', was born, with spontaneous drips and an extravagance of color. Now that I've filled my home with color and my heart with joy, I want to share that happiness with you.",
-          aboutText2:"",
-          filterAll:"All", filterSetubal:"Setúbal", filterConcept:"Concept", filterNature:"Nature",
-          sortRecent:"Newest", sortPriceLow:"Price ↑", sortPriceHigh:"Price ↓",
+          heroTag:"Expressive strokes · Neon palette · Acrylique Pluie",
+          heroSub:"Acrylic on canvas · Magna Leite · Portugal",
+          introTitle:"Life is happier with color.",
+          introText:"I started painting to fill my home with color. I wanted to create works that broke away from the obvious, with a neon palette that could impact and excite me every time I looked at them. That's how my technique, 'Acrylique Pluie', was born, with spontaneous drips and an extravagance of color. Now that I've filled my home with color and my heart with joy, I want to share that happiness with you.",
+          introText2:"",
+          filterAll:"All", sortRecent:"Newest", sortPriceLow:"Price ↑", sortPriceHigh:"Price ↓",
           exhibTitle:"Selected Exhibitions", contactTitle:"Contact & Acquisitions",
           contactText:"For inquiries about original artworks, limited prints, or studio visits, please contact us directly.",
           qrVisitLabel:"Visit on Mobile", pricingLabel:"Pricing", provLabel:"Provenance",
@@ -707,17 +677,20 @@
           priceCollectorLabel:"Collector Print", priceDigitalLabel:"Digital Download",
           acquireBtn:"Acquire Original", buyGalleryBtn:"Buy Gallery Print",
           buyCollectorBtn:"Buy Collector Print", buyDigitalBtn:"Buy Digital",
-          soldLabel:"SOLD", availableLabel:"Available", reservedLabel:"Reserved"
+          soldLabel:"SOLD", availableLabel:"Available", reservedLabel:"Reserved",
+          aboutTitle:"Magna Leite",
+          aboutText:"Magna Leite is a contemporary painter based in Portugal. Her acrylic paintings on canvas stand out for their unique strokes and vibrant neon color palette, which give her works a strong visual impact. Her signature technique, Acrylique Pluie, showcases expressive and unusual compositions, in which chromatic exuberance asserts itself as a poetic language and strategy. The artist develops her work in a studio located at Quinta de Alcube, in the Serra da Arrábida, where daily interaction with nature inspires her compositions and reinforces the dialogue between landscape, color, and imagination. Since 2025, she has participated in several group exhibitions in Portugal. In 2026, she expanded her presence in the art circuit with participation in group exhibitions and the realization of her first solo exhibitions.",
+          aboutText2:"I use painting to fill everyone's hearts and create impactful experiences, adding extravagance to the places where they are. My art reveals itself in unusual strokes and a palette of neon colors, worked in the 'Acrylique Pluie' technique."
         },
         pt: {
           siteSubtitle:"Obras & Exposições", navAbout:"Sobre", navWorks:"Obras",
           navExhibitions:"Exposições", navContact:"Contato",
-          heroTag:"Traços expressivos · Paleta neon · Acrylique Pluie", heroSub:"Acrílico sobre tela · Magna Leite · Portugal",
-          aboutTitle:"A vida é mais feliz com cor.",
-          aboutText:"Comecei a pintar para encher a minha casa de cor. Queria ter obras que fugissem ao óbvio, com uma paleta neon capaz de me impactar e entusiasmar todas as vezes que olhasse para elas. Foi assim que nasceu a minha técnica 'Acrylique Pluie', com pingos espontâneos e uma extravagância de cor. Agora que consegui encher a minha casa de cor e o meu coração de alegria, quero partilhar essa felicidade com vocês.",
-          aboutText2:"",
-          filterAll:"Todas", filterSetubal:"Setúbal", filterConcept:"Conceito", filterNature:"Natureza",
-          sortRecent:"Recentes", sortPriceLow:"Preço ↑", sortPriceHigh:"Preço ↓",
+          heroTag:"Traços expressivos · Paleta neon · Acrylique Pluie",
+          heroSub:"Acrílico sobre tela · Magna Leite · Portugal",
+          introTitle:"A vida é mais feliz com cor.",
+          introText:"Comecei a pintar para encher a minha casa de cor. Queria ter obras que fugissem ao óbvio, com uma paleta neon capaz de me impactar e entusiasmar todas as vezes que olhasse para elas. Foi assim que nasceu a minha técnica 'Acrylique Pluie', com pingos espontâneos e uma extravagância de cor. Agora que consegui encher a minha casa de cor e o meu coração de alegria, quero partilhar essa felicidade com vocês.",
+          introText2:"",
+          filterAll:"Todas", sortRecent:"Recentes", sortPriceLow:"Preço ↑", sortPriceHigh:"Preço ↓",
           exhibTitle:"Exposições Selecionadas", contactTitle:"Contato & Aquisições",
           contactText:"Para consultas sobre obras originais, prints limitados ou visitas ao ateliê, entre em contato conosco.",
           qrVisitLabel:"Visitar no Celular", pricingLabel:"Preços", provLabel:"Procedência",
@@ -729,17 +702,20 @@
           priceCollectorLabel:"Print Colecionador", priceDigitalLabel:"Download Digital",
           acquireBtn:"Adquirir Original", buyGalleryBtn:"Comprar Print Galeria",
           buyCollectorBtn:"Comprar Print Colecionador", buyDigitalBtn:"Comprar Digital",
-          soldLabel:"VENDIDA", availableLabel:"Disponível", reservedLabel:"Reservada"
+          soldLabel:"VENDIDA", availableLabel:"Disponível", reservedLabel:"Reservada",
+          aboutTitle:"Magna Leite",
+          aboutText:"Magna Leite é uma pintora contemporânea radicada em Portugal. Sua produção em pintura acrílica sobre tela destaca-se por traços únicos e uma paleta de cores neon vibrantes, que conferem forte impacto visual às obras. A técnica autoral Acrylique Pluie evidencia composições expressivas e inusitadas, nas quais a exuberância cromática se afirma como linguagem e estratégia poética. A artista desenvolve seu trabalho em um atelier situado na Quinta de Alcube, na Serra da Arrábida, onde a convivência diária com a natureza inspira suas composições e reforça o diálogo entre paisagem, cor e imaginação. Desde 2025, participa de diversas exposições coletivas em Portugal. Em 2026, ampliou sua presença no circuito artístico com participações em exposições coletivas e a realização de suas primeiras exposições individuais.",
+          aboutText2:"Utilizo a pintura para preencher os corações de todos e criar experiências impactantes, adicionando extravagância aos lugares onde estou. Minha arte se revela em pinceladas incomuns e uma paleta de cores neon, trabalhadas na técnica 'Acrylique Pluie'."
         },
         es: {
           siteSubtitle:"Obras y Exposiciones", navAbout:"Sobre", navWorks:"Obras",
           navExhibitions:"Exposiciones", navContact:"Contacto",
-          heroTag:"Trazos expresivos · Paleta neón · Acrylique Pluie", heroSub:"Acrílico sobre lienzo · Magna Leite · Portugal",
-          aboutTitle:"La vida es más feliz con color.",
-          aboutText:"Empecé a pintar para llenar mi casa de color. Quería crear obras que rompieran con lo convencional, con una paleta de colores neón que me impactara y emocionara cada vez que las mirara. Así nació mi técnica, «Acrylique Pluie», con sus goteos espontáneos y una explosión de color. Ahora que he llenado mi casa de color y mi corazón de alegría, quiero compartir esa felicidad contigo.",
-          aboutText2:"",
-          filterAll:"Todas", filterSetubal:"Setúbal", filterConcept:"Concepto", filterNature:"Naturaleza",
-          sortRecent:"Recientes", sortPriceLow:"Precio ↑", sortPriceHigh:"Precio ↓",
+          heroTag:"Trazos expresivos · Paleta neón · Acrylique Pluie",
+          heroSub:"Acrílico sobre lienzo · Magna Leite · Portugal",
+          introTitle:"La vida es más feliz con color.",
+          introText:"Empecé a pintar para llenar mi casa de color. Quería crear obras que rompieran con lo convencional, con una paleta de colores neón que me impactara y emocionara cada vez que las mirara. Así nació mi técnica, «Acrylique Pluie», con sus goteos espontáneos y una explosión de color. Ahora que he llenado mi casa de color y mi corazón de alegría, quiero compartir esa felicidad contigo.",
+          introText2:"",
+          filterAll:"Todas", sortRecent:"Recientes", sortPriceLow:"Precio ↑", sortPriceHigh:"Precio ↓",
           exhibTitle:"Exposiciones Seleccionadas", contactTitle:"Contacto y Adquisiciones",
           contactText:"Para consultas sobre obras originales, impresiones limitadas o visitas al estudio, contáctenos directamente.",
           qrVisitLabel:"Visitar en Móvil", pricingLabel:"Precios", provLabel:"Procedencia",
@@ -751,15 +727,19 @@
           priceCollectorLabel:"Print Coleccionista", priceDigitalLabel:"Descarga Digital",
           acquireBtn:"Adquirir Original", buyGalleryBtn:"Comprar Print Galería",
           buyCollectorBtn:"Comprar Print Coleccionista", buyDigitalBtn:"Comprar Digital",
-          soldLabel:"VENDIDA", availableLabel:"Disponible", reservedLabel:"Reservada"
+          soldLabel:"VENDIDA", availableLabel:"Disponible", reservedLabel:"Reservada",
+          aboutTitle:"Magna Leite",
+          aboutText:"Magna Leite es una pintora contemporánea afincada en Portugal. Sus pinturas acrílicas sobre lienzo destacan por sus pinceladas únicas y su vibrante paleta de colores neón, que confieren a sus obras un fuerte impacto visual. Su técnica distintiva, Acrylique Pluie, muestra composiciones expresivas e inusuales, en las que la exuberancia cromática se erige como lenguaje y estrategia poética. La artista desarrolla su trabajo en un estudio situado en Quinta de Alcube, en la Serra da Arrábida, donde la interacción diaria con la naturaleza inspira sus composiciones y refuerza el diálogo entre paisaje, color e imaginación. Desde 2025, ha participado en diversas exposiciones colectivas en Portugal. En 2026, amplió su presencia en el circuito artístico con la participación en exposiciones colectivas y la realización de sus primeras exposiciones individuales.",
+          aboutText2:"Utilizo la pintura para llenar los corazones de todos y crear experiencias impactantes, añadiendo extravagancia a los lugares donde se encuentran. Mi arte se revela en pinceladas inusuales y una paleta de colores neón, trabajadas con la técnica 'Acrylique Pluie'."
         }
       };
 
       // ── STATE ──
-      let allArtworks   = [];
-      let currentLang   = 'en';
-      let currentSlug   = null;
-      let filteredSlugs = [];
+      let allArtworks      = [];
+      let globalCollections = {};
+      let currentLang      = 'en';
+      let currentSlug      = null;
+      let filteredSlugs    = [];
 
       function t(key) { return (T[currentLang]?.[key]) || (T.en[key]) || key; }
 
@@ -781,6 +761,7 @@
           renderGallery(f, document.getElementById('sortSelect').value);
         }
         loadExhibitions();
+        if (Object.keys(globalCollections).length > 0) buildFilterPills();
       }
 
       function applyTranslations() {
@@ -793,10 +774,17 @@
       // ── GALLERY ──
       async function loadGalleryData() {
         try {
-          const res = await fetch('artworks.json');
-          if (!res.ok) throw new Error('Failed to load artworks.json');
-          const data = await res.json();
+          const [artRes, colRes] = await Promise.all([
+            fetch('artworks.json'),
+            fetch('collections.json')
+          ]);
+          if (!artRes.ok) throw new Error('Failed to load artworks.json');
+          const data = await artRes.json();
           allArtworks = Object.entries(data).map(([slug, work]) => ({ ...work, slug }));
+          if (colRes.ok) {
+            globalCollections = await colRes.json();
+            buildFilterPills();
+          }
           renderGallery();
         } catch(err) {
           console.error(err);
@@ -806,11 +794,13 @@
       }
 
       function renderGallery(filter='all', sort='recent') {
-        const grid = document.getElementById('galleryGrid');
+        const grid      = document.getElementById('galleryGrid');
         const noResults = document.getElementById('noResults');
-        grid.innerHTML = '';
+        grid.innerHTML  = '';
 
-        let items = allArtworks.filter(a => filter==='all' || (a.collections || (a.collection ? [a.collection] : [])).includes(filter));
+        let items = allArtworks.filter(a =>
+          filter==='all' || (a.collections || (a.collection ? [a.collection] : [])).includes(filter)
+        );
         items.sort((a,b) => {
           if (sort==='recent')    return (b.year||0)-(a.year||0);
           if (sort==='alpha')     return a.title.localeCompare(b.title);
@@ -820,16 +810,13 @@
         });
 
         filteredSlugs = items.map(a => a.slug);
-
         if (items.length === 0) { noResults.classList.remove('hidden'); return; }
         noResults.classList.add('hidden');
 
-        // Build all cards first
         const cards = items.map((art, i) => {
-          const tech  = art.technique?.[currentLang] || art.technique?.en || '';
-          const price = art.priceDisplay?.original;
-          const isSold = art.status !== 'available';
-
+          const tech     = art.technique?.[currentLang] || art.technique?.en || '';
+          const price    = art.priceDisplay?.original;
+          const isSold   = art.status !== 'available';
           let statusClass, statusText;
           switch (art.status) {
             case 'sold_private':
@@ -840,7 +827,6 @@
             default:
               statusClass = 'available'; statusText = t('availableLabel');
           }
-
           const card = document.createElement('div');
           card.className = 'art-card';
           card.style.animationDelay = `${i * 55}ms`;
@@ -859,27 +845,103 @@
                 <div class="art-card__prints">Prints from €${(art.priceDisplay?.printCollector||0).toLocaleString('de-DE')}</div>
               ` : ''}
               <span class="art-card__status status-${statusClass}">${statusText}</span>
-            </div>
-          `;
+            </div>`;
           return card;
         });
 
-        // Distribute cards row-by-row (left→right, top→bottom)
-        const cols = window.innerWidth < 1024 ? 2 : 3;
-        const gap = window.innerWidth < 1024 ? '1rem' : '1.5rem';
-        const columns = Array.from({ length: cols }, () => {
-          const col = document.createElement('div');
-          col.style.cssText = `display:flex;flex-direction:column;gap:${gap};flex:1;min-width:0;`;
-          return col;
-        });
-
-        cards.forEach((card, i) => columns[i % cols].appendChild(card));
-
-        // Grid CSS — largura fixa igual, altura natural por imagem
+        const cols    = window.innerWidth < 1024 ? 2 : 3;
+        const gap     = window.innerWidth < 1024 ? '1rem' : '1.5rem';
         const wrapper = document.createElement('div');
         wrapper.className = 'gallery-wrapper';
         cards.forEach(card => wrapper.appendChild(card));
         grid.appendChild(wrapper);
+      }
+
+      // ── FILTERS ──
+      function initFilters() {
+        document.getElementById('sortSelect').addEventListener('change', e => {
+          const f = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+          renderGallery(f, e.target.value);
+        });
+        document.addEventListener('click', e => {
+          const wrap = document.getElementById('moreCollectionsWrap');
+          if (wrap && !wrap.contains(e.target)) {
+            document.getElementById('collectionsDropdown').classList.remove('open');
+          }
+        });
+        document.querySelector('.filter-btn[data-filter="all"]').addEventListener('click', () => activateFilter('all'));
+      }
+
+      function buildFilterPills() {
+        const ids      = Object.keys(globalCollections);
+        const visible  = ids.slice(0, 3);
+        const overflow = ids.slice(3);
+
+        const pillsContainer = document.getElementById('pillsContainer');
+        pillsContainer.innerHTML = '';
+        visible.forEach(id => {
+          const label = globalCollections[id]?.[currentLang] || globalCollections[id]?.pt || id;
+          const btn   = document.createElement('button');
+          btn.className      = 'pill filter-btn flex-shrink-0';
+          btn.dataset.filter = id;
+          btn.textContent    = label;
+          btn.addEventListener('click', () => activateFilter(id));
+          pillsContainer.appendChild(btn);
+        });
+
+        const wrap     = document.getElementById('moreCollectionsWrap');
+        const dropdown = document.getElementById('collectionsDropdown');
+        const moreBtn  = document.getElementById('moreBtn');
+
+        // Estilo distinto para o botão More
+        moreBtn.style.cssText = 'border-style:dashed;color:#6366f1;border-color:#a5b4fc;';
+
+        // Remover listener anterior para não duplicar
+        const newMoreBtn = moreBtn.cloneNode(true);
+        moreBtn.parentNode.replaceChild(newMoreBtn, moreBtn);
+
+        dropdown.innerHTML = '';
+
+        if (overflow.length > 0) {
+          wrap.style.display = '';
+          // Também colocar todas as coleções no dropdown (incluindo as visíveis como pills)
+          ids.forEach(id => {
+            const label = globalCollections[id]?.[currentLang] || globalCollections[id]?.pt || id;
+            const item  = document.createElement('div');
+            item.className      = 'collections-dropdown__item';
+            item.dataset.filter = id;
+            item.textContent    = label;
+            item.addEventListener('click', e => {
+              e.stopPropagation();
+              activateFilter(id);
+              document.getElementById('collectionsDropdown').classList.remove('open');
+            });
+            dropdown.appendChild(item);
+          });
+          newMoreBtn.addEventListener('click', e => {
+            e.stopPropagation();
+            document.getElementById('collectionsDropdown').classList.toggle('open');
+          });
+        } else {
+          wrap.style.display = 'none';
+        }
+
+        const active = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
+        setActiveFilter(active);
+      }
+
+      function activateFilter(filter) {
+        setActiveFilter(filter);
+        renderGallery(filter, document.getElementById('sortSelect').value);
+      }
+
+      function setActiveFilter(filter) {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.collections-dropdown__item').forEach(b => b.classList.remove('active'));
+        const btn  = [...document.querySelectorAll('.filter-btn')].find(b => b.dataset.filter === filter);
+        if (btn) btn.classList.add('active');
+        const item = [...document.querySelectorAll('.collections-dropdown__item')].find(b => b.dataset.filter === filter);
+        if (item) item.classList.add('active');
       }
 
       // ── LIGHTBOX ──
@@ -888,7 +950,7 @@
         populateLightbox(slug);
         const lb = document.getElementById('lightbox');
         lb.classList.add('open');
-        requestAnimationFrame(() => { lb.classList.add('visible'); });
+        requestAnimationFrame(() => lb.classList.add('visible'));
         document.body.style.overflow = 'hidden';
       }
 
@@ -905,15 +967,13 @@
       function navigateLightbox(dir) {
         const idx = filteredSlugs.indexOf(currentSlug);
         if (idx === -1) return;
-        const next = (idx + dir + filteredSlugs.length) % filteredSlugs.length;
-        currentSlug = filteredSlugs[next];
+        currentSlug = filteredSlugs[(idx + dir + filteredSlugs.length) % filteredSlugs.length];
         populateLightbox(currentSlug);
       }
 
       function populateLightbox(slug) {
         const art = allArtworks.find(a => a.slug === slug);
         if (!art) return;
-
         const isSold = art.status !== 'available';
         const lang   = currentLang;
         const tech   = art.technique?.[lang] || art.technique?.en || '';
@@ -921,14 +981,14 @@
         const loc    = typeof art.location==='object' ? (art.location[lang]||art.location.en) : art.location;
         const pd     = art.priceDisplay || {};
 
-        document.getElementById('lbImage').src = art.image;
-        document.getElementById('lbImage').alt = art.title;
+        document.getElementById('lbImage').src   = art.image;
+        document.getElementById('lbImage').alt   = art.title;
         document.getElementById('lbTitle').textContent = art.title;
         document.getElementById('lbMeta').textContent  = `${art.year} · ${tech} · ${art.dimensions}`;
         document.getElementById('lbStory').textContent = `"${story}"`;
         document.getElementById('lbLocation').textContent = loc || '—';
-        document.getElementById('lbHash').textContent = art.originalHash || '';
-        document.getElementById('lbFullLink').href = `artwork.html?id=${slug}`;
+        document.getElementById('lbHash').textContent     = art.originalHash || '';
+        document.getElementById('lbFullLink').href        = `artwork.html?id=${slug}`;
         document.getElementById('lbFullLink').textContent = t('viewFullPage');
 
         const soldBadge = document.getElementById('lbSoldBadge');
@@ -936,22 +996,16 @@
         soldBadge.textContent = t('soldLabel');
 
         const statusEl = document.getElementById('lbStatus');
-        if (isSold) {
-          statusEl.textContent = t('soldLabel');
-          statusEl.className = 'text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1 status-sold';
-        } else {
-          statusEl.textContent = t('availableLabel');
-          statusEl.className = 'text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1 status-available';
-        }
+        statusEl.textContent = isSold ? t('soldLabel') : t('availableLabel');
+        statusEl.className   = `text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1 status-${isSold ? 'sold' : 'available'}`;
 
-        // Pricing rows
         const pricingEl = document.getElementById('lbPricing');
         pricingEl.innerHTML = '';
         [
-          { label: t('priceOriginalLabel'), val: pd.original,        note: 'Unique · Signed' },
-          { label: t('priceGalleryLabel'),  val: pd.printGallery,    note: '70 × 100 cm' },
-          { label: t('priceCollectorLabel'),val: pd.printCollector,  note: '50 × 70 cm' },
-          { label: t('priceDigitalLabel'),  val: pd.digital,         note: 'High-res file' },
+          { label: t('priceOriginalLabel'),  val: pd.original,       note: 'Unique · Signed' },
+          { label: t('priceGalleryLabel'),   val: pd.printGallery,   note: '70 × 100 cm' },
+          { label: t('priceCollectorLabel'), val: pd.printCollector, note: '50 × 70 cm' },
+          { label: t('priceDigitalLabel'),   val: pd.digital,        note: 'High-res file' },
         ].forEach(row => {
           if (!row.val) return;
           pricingEl.innerHTML += `
@@ -961,31 +1015,24 @@
             </div>`;
         });
 
-        // Buttons
         const btnsEl = document.getElementById('lbButtons');
         btnsEl.innerHTML = '';
-        if (!isSold && art.priceOriginal?.live) {
+        if (!isSold && art.priceOriginal?.live)
           btnsEl.innerHTML += `<a href="${art.priceOriginal.live}" target="_blank" rel="noopener" class="btn-acquire">${t('acquireBtn')} — €${(pd.original||0).toLocaleString('de-DE')}</a>`;
-        }
-        if (art.pricePrintGallery?.live) {
+        if (art.pricePrintGallery?.live)
           btnsEl.innerHTML += `<a href="${art.pricePrintGallery.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyGalleryBtn')} — €${(pd.printGallery||0).toLocaleString('de-DE')}</a>`;
-        }
-        if (art.pricePrintCollector?.live) {
+        if (art.pricePrintCollector?.live)
           btnsEl.innerHTML += `<a href="${art.pricePrintCollector.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyCollectorBtn')} — €${(pd.printCollector||0).toLocaleString('de-DE')}</a>`;
-        }
-        if (art.priceDigital?.live) {
+        if (art.priceDigital?.live)
           btnsEl.innerHTML += `<a href="${art.priceDigital.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyDigitalBtn')} — €${(pd.digital||0).toLocaleString('de-DE')}</a>`;
-        }
       }
 
-      // Keyboard navigation
       document.addEventListener('keydown', e => {
-        if (e.key === 'Escape')      closeLightbox();
-        if (e.key === 'ArrowRight')  navigateLightbox(1);
-        if (e.key === 'ArrowLeft')   navigateLightbox(-1);
+        if (e.key === 'Escape')     closeLightbox();
+        if (e.key === 'ArrowRight') navigateLightbox(1);
+        if (e.key === 'ArrowLeft')  navigateLightbox(-1);
       });
 
-      // Touch swipe on lightbox
       let touchStartX = 0;
       document.getElementById('lightbox').addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, {passive:true});
       document.getElementById('lightbox').addEventListener('touchend',   e => {
@@ -1001,27 +1048,100 @@
           const list = document.getElementById('exhibitionsList');
           list.innerHTML = '';
           Object.entries(data).forEach(([slug, exhib]) => {
-            const desc = exhib.description?.[currentLang] || exhib.description?.en || '';
+            const desc   = exhib.description?.[currentLang] || exhib.description?.en || '';
+            const thumbs = (exhib.gallery || []).slice(0, 6);
+            const thumbsHtml = thumbs.length ? `
+              <div class="exhib-thumbs">
+                ${thumbs.map(f => `
+                  <img class="exhib-thumb"
+                       src="assets/exhibition/img/${slug}/${f}" alt=""
+                       loading="lazy"
+                       onclick="event.stopPropagation();window.location.href='exhibition.html?id=${slug}'"
+                       onerror="this.style.display='none'">`).join('')}
+                ${exhib.gallery.length > 6 ? `<span class="exhib-thumb flex items-center justify-center text-xs text-gray-400 bg-gray-100 border border-gray-200 rounded">+${exhib.gallery.length - 6}</span>` : ''}
+              </div>` : '';
             const item = document.createElement('div');
             item.className = 'group cursor-pointer border-b border-gray-100 pb-6 last:border-0 hover:bg-gray-50 transition p-4 rounded-lg -mx-4';
-            item.onclick = () => window.location.href = `exhibition.html?id=${slug}`;
+            item.onclick   = () => window.location.href = `exhibition.html?id=${slug}`;
             item.innerHTML = `
               <div class="flex flex-col md:flex-row gap-5 items-start">
                 <div class="w-full md:w-44 flex-shrink-0 rounded bg-gray-100 overflow-hidden min-h-40 flex items-center justify-center">
-                  <img src="assets/exhibition/flyers/${exhib.image}"onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect width=%22300%22 height=%22400%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E';"
+                  <img src="assets/exhibition/flyers/${exhib.image}"
+                       onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22300%22 height=%22400%22%3E%3Crect width=%22300%22 height=%22400%22 fill=%22%23e5e7eb%22/%3E%3C/svg%3E';"
                        alt="${exhib.title}" class="w-full h-auto max-h-72 object-contain group-hover:scale-105 transition duration-700">
                 </div>
-                <div>
+                <div class="flex-1 min-w-0">
                   <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${exhib.date}</span>
                   <h3 class="text-lg serif font-medium mt-1 mb-1 group-hover:text-black transition">${exhib.title}</h3>
                   <p class="text-gray-700 text-sm font-medium mb-2">${exhib.location}</p>
                   <p class="text-gray-500 text-sm leading-relaxed line-clamp-3">${desc}</p>
+                  ${thumbsHtml}
                 </div>
               </div>`;
             list.appendChild(item);
           });
         } catch(err) { console.error('Exhibitions error:', err); }
       }
+
+      // ── ABOUT SLIDESHOW ──
+      let aboutPhotos  = [];
+      let aboutCurrent = 0;
+
+      async function loadAboutSlideshow() {
+        try {
+          const API = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
+          const res = await fetch(`${API}/about-photos`);
+          if (!res.ok) return;
+          const data  = await res.json();
+          aboutPhotos = data.photos || [];
+          if (aboutPhotos.length === 0) {
+            document.getElementById('aboutPrev').style.display = 'none';
+            document.getElementById('aboutNext').style.display = 'none';
+            return;
+          }
+          const track  = document.getElementById('aboutTrack');
+          const dotsEl = document.getElementById('aboutDots');
+          track.innerHTML  = '';
+          dotsEl.innerHTML = '';
+          aboutPhotos.forEach((photo, i) => {
+            const slide = document.createElement('div');
+            slide.className = 'about-slideshow__slide';
+            slide.innerHTML = `<img src="assets/img/about/${photo}" alt="Magna Leite" loading="${i===0?'eager':'lazy'}">`;
+            track.appendChild(slide);
+            const dot = document.createElement('button');
+            dot.className = 'about-slideshow__dot' + (i===0 ? ' active' : '');
+            dot.setAttribute('aria-label', `Foto ${i+1}`);
+            dot.onclick = () => aboutGoTo(i);
+            dotsEl.appendChild(dot);
+          });
+          if (aboutPhotos.length === 1) {
+            document.getElementById('aboutPrev').style.display = 'none';
+            document.getElementById('aboutNext').style.display = 'none';
+          }
+          aboutGoTo(0);
+        } catch(err) { console.error('About slideshow error:', err); }
+      }
+
+      function aboutGoTo(idx) {
+        aboutCurrent = (idx + aboutPhotos.length) % aboutPhotos.length;
+        document.getElementById('aboutTrack').style.transform = `translateX(-${aboutCurrent * 100}%)`;
+        document.querySelectorAll('.about-slideshow__dot').forEach((d, i) => {
+          d.classList.toggle('active', i === aboutCurrent);
+        });
+      }
+
+      function aboutSlide(dir) { aboutGoTo(aboutCurrent + dir); }
+
+      (function() {
+        let tx = 0;
+        const el = document.getElementById('aboutSlideshow');
+        if (!el) return;
+        el.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, {passive:true});
+        el.addEventListener('touchend',   e => {
+          const dx = e.changedTouches[0].clientX - tx;
+          if (Math.abs(dx) > 40) aboutSlide(dx < 0 ? 1 : -1);
+        }, {passive:true});
+      })();
 
       // ── EMAIL MODAL ──
       function openEmailModal() {
@@ -1046,12 +1166,12 @@
         emailjs.sendForm(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, this)
           .then(() => {
             status.textContent = currentLang==='pt' ? 'Mensagem enviada!' : 'Message sent!';
-            status.className = 'text-xs text-center mt-1 text-green-600 font-bold';
+            status.className   = 'text-xs text-center mt-1 text-green-600 font-bold';
             setTimeout(() => { closeEmailModal(); btn.textContent=t('sendBtn'); btn.disabled=false; status.textContent=''; this.reset(); }, 2000);
           }, err => {
             console.error(err);
             status.textContent = currentLang==='pt' ? 'Erro. Tente novamente.' : 'Error. Try again.';
-            status.className = 'text-xs text-center mt-1 text-red-500';
+            status.className   = 'text-xs text-center mt-1 text-red-500';
             btn.textContent = t('sendBtn'); btn.disabled = false;
           });
       });
@@ -1062,7 +1182,7 @@
         const msgs = {
           pt: 'Olá! Gostaria de informações sobre as obras da Magna.',
           es: '¡Hola! Me gustaría información sobre las obras de Magna.',
-          en: 'Hello! I would like information about Magna\'s artworks.'
+          en: "Hello! I would like information about Magna's artworks."
         };
         window.open(`https://wa.me/${WHATSAPP_PHONE}?text=${encodeURIComponent(msgs[currentLang]||msgs.en)}`, '_blank', 'noopener');
       });
@@ -1074,27 +1194,12 @@
         new QRCode(el, { text: BASE_URL, width:72, height:72, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.M });
       }
 
-      // ── FILTERS & SORT ──
-      function initFilters() {
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-          btn.addEventListener('click', () => {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            renderGallery(btn.dataset.filter, document.getElementById('sortSelect').value);
-          });
-        });
-        document.getElementById('sortSelect').addEventListener('change', e => {
-          const f = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
-          renderGallery(f, e.target.value);
-        });
-        document.getElementById('langSwitcher').addEventListener('change', e => setLanguage(e.target.value));
-      }
-
       // ── INIT ──
       document.addEventListener('DOMContentLoaded', () => {
         setLanguage(getInitialLang());
         loadGalleryData();
         loadExhibitions();
+        loadAboutSlideshow();
         initFilters();
         generateQR();
       });

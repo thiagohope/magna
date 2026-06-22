@@ -252,7 +252,9 @@
     "dimensions": "120 x 120 cm (H x W)",
     "image": "assets/paintings/full/coral.jpeg",
     "thumbnail": "assets/paintings/thumbnails/coral.jpeg",
-    "collection": "nature",
+    "collections": [
+      "nature"
+    ],
     "priceDisplay": {
       "original": 2100,
       "printGallery": 630,
@@ -278,19 +280,19 @@
     },
     "priceOriginal": {
       "test": "https://buy.stripe.com/test_bJebJ1eCr0Ila2Rb49a7C0g",
-      "live": "https://buy.stripe.com/9B614o7LH1EldG82oL2VG0g"
+      "live": "https://buy.stripe.com/4gMaEYea5er7dG88N92VG0Q"
     },
     "pricePrintGallery": {
       "test": "https://buy.stripe.com/test_bJebJ1fGvfDf0shdcha7C0h",
-      "live": "https://buy.stripe.com/cNiaEY1njer7fOg3sP2VG0i"
+      "live": "https://buy.stripe.com/00w8wQaXTaaR59C9Rd2VG0R"
     },
     "pricePrintCollector": {
       "test": "https://buy.stripe.com/test_bJeaEX79Z1Mp3Eta05a7C0i",
-      "live": "https://buy.stripe.com/8x2cN6c1XciZ31ue7t2VG0j"
+      "live": "https://buy.stripe.com/28EcN61nj6YF6dG9Rd2VG0S"
     },
     "priceDigital": {
       "test": "https://buy.stripe.com/test_eVq14ncuj3Uxdf31tza7C0j",
-      "live": "https://buy.stripe.com/00w8wQfe996N7hK4wT2VG0h"
+      "live": "https://buy.stripe.com/cNi4gA5Dz4Qx45y4wT2VG0T"
     },
     "history": [
       {
@@ -604,6 +606,70 @@
     "history": [
       {
         "date": "2026-06-21",
+        "event": "Creation",
+        "location": "",
+        "details": ""
+      }
+    ]
+  },
+  "alcube": {
+    "title": "Alcube",
+    "year": "2026",
+    "technique": {
+      "pt": "Acrylique pluie",
+      "en": "Acrylique pluie",
+      "es": "Acrylique pluie"
+    },
+    "dimensions": "205 x 220 cm",
+    "image": "assets/paintings/full/alcube.JPG",
+    "thumbnail": "assets/paintings/thumbnails/alcube.JPG",
+    "collections": [
+      "nature",
+      "portugal",
+      "setubal"
+    ],
+    "priceDisplay": {
+      "original": 4300,
+      "printGallery": 1290,
+      "printCollector": 430,
+      "digital": 43
+    },
+    "story": {
+      "pt": "Quis unir duas épocas nesta obra: a Capela de São Pedro de Alcube, que remonta ao final do século XVI, e as cores vibrantes e neon da atualidade, como se o próprio tempo pudesse ser pintado. Pintei-a envolta numa ânfora de vinho, rodeada pelo céu, mar e montanhas. Para mim, aqui há mais do que fé; há paisagem, antiga e presente ao mesmo tempo.",
+      "en": "I wanted to bring together two eras in this work: the Chapel of São Pedro de Alcube, dating back to the late 16th century, and today's colors, neon and vibrant, as if time itself could be painted. I painted it wrapped around a wine amphora, surrounded by sky, sea, and mountains. To me, there's more than faith here, there's landscape, both old and present at once.",
+      "es": "Quise fusionar dos épocas en esta obra: la capilla de São Pedro de Alcube, que data de finales del siglo XVI, y los colores actuales, neón y vibrantes, como si el tiempo mismo pudiera pintarse. La pinté envolviendo una ánfora de vino, rodeada de cielo, mar y montañas. Para mí, aquí hay algo más que fe; hay paisaje, antiguo y presente a la vez."
+    },
+    "status": "available",
+    "location": {
+      "pt": "",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "022e1e6f-9639-48fc-9d8c-4529b793b8ff",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "",
+      "live": ""
+    },
+    "pricePrintGallery": {
+      "test": "",
+      "live": ""
+    },
+    "pricePrintCollector": {
+      "test": "",
+      "live": ""
+    },
+    "priceDigital": {
+      "test": "",
+      "live": ""
+    },
+    "history": [
+      {
+        "date": "2026-06-22",
         "event": "Creation",
         "location": "",
         "details": ""

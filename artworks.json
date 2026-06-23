@@ -70,7 +70,9 @@
     "dimensions": "155 x 200 cm (H x W)",
     "image": "assets/paintings/full/figueirinha.JPG",
     "thumbnail": "assets/paintings/thumbnails/figueirinha.JPG",
-    "collection": "setubal",
+    "collections": [
+      "setubal"
+    ],
     "priceDisplay": {
       "original": 2000,
       "printGallery": 600,
@@ -96,19 +98,19 @@
     },
     "priceOriginal": {
       "test": "https://buy.stripe.com/test_6oU4gz2TJ8aN0shdcha7C04",
-      "live": "https://buy.stripe.com/fZubJ29TPciZ9pS6F12VG04"
+      "live": "https://buy.stripe.com/4gMcN60jfaaR8lOaVh2VG12"
     },
     "pricePrintGallery": {
       "test": "https://buy.stripe.com/test_7sY6oH2TJ8aN5MB5JPa7C05",
-      "live": "https://buy.stripe.com/9B6bJ21nj0AhdG82oL2VG07"
+      "live": "https://buy.stripe.com/8x25kEgid96NdG88N92VG13"
     },
     "pricePrintCollector": {
       "test": "https://buy.stripe.com/test_4gMbJ13XNfDf1wl0pva7C06",
-      "live": "https://buy.stripe.com/14AfZi2rn2Ip59C5AX2VG06"
+      "live": "https://buy.stripe.com/cNi3cwaXT6YF45ye7t2VG14"
     },
     "priceDigital": {
       "test": "https://buy.stripe.com/test_9B63cv3XNaiVb6V4FLa7C07",
-      "live": "https://buy.stripe.com/14AcN6aXTfvbcC44wT2VG05"
+      "live": "https://buy.stripe.com/3cI3cw2rn2IpeKcfbx2VG15"
     },
     "history": [
       {
@@ -130,7 +132,9 @@
     "dimensions": "150 x 100 cm (H x W)",
     "image": "assets/paintings/full/guarita.jpeg",
     "thumbnail": "assets/paintings/thumbnails/guarita.jpeg",
-    "collection": "setubal",
+    "collections": [
+      "setubal"
+    ],
     "priceDisplay": {
       "original": 2000,
       "printGallery": 600,
@@ -156,19 +160,19 @@
     },
     "priceOriginal": {
       "test": "https://buy.stripe.com/test_3cI5kD0LB4YB5MB3BHa7C08",
-      "live": "https://buy.stripe.com/fZu5kE5DzciZgSk6F12VG08"
+      "live": "https://buy.stripe.com/9B628s6HD3Mt31u6F12VG0Y"
     },
     "pricePrintGallery": {
       "test": "https://buy.stripe.com/test_fZu8wPdyn1Mp6QF0pva7C09",
-      "live": "https://buy.stripe.com/14A4gA3vr96N59C8N92VG09"
+      "live": "https://buy.stripe.com/aFa9AU1njdn345y4wT2VG0Z"
     },
     "pricePrintCollector": {
       "test": "https://buy.stripe.com/test_eVq3cvamb9eR7UJgota7C0a",
-      "live": "https://buy.stripe.com/fZu5kE4zvciZ7hKd3p2VG0a"
+      "live": "https://buy.stripe.com/9B63cw6HD96N0Tm2oL2VG10"
     },
     "priceDigital": {
       "test": "https://buy.stripe.com/test_14A14n51R4YB0sh8W1a7C0b",
-      "live": "https://buy.stripe.com/7sYaEY3vr1El6dG1kH2VG0b"
+      "live": "https://buy.stripe.com/aFabJ28PL0AhatW3sP2VG11"
     },
     "history": [
       {

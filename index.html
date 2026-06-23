@@ -57,31 +57,33 @@
         position: static;
         background: white;
         border-bottom: 1px solid var(--line);
+        overflow: visible;
       }
-      .collections-dropdown {
-        position: absolute;
-        top: calc(100% + 6px);
-        left: 0;
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        box-shadow: 0 8px 24px rgba(0,0,0,.1);
-        z-index: 100;
-        min-width: 180px;
-        padding: 0.4rem 0;
-        display: none;
+      .collections-modal {
+        position: fixed; inset: 0; z-index: 2000;
+        background: rgba(0,0,0,.4);
+        display: none; align-items: center; justify-content: center;
       }
-      .collections-dropdown.open { display: block; }
-      .collections-dropdown__item {
-        padding: 0.5rem 1rem;
-        font-size: 0.78rem;
-        cursor: pointer;
-        color: #374151;
+      .collections-modal.open { display: flex; }
+      .collections-modal__box {
+        background: white; border-radius: 12px;
+        padding: 1.5rem; min-width: 220px; max-width: 90vw;
+        box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      }
+      .collections-modal__title {
+        font-size: .7rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: .08em; color: #aaa; margin-bottom: .75rem;
+      }
+      .collections-modal__item {
+        display: block; width: 100%; text-align: left;
+        padding: .6rem .75rem; border-radius: 6px;
+        font-size: .85rem; cursor: pointer; border: none;
+        background: transparent; color: #374151;
         transition: background .15s;
       }
-      .collections-dropdown__item:hover { background: #f9fafb; }
-      .collections-dropdown__item.active { font-weight: 700; color: #111; }
-      .filter-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .collections-modal__item:hover { background: #f3f4f6; }
+      .collections-modal__item.active { font-weight: 700; color: #111; background: #f9fafb; }
+      .filter-scroll { overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
       .filter-scroll::-webkit-scrollbar { display: none; }
 
       /* ── GALLERY GRID ── */
@@ -421,7 +423,7 @@
           </select>
           <nav class="hidden md:flex items-center gap-5 text-sm text-gray-500">
             <a href="#about" class="hover:text-black transition-colors" data-i18n="navAbout">About</a>
-            <a href="#gallery" class="hover:text-black transition-colors" data-i18n="navWorks">Artworks</a>
+            <a href="#artworks" class="hover:text-black transition-colors" data-i18n="navWorks">Artworks</a>
             <a href="#exhibitions" class="hover:text-black transition-colors" data-i18n="navExhibitions">Exhibitions</a>
             <a href="#contact" class="hover:text-black transition-colors" data-i18n="navContact">Contact</a>
           </nav>
@@ -434,7 +436,7 @@
         <div id="mobileMenu" class="hidden md:hidden absolute top-full left-0 right-0 bg-white border-t border-gray-100 shadow-md z-50 py-3">
           <div class="container flex flex-col gap-1">
             <a href="#about" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navAbout">About</a>
-            <a href="#gallery" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navWorks">Artworks</a>
+            <a href="#artworks" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navWorks">Artworks</a>
             <a href="#exhibitions" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors border-b border-gray-50" data-i18n="navExhibitions">Exhibitions</a>
             <a href="#contact" onclick="toggleMenu()" class="py-2.5 text-sm text-gray-600 hover:text-black transition-colors" data-i18n="navContact">Contact</a>
           </div>
@@ -464,14 +466,13 @@
     </section>
 
     <!-- FILTER TOOLBAR -->
-    <div class="toolbar">
+    <div class="toolbar" id="artworks">
       <div class="container py-2.5">
         <div class="filter-scroll flex items-center gap-2 pb-0.5">
           <button class="pill active filter-btn flex-shrink-0" data-filter="all" data-i18n="filterAll">All</button>
           <div id="pillsContainer" class="flex items-center gap-2"></div>
           <div class="relative flex-shrink-0" id="moreCollectionsWrap" style="display:none;">
-            <button id="moreBtn" class="pill flex-shrink-0">+ More ▾</button>
-            <div id="collectionsDropdown" class="collections-dropdown"></div>
+            <button id="moreBtn" class="pill flex-shrink-0" onclick="openCollectionsModal()">+ More ▾</button>
           </div>
           <div class="ml-auto flex items-center gap-2 flex-shrink-0 pl-3">
             <select id="sortSelect" class="text-xs bg-white border border-gray-200 rounded-full px-3 py-1 focus:outline-none focus:border-black cursor-pointer">
@@ -547,6 +548,14 @@
         </div>
       </div>
     </footer>
+
+    <!-- COLLECTIONS MODAL -->
+    <div id="collectionsModal" class="collections-modal" onclick="if(event.target===this)closeCollectionsModal()">
+      <div class="collections-modal__box">
+        <div class="collections-modal__title">Coleções</div>
+        <div id="collectionsModalList"></div>
+      </div>
+    </div>
 
     <!-- BACK TO TOP -->
     <button id="backToTop" class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Voltar ao topo">&#8593;</button>
@@ -851,26 +860,28 @@
         grid.appendChild(wrapper);
       }
 
-      // ── FILTERS ──
       function initFilters() {
         document.getElementById('sortSelect').addEventListener('change', e => {
           const f = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
           renderGallery(f, e.target.value);
         });
-        document.addEventListener('click', e => {
-          const wrap = document.getElementById('moreCollectionsWrap');
-          if (wrap && !wrap.contains(e.target)) {
-            document.getElementById('collectionsDropdown').classList.remove('open');
-          }
-        });
+        document.getElementById('langSwitcher').addEventListener('change', e => setLanguage(e.target.value));
         document.querySelector('.filter-btn[data-filter="all"]').addEventListener('click', () => activateFilter('all'));
       }
 
-      function buildFilterPills() {
-        const ids      = Object.keys(globalCollections);
-        const visible  = ids.slice(0, 3);
-        const overflow = ids.slice(3);
+      function openCollectionsModal() {
+        document.getElementById('collectionsModal').classList.add('open');
+      }
 
+      function closeCollectionsModal() {
+        document.getElementById('collectionsModal').classList.remove('open');
+      }
+
+      function buildFilterPills() {
+        const ids = Object.keys(globalCollections);
+        if (ids.length === 0) return;
+
+        const visible = ids.slice(0, 3);
         const pillsContainer = document.getElementById('pillsContainer');
         pillsContainer.innerHTML = '';
         visible.forEach(id => {
@@ -883,42 +894,23 @@
           pillsContainer.appendChild(btn);
         });
 
-        const wrap     = document.getElementById('moreCollectionsWrap');
-        const dropdown = document.getElementById('collectionsDropdown');
-        const moreBtn  = document.getElementById('moreBtn');
-
-        // Estilo distinto para o botão More
-        moreBtn.style.cssText = 'border-style:dashed;color:#6366f1;border-color:#a5b4fc;';
-
-        // Remover listener anterior para não duplicar
-        const newMoreBtn = moreBtn.cloneNode(true);
-        moreBtn.parentNode.replaceChild(newMoreBtn, moreBtn);
-
-        dropdown.innerHTML = '';
-
-        if (overflow.length > 0) {
-          wrap.style.display = '';
-          // Também colocar todas as coleções no dropdown (incluindo as visíveis como pills)
-          ids.forEach(id => {
-            const label = globalCollections[id]?.[currentLang] || globalCollections[id]?.pt || id;
-            const item  = document.createElement('div');
-            item.className      = 'collections-dropdown__item';
-            item.dataset.filter = id;
-            item.textContent    = label;
-            item.addEventListener('click', e => {
-              e.stopPropagation();
-              activateFilter(id);
-              document.getElementById('collectionsDropdown').classList.remove('open');
-            });
-            dropdown.appendChild(item);
+        const modalList = document.getElementById('collectionsModalList');
+        modalList.innerHTML = '';
+        ids.forEach(id => {
+          const label = globalCollections[id]?.[currentLang] || globalCollections[id]?.pt || id;
+          const btn   = document.createElement('button');
+          btn.className      = 'collections-modal__item';
+          btn.dataset.filter = id;
+          btn.textContent    = label;
+          btn.addEventListener('click', () => {
+            activateFilter(id);
+            closeCollectionsModal();
           });
-          newMoreBtn.addEventListener('click', e => {
-            e.stopPropagation();
-            document.getElementById('collectionsDropdown').classList.toggle('open');
-          });
-        } else {
-          wrap.style.display = 'none';
-        }
+          modalList.appendChild(btn);
+        });
+
+        document.getElementById('moreCollectionsWrap').style.display = '';
+        document.getElementById('moreBtn').style.cssText = 'border-style:dashed;color:#6366f1;border-color:#a5b4fc;';
 
         const active = document.querySelector('.filter-btn.active')?.dataset.filter || 'all';
         setActiveFilter(active);
@@ -931,10 +923,10 @@
 
       function setActiveFilter(filter) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.collections-dropdown__item').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.collections-modal__item').forEach(b => b.classList.remove('active'));
         const btn  = [...document.querySelectorAll('.filter-btn')].find(b => b.dataset.filter === filter);
         if (btn) btn.classList.add('active');
-        const item = [...document.querySelectorAll('.collections-dropdown__item')].find(b => b.dataset.filter === filter);
+        const item = [...document.querySelectorAll('.collections-modal__item')].find(b => b.dataset.filter === filter);
         if (item) item.classList.add('active');
       }
 

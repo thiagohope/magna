@@ -532,6 +532,15 @@
                 btn.classList.add('success');
                 showStatus(`✅ Site atualizado! ${data.artworks} obras guardadas no servidor.`, 'success');
 
+                // Guardar collections.json em simultâneo
+                try {
+                    await fetch('https://brainboxmed.com/magna/api/save-collections', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': API_SECRET },
+                        body: JSON.stringify(globalCollections)
+                    });
+                } catch(e) { console.warn('collections.json não guardado:', e); }
+
                 setTimeout(() => {
                     btn.textContent = '💾 GUARDAR NO SERVIDOR';
                     btn.className   = btn.className.replace('saving','').replace('success','') + ' bg-black';

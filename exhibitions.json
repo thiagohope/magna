@@ -10,18 +10,34 @@
         "es": ""
     },
     "gallery": [
-        "foto01.jpeg",
-        "foto02.jpeg",
-        "Chocochique03.jpeg",
-        "Chocochique04.jpeg",
-        "Chocochique05.jpeg",
-        "Chocochique06.jpeg",
-        "Chocochique07.jpeg",
-        "Chocochique08.jpeg",
-        "Chocochique09.jpeg",
-        "Chocochique09b.jpeg",
-        "Chocochique10.jpeg",
-        "Chocochique11.jpeg"
+        "2025-chocochique": {
+    "title": "8a. Edição Vinhos com Arte de São Sebastião",
+    "date": "Sep 2025",
+    "location": "Casa Episcopal, Setubal, Portugal",
+    "image": "2025-8_ed_vinhos.png",
+    "description": {
+        "pt": "",
+        "en": "",
+        "es": ""
+    },
+    "gallery": [
+        "00.jpeg",
+        "01.jpeg",
+        "02.jpeg",
+        "03.jpeg",
+        "04.jpeg",
+        "05.jpeg",
+        "06.jpeg",
+        "07.jpeg",
+        "08.jpeg",
+        "09.jpeg",
+        "10.jpeg",
+        "11.jpeg"
+    ],
+    "artworks": [
+        "choco"
+    ]
+},
     ],
     "artworks": [
         "choco"

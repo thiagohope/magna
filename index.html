@@ -61,28 +61,70 @@
       }
       .collections-modal {
         position: fixed; inset: 0; z-index: 2000;
-        background: rgba(0,0,0,.4);
-        display: none; align-items: center; justify-content: center;
+        background: rgba(15,23,42,.35);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        display: none; align-items: flex-start; justify-content: center;
+        padding-top: 120px;
       }
       .collections-modal.open { display: flex; }
       .collections-modal__box {
-        background: white; border-radius: 12px;
-        padding: 1.5rem; min-width: 220px; max-width: 90vw;
-        box-shadow: 0 20px 60px rgba(0,0,0,.25);
+        background: white; border-radius: 16px;
+        width: 100%; max-width: 360px;
+        box-shadow: 0 24px 64px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.08);
+        overflow: hidden;
+        animation: modalSlideIn .2s cubic-bezier(.4,0,.2,1);
       }
-      .collections-modal__title {
-        font-size: .7rem; font-weight: 700; text-transform: uppercase;
-        letter-spacing: .08em; color: #aaa; margin-bottom: .75rem;
+      @keyframes modalSlideIn {
+        from { opacity: 0; transform: translateY(-12px) scale(.97); }
+        to   { opacity: 1; transform: translateY(0) scale(1); }
       }
+      .collections-modal__search {
+        display: flex; align-items: center; gap: .5rem;
+        padding: .875rem 1rem;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .collections-modal__search input {
+        flex: 1; border: none; outline: none;
+        font-size: .85rem; color: #111;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background: transparent;
+      }
+      .collections-modal__search input::placeholder { color: #aaa; }
+      .collections-modal__search svg { flex-shrink: 0; color: #bbb; }
+      .collections-modal__list { padding: .4rem 0; max-height: 280px; overflow-y: auto; }
       .collections-modal__item {
-        display: block; width: 100%; text-align: left;
-        padding: .6rem .75rem; border-radius: 6px;
-        font-size: .85rem; cursor: pointer; border: none;
+        display: flex; align-items: center; justify-content: space-between;
+        width: 100%; text-align: left;
+        padding: .65rem 1rem; border: none;
         background: transparent; color: #374151;
-        transition: background .15s;
+        font-size: .85rem; font-family: 'Plus Jakarta Sans', sans-serif;
+        cursor: pointer; transition: background .12s;
       }
-      .collections-modal__item:hover { background: #f3f4f6; }
-      .collections-modal__item.active { font-weight: 700; color: #111; background: #f9fafb; }
+      .collections-modal__item:hover { background: #f9fafb; }
+      .collections-modal__item.active { color: #111; font-weight: 600; }
+      .collections-modal__item .check {
+        width: 18px; height: 18px; border-radius: 50%;
+        border: 1.5px solid #d1d5db;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0; transition: all .15s;
+      }
+      .collections-modal__item.active .check {
+        background: #111; border-color: #111; color: white;
+        font-size: .6rem;
+      }
+      .collections-modal__footer {
+        padding: .75rem 1rem;
+        border-top: 1px solid #f0f0f0;
+        text-align: right;
+      }
+      .collections-modal__close {
+        font-size: .75rem; color: #888; background: none;
+        border: none; cursor: pointer; padding: .25rem .5rem;
+        border-radius: 4px; transition: color .15s;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      .collections-modal__close:hover { color: #111; }
       .filter-scroll { overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
       .filter-scroll::-webkit-scrollbar { display: none; }
 
@@ -552,8 +594,14 @@
     <!-- COLLECTIONS MODAL -->
     <div id="collectionsModal" class="collections-modal" onclick="if(event.target===this)closeCollectionsModal()">
       <div class="collections-modal__box">
-        <div class="collections-modal__title">Coleções</div>
-        <div id="collectionsModalList"></div>
+        <div class="collections-modal__search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="collectionsSearch" placeholder="Pesquisar coleção..." oninput="filterCollectionsModal(this.value)">
+        </div>
+        <div class="collections-modal__list" id="collectionsModalList"></div>
+        <div class="collections-modal__footer">
+          <button class="collections-modal__close" onclick="closeCollectionsModal()">Fechar</button>
+        </div>
       </div>
     </div>
 
@@ -870,11 +918,22 @@
       }
 
       function openCollectionsModal() {
+        document.getElementById('collectionsSearch').value = '';
+        filterCollectionsModal('');
         document.getElementById('collectionsModal').classList.add('open');
+        setTimeout(() => document.getElementById('collectionsSearch').focus(), 150);
       }
 
       function closeCollectionsModal() {
         document.getElementById('collectionsModal').classList.remove('open');
+      }
+
+      function filterCollectionsModal(query) {
+        const q = query.toLowerCase();
+        document.querySelectorAll('.collections-modal__item').forEach(btn => {
+          const label = btn.querySelector('.col-label')?.textContent.toLowerCase() || '';
+          btn.style.display = label.includes(q) ? '' : 'none';
+        });
       }
 
       function buildFilterPills() {
@@ -897,11 +956,12 @@
         const modalList = document.getElementById('collectionsModalList');
         modalList.innerHTML = '';
         ids.forEach(id => {
-          const label = globalCollections[id]?.[currentLang] || globalCollections[id]?.pt || id;
-          const btn   = document.createElement('button');
-          btn.className      = 'collections-modal__item';
+          const label  = globalCollections[id]?.[currentLang] || globalCollections[id]?.pt || id;
+          const active = (document.querySelector('.filter-btn.active')?.dataset.filter === id);
+          const btn    = document.createElement('button');
+          btn.className      = 'collections-modal__item' + (active ? ' active' : '');
           btn.dataset.filter = id;
-          btn.textContent    = label;
+          btn.innerHTML      = `<span class="col-label">${label}</span><span class="check">${active ? '✓' : ''}</span>`;
           btn.addEventListener('click', () => {
             activateFilter(id);
             closeCollectionsModal();
@@ -923,11 +983,14 @@
 
       function setActiveFilter(filter) {
         document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.collections-modal__item').forEach(b => b.classList.remove('active'));
-        const btn  = [...document.querySelectorAll('.filter-btn')].find(b => b.dataset.filter === filter);
+        document.querySelectorAll('.collections-modal__item').forEach(b => {
+          const isActive = b.dataset.filter === filter;
+          b.classList.toggle('active', isActive);
+          const check = b.querySelector('.check');
+          if (check) check.textContent = isActive ? '✓' : '';
+        });
+        const btn = [...document.querySelectorAll('.filter-btn')].find(b => b.dataset.filter === filter);
         if (btn) btn.classList.add('active');
-        const item = [...document.querySelectorAll('.collections-modal__item')].find(b => b.dataset.filter === filter);
-        if (item) item.classList.add('active');
       }
 
       // ── LIGHTBOX ──

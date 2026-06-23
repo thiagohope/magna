@@ -1,73 +1,57 @@
 {
-"2025-chocochique": {
+  "2025-chocochique": {
     "title": "8a. Edição Vinhos com Arte de São Sebastião",
     "date": "Sep 2025",
     "location": "Casa Episcopal, Setubal, Portugal",
     "image": "2025-8_ed_vinhos.png",
     "description": {
-        "pt": "",
-        "en": "",
-        "es": ""
+      "pt": "",
+      "en": "",
+      "es": ""
     },
     "gallery": [
-        "2025-chocochique": {
-    "title": "8a. Edição Vinhos com Arte de São Sebastião",
-    "date": "Sep 2025",
-    "location": "Casa Episcopal, Setubal, Portugal",
-    "image": "2025-8_ed_vinhos.png",
-    "description": {
-        "pt": "",
-        "en": "",
-        "es": ""
-    },
-    "gallery": [
-        "00.jpeg",
-        "01.jpeg",
-        "02.jpeg",
-        "03.jpeg",
-        "04.jpeg",
-        "05.jpeg",
-        "06.jpeg",
-        "07.jpeg",
-        "08.jpeg",
-        "09.jpeg",
-        "10.jpeg",
-        "11.jpeg"
+      "00.jpeg",
+      "01.jpeg",
+      "02.jpeg",
+      "03.jpeg",
+      "04.jpeg",
+      "05.jpeg",
+      "06.jpeg",
+      "07.jpeg",
+      "08.jpeg",
+      "09.jpeg",
+      "10.jpeg",
+      "11.jpeg"
     ],
     "artworks": [
-        "choco"
+      "choco"
     ]
-},
-    ],
-    "artworks": [
-        "choco"
-    ]
-},
-"2025-lasa": {
+  },
+  "2025-lasa": {
     "title": "Festa LASA de Artes e Letras 2025",
     "date": "Dec 2025",
     "location": "Galeria Municipal do Onze. Setubal, Portugal",
     "image": "2025-1a_ed_LASA.png",
     "description": {
-        "pt": "",
-        "en": "",
-        "es": ""
+      "pt": "",
+      "en": "",
+      "es": ""
     },
     "gallery": [
-        "foto03.jpeg",
-        "foto04.jpeg",
-        "foto05.jpeg",
-        "foto06.jpeg",
-        "foto07.jpeg",
-        "foto08.jpeg",
-        "foto09.jpeg",
-        "foto10.jpeg",
-        "foto11.jpeg",
-        "foto12.jpeg",
-        "foto13.jpeg"
+      "foto03.jpeg",
+      "foto04.jpeg",
+      "foto05.jpeg",
+      "foto06.jpeg",
+      "foto07.jpeg",
+      "foto08.jpeg",
+      "foto09.jpeg",
+      "foto10.jpeg",
+      "foto11.jpeg",
+      "foto12.jpeg",
+      "foto13.jpeg"
     ],
     "artworks": [
-        "coral"
+      "coral"
     ]
-}
+  }
 }

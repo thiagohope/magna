@@ -1096,7 +1096,16 @@
           const data = await res.json();
           const list = document.getElementById('exhibitionsList');
           list.innerHTML = '';
-          Object.entries(data).forEach(([slug, exhib]) => {
+          // Mais recente primeiro: ordena por startDate (fallback: endDate, depois final da lista)
+          const entries = Object.entries(data).sort(([, a], [, b]) => {
+            const da = a.startDate ? new Date(a.startDate) : (a.endDate ? new Date(a.endDate) : null);
+            const db = b.startDate ? new Date(b.startDate) : (b.endDate ? new Date(b.endDate) : null);
+            if (!da && !db) return 0;
+            if (!da) return 1;
+            if (!db) return -1;
+            return db - da;
+          });
+          entries.forEach(([slug, exhib]) => {
             const desc   = exhib.description?.[currentLang] || exhib.description?.en || '';
             const thumbs = (exhib.gallery || []).slice(0, 6);
             const thumbsHtml = thumbs.length ? `
@@ -1137,15 +1146,19 @@
       let aboutCurrent = 0;
 
       async function loadAboutSlideshow() {
+        const slideshowEl = document.getElementById('aboutSlideshow');
         try {
           const API = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
           const res = await fetch(`${API}/about-photos`);
-          if (!res.ok) return;
+          if (!res.ok) {
+            console.error(`About slideshow: API respondeu ${res.status} em ${API}/about-photos`);
+            if (slideshowEl) slideshowEl.style.display = 'none';
+            return;
+          }
           const data  = await res.json();
           aboutPhotos = data.photos || [];
           if (aboutPhotos.length === 0) {
-            document.getElementById('aboutPrev').style.display = 'none';
-            document.getElementById('aboutNext').style.display = 'none';
+            if (slideshowEl) slideshowEl.style.display = 'none';
             return;
           }
           const track  = document.getElementById('aboutTrack');
@@ -1168,7 +1181,10 @@
             document.getElementById('aboutNext').style.display = 'none';
           }
           aboutGoTo(0);
-        } catch(err) { console.error('About slideshow error:', err); }
+        } catch(err) {
+          console.error('About slideshow error (provavelmente API em 127.0.0.1:3100 offline ou bloco nginx /about-photos ausente em produção):', err);
+          if (slideshowEl) slideshowEl.style.display = 'none';
+        }
       }
 
       function aboutGoTo(idx) {

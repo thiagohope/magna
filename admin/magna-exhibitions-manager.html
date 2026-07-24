@@ -124,13 +124,23 @@
                             <input type="text" id="title" class="font-serif text-lg font-bold">
                         </div>
                         <div>
-                            <label>Data</label>
-                            <input type="text" id="date">
+                            <label>Localização</label>
+                            <input type="text" id="location">
                         </div>
                     </div>
-                    <div class="mb-6">
-                        <label>Localização</label>
-                        <input type="text" id="location">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div>
+                            <label>Data de Início</label>
+                            <input type="date" id="startDate" oninput="updateDateLabel()">
+                        </div>
+                        <div>
+                            <label>Data de Fim (opcional)</label>
+                            <input type="date" id="endDate" oninput="updateDateLabel()">
+                        </div>
+                        <div>
+                            <label>Rótulo Exibido no Site</label>
+                            <input type="text" id="date" placeholder="gerado automaticamente, pode editar">
+                        </div>
                     </div>
 
                     <div class="section-header"><span>Capa (Flyer)</span></div>
@@ -316,7 +326,9 @@
             document.getElementById('slug').readOnly = true;
             
             document.getElementById('title').value = data.title;
-            document.getElementById('date').value = data.date;
+            document.getElementById('date').value = data.date || '';
+            document.getElementById('startDate').value = data.startDate || '';
+            document.getElementById('endDate').value = data.endDate || '';
             document.getElementById('location').value = data.location;
             
             // LIMPEZA DE CAMINHOS PARA OS CAMPOS DE INPUT
@@ -374,6 +386,24 @@
         }
         function clearGallery() { if(confirm("Limpar lista?")) document.getElementById('gallery_images').value = ""; }
 
+        // === DATA (calendário) → rótulo automático ===
+        const MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        function updateDateLabel() {
+            const s = document.getElementById('startDate').value;
+            const e = document.getElementById('endDate').value;
+            if (!s) return;
+            const sd = new Date(s + 'T00:00:00');
+            const label = document.getElementById('date');
+            if (e && e !== s) {
+                const ed = new Date(e + 'T00:00:00');
+                label.value = (sd.getFullYear() === ed.getFullYear())
+                    ? `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`
+                    : `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()}, ${sd.getFullYear()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`;
+            } else {
+                label.value = `${MONTHS_ABBR[sd.getMonth()]}, ${sd.getFullYear()}`;
+            }
+        }
+
         // === GERAR JSON (CORREÇÃO CRÍTICA DE CAMINHOS) ===
         function generateJSON() {
             const slug = document.getElementById('slug').value.trim();
@@ -400,9 +430,15 @@
             // Obras
             const finalArtworks = document.getElementById('artworks_list').value.split(',').map(s => s.trim()).filter(s => s.length > 0);
 
+            const startDateVal = document.getElementById('startDate').value;
+            const endDateVal   = document.getElementById('endDate').value;
+            if (!startDateVal) alert("⚠ Sem Data de Início: a exposição vai aparecer no fim da lista na home.");
+
             const jsonObj = {
                 title: document.getElementById('title').value,
                 date: document.getElementById('date').value,
+                startDate: startDateVal || undefined,
+                endDate: endDateVal || startDateVal || undefined,
                 location: document.getElementById('location').value,
                 image: finalImg, // Caminho corrigido
                 description: {

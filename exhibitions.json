@@ -1,7 +1,41 @@
 {
+  "mertolarte": {
+    "title": "Mertolarte 2026",
+    "date": "Jul,11 - Sep,7, 2026",
+    "startDate": "2026-07-11",
+    "endDate": "2026-09-07",
+    "location": "Cineteatro da Mina de São Domingos, Mértola, Portugal",
+    "image": "convite_mertolarte2026.jpg",
+    "description": {
+        "pt": "",
+        "en": "",
+        "es": ""
+    },
+    "gallery": [
+        "00.mertola.jpeg",
+        "01.mertola.jpg",
+        "02.mertola.jpeg",
+        "03.mertola.jpeg",
+        "04.mertola.jpeg",
+        "05.mertola.jpeg",
+        "06.mertola.jpeg",
+        "07.mertola.jpeg",
+        "08.mertola.jpeg",
+        "09.mertola.jpeg",
+        "10.mertola.jpeg",
+        "11.mertola.jpeg",
+        "12.mertola.jpeg"
+    ],
+    "artworks": [
+        "mertola"
+    ]
+  },
+
   "2025-chocochique": {
     "title": "8a. Edição Vinhos com Arte de São Sebastião",
-    "date": "Sep 2025",
+    "date": "Sep, 2025",
+    "startDate": "2025-09-01",
+    "endDate": "2025-09-01",
     "location": "Casa Episcopal, Setubal, Portugal",
     "image": "2025-8_ed_vinhos.png",
     "description": {
@@ -27,9 +61,12 @@
       "choco"
     ]
   },
+
   "2025-lasa": {
     "title": "Festa LASA de Artes e Letras 2025",
-    "date": "Dec 2025",
+    "date": "Dec, 2025",
+    "startDate": "2025-12-01",
+    "endDate": "2025-12-01",
     "location": "Galeria Municipal do Onze. Setubal, Portugal",
     "image": "2025-1a_ed_LASA.png",
     "description": {

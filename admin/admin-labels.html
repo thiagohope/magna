@@ -227,9 +227,7 @@
 
     // 3. Gerar o Link de Destino
     function getArtworkUrl(slug) {
-      // Calcula o caminho base relativo (sobe um nível, pois artwork.html está na raiz)
-      const base = window.location.href.replace(/\/[^\/]*$/, '/');
-      return `${base}../artwork.html?id=${encodeURIComponent(slug)}`;
+      return `https://magnaleite.com/artwork.html?id=${encodeURIComponent(slug)}`;
     }
 
     // 4. Gerar o HTML de UMA Etiqueta

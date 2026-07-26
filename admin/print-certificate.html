@@ -217,7 +217,7 @@
                 }
 
                 // 3. Gerar QR Code (Aponta para o Certificado Original)
-                const originalCertUrl = `${window.location.origin}/certificate.html?id=${slug}`;
+                const originalCertUrl = `https://magnaleite.com/admin/certificate.html?id=${slug}`;
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=000000&bgcolor=ffffff&data=${encodeURIComponent(originalCertUrl)}`;
                 
                 document.getElementById("qrcode").src = qrUrl;

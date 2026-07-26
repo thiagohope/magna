@@ -132,10 +132,6 @@
         </div>
 
         <div class="flex flex-col h-full justify-center text-left">
-            
-            <div class="mb-4">
-                <p class="text-xs font-bold uppercase tracking-[0.4em] text-gray-400 border-b border-gray-300 pb-2 inline-block" data-i18n="headerMagna">Magna Exhibition</p>
-            </div>
 
             <h1 id="artTitle" class="serif text-5xl lg:text-7xl mb-6 text-black leading-tight">...</h1>
             
@@ -292,9 +288,11 @@
                 container.style.aspectRatio = `${match[1]} / ${match[2]}`;
             }
 
-            let originalPath = art.image.startsWith('/') ? art.image.substring(1) : art.image;
+            let rawImage = Array.isArray(art.image) ? art.image[0] : art.image;
+            let originalPath = rawImage.startsWith('/') ? rawImage.substring(1) : rawImage;
+            originalPath = '../' + originalPath; // esta página vive em /admin/, os assets estão na raiz
             let thumbPath = originalPath.replace('assets/', 'assets/thumbnails/');
-            
+
             const imgEl = document.getElementById('mainImage');
             imgEl.src = thumbPath;
             imgEl.onerror = function() { this.src = originalPath; this.onerror = null; };
@@ -311,7 +309,7 @@
             document.getElementById('artStory').textContent = `"${art.story[lang] || art.story['en']}"`;
 
             // QR Code
-            const purchaseUrl = `${window.location.origin}/magna/artwork.html?id=${slug}`;
+            const purchaseUrl = `https://magnaleite.com/artwork.html?id=${slug}`;
             const qrContainer = document.getElementById("qrcode");
             qrContainer.innerHTML = ""; 
             new QRCode(qrContainer, {

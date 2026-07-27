@@ -1,5 +1,23 @@
 {
   "setubal": { "en": "Setúbal", "pt": "Setúbal" },
   "concept": { "en": "Concept", "pt": "Conceito" },
-  "nature":  { "en": "Nature",  "pt": "Natureza" }
+  "nature":  { "en": "Nature",  "pt": "Natureza" },
+  "alentejo": { "en": "Alentejo", "pt": "Alentejo" },
+  "ampulheta": { "en": "Hourglass", "pt": "Ampulheta" },
+  "anfora": { "en": "Amphora", "pt": "Ânfora" },
+  "bandeirola": { "en": "Bunting", "pt": "Bandeirola" },
+  "brasil": { "en": "Brazil", "pt": "Brasil" },
+  "caatinga": { "en": "Caatinga", "pt": "Caatinga" },
+  "castelo": { "en": "Castle", "pt": "Castelo" },
+  "choco": { "en": "Cuttlefish", "pt": "Choco" },
+  "festas-juninas": { "en": "June Festivities", "pt": "Festas Juninas" },
+  "figueirinha": { "en": "Figueirinha", "pt": "Figueirinha" },
+  "mar": { "en": "Sea", "pt": "Mar" },
+  "mertola": { "en": "Mértola", "pt": "Mértola" },
+  "mosaico": { "en": "Mosaic", "pt": "Mosaico" },
+  "portugal": { "en": "Portugal", "pt": "Portugal" },
+  "rainha": { "en": "Queen", "pt": "Rainha" },
+  "sertao": { "en": "Sertão", "pt": "Sertão" },
+  "tempo": { "en": "Time", "pt": "Tempo" },
+  "vinho": { "en": "Wine", "pt": "Vinho" }
 }

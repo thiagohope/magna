@@ -534,6 +534,10 @@
 
                 // Guardar collections.json em simultâneo
                 try {
+                    const newlyAdded = syncCollectionsFromArtworks();
+                    if (newlyAdded.length) {
+                        console.info('Coleções auto-registadas em collections.json:', newlyAdded.join(', '));
+                    }
                     await fetch('https://brainboxmed.com/magna/api/save-collections', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': API_SECRET },
@@ -615,6 +619,25 @@
         // ============================================================
         // COLLECTIONS — pills clicáveis, multi-select visual
         // ============================================================
+
+        // Varre globalArtworks e regista em globalCollections qualquer ID
+        // de coleção que apareça numa obra mas ainda não exista no ficheiro.
+        // Evita o collections.json ficar desatualizado em relação às obras
+        // (ex.: coleções criadas fora do fluxo "+ Nova coleção").
+        function syncCollectionsFromArtworks() {
+            let added = [];
+            Object.values(globalArtworks).forEach(art => {
+                const ids = art.collections || (art.collection ? [art.collection] : []);
+                ids.forEach(id => {
+                    if (!id || globalCollections[id]) return;
+                    const label = id.charAt(0).toUpperCase() + id.slice(1).replace(/-/g, ' ');
+                    globalCollections[id] = { pt: label, en: label };
+                    added.push(id);
+                });
+            });
+            return added;
+        }
+
         let globalCollections = {};
         let selectedCollections = new Set();
 

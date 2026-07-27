@@ -10,7 +10,11 @@
     "dimensions": "150 x 100 cm (H x W)",
     "image": "assets/paintings/full/choco.jpeg",
     "thumbnail": "assets/paintings/thumbnails/choco.jpeg",
-    "collection": "setubal",
+    "collections": [
+      "setubal",
+      "choco",
+      "nature"
+    ],
     "priceDisplay": {
       "original": 2200,
       "printGallery": 660,
@@ -67,11 +71,14 @@
       "en": "Acrylic on canvas",
       "es": "Acrilico sobre lienzo"
     },
-    "dimensions": "155 x 200 cm (H x W)",
-    "image": "assets/paintings/full/figueirinha.JPG",
-    "thumbnail": "assets/paintings/thumbnails/figueirinha.JPG",
+    "dimensions": "160 x 210 cm (H x W)",
+    "image": "assets/paintings/full/figueirinha.jpg",
+    "thumbnail": "assets/paintings/thumbnails/figueirinha.jpg",
     "collections": [
-      "setubal"
+      "setubal",
+      "portugal",
+      "nature",
+      "figueirinha"
     ],
     "priceDisplay": {
       "original": 2000,
@@ -133,7 +140,8 @@
     "image": "assets/paintings/full/guarita.jpeg",
     "thumbnail": "assets/paintings/thumbnails/guarita.jpeg",
     "collections": [
-      "setubal"
+      "setubal",
+      "portugal"
     ],
     "priceDisplay": {
       "original": 2000,
@@ -191,9 +199,9 @@
       "en": "Acrylic on canvas",
       "es": "Acrilico sobre lienzo"
     },
-    "dimensions": "140 x 185 cm (H x W)",
-    "image": "assets/paintings/full/trabalho.JPG",
-    "thumbnail": "assets/paintings/thumbnails/trabalho.JPG",
+    "dimensions": "136 x 183 cm (H x W)",
+    "image": "assets/paintings/full/trabalho.jpg",
+    "thumbnail": "assets/paintings/thumbnails/trabalho.jpg",
     "collections": [
       "concept"
     ],
@@ -257,7 +265,9 @@
     "image": "assets/paintings/full/coral.jpeg",
     "thumbnail": "assets/paintings/thumbnails/coral.jpeg",
     "collections": [
-      "nature"
+      "nature",
+      "portugal",
+      "mar"
     ],
     "priceDisplay": {
       "original": 2100,
@@ -318,7 +328,11 @@
     "dimensions": "150 x 100 cm (H x W)",
     "image": "assets/paintings/full/anfora.jpeg",
     "thumbnail": "assets/paintings/thumbnails/anfora.jpeg",
-    "collection": "nature",
+    "collections": [
+      "portugal",
+      "vinho",
+      "anfora"
+    ],
     "priceDisplay": {
       "original": 2000,
       "printGallery": 600,
@@ -380,7 +394,10 @@
     "thumbnail": "assets/paintings/thumbnails/mertola.jpeg",
     "collections": [
       "mertola",
-      "nature"
+      "nature",
+      "portugal",
+      "castelo",
+      "alentejo"
     ],
     "priceDisplay": {
       "original": 1600,
@@ -442,7 +459,8 @@
     "image": "assets/paintings/full/rainha.jpeg",
     "thumbnail": "assets/paintings/thumbnails/rainha.jpeg",
     "collections": [
-      "rainha"
+      "rainha",
+      "concept"
     ],
     "priceDisplay": {
       "original": 1800,
@@ -504,7 +522,9 @@
     "image": "assets/paintings/full/tempo.jpeg",
     "thumbnail": "assets/paintings/thumbnails/tempo.jpeg",
     "collections": [
-      "concept"
+      "concept",
+      "tempo",
+      "ampulheta"
     ],
     "priceDisplay": {
       "original": 1600,
@@ -675,6 +695,200 @@
       {
         "date": "2026-06-22",
         "event": "Creation",
+        "location": "",
+        "details": ""
+      }
+    ]
+  },
+  "mosaic": {
+    "title": "Mosaico I (+ Mosaico II)",
+    "year": "2025",
+    "technique": {
+      "pt": "Acrylique pluie",
+      "en": "Acrylique pluie",
+      "es": "Acrylique pluie"
+    },
+    "dimensions": "100 x 150 cm",
+    "image": "assets/paintings/full/mosaico01.jpeg",
+    "thumbnail": "assets/paintings/thumbnails/mosaico01.jpeg",
+    "collections": [
+      "mosaico",
+      "concept"
+    ],
+    "priceDisplay": {
+      "original": 3600,
+      "printGallery": 1080,
+      "printCollector": 360,
+      "digital": 36
+    },
+    "story": {
+      "pt": "Inspirado na tradição portuguesa dos azulejos, este Mosaico I reinventa um símbolo nacional através do movimento, da cor vibrante e da alegria. Aqui, reinvento-o através do movimento, da cor vibrante e da intensidade. Cada forma é um fragmento de alegria; cada cor, uma celebração da alma portuguesa.\nVendido em conjunto com Mosaico II.",
+      "en": "Inspired by the Portuguese azulejo tradition, thes Mosaic I reinvents a national symbol through movement, vibrant color, and joy. Here, I reinvent it through movement, vibrant color, and intensity. Each shape is a fragment of joy; each color, a celebration of the Portuguese soul.\nSold together with Mosaico II.\n",
+      "es": "Inspirado en la tradición portuguesa del azulejo, este Mosaico I reinventa un símbolo nacional a través del movimiento, el color vibrante y la alegría. Aquí, lo reinvento a través del movimiento, el color vibrante y la intensidad. Cada forma es un fragmento de alegría; cada color, una celebración del alma portuguesa.\nSe vende junto con el Mosaico II."
+    },
+    "status": "available",
+    "location": {
+      "pt": "Setubal, Portugal",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "e2e87b55-742e-4c80-9c26-c450a9f1f137",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "",
+      "live": "https://buy.stripe.com/5kQ9AU0jf5UB9pSfbx2VG16"
+    },
+    "pricePrintGallery": {
+      "test": "",
+      "live": "https://buy.stripe.com/14A14o6HD1ElfOg1kH2VG19"
+    },
+    "pricePrintCollector": {
+      "test": "",
+      "live": "https://buy.stripe.com/aFa5kE8PL4QxatW0gD2VG18"
+    },
+    "priceDigital": {
+      "test": "",
+      "live": "https://buy.stripe.com/dRmcN67LHaaRatWe7t2VG17"
+    },
+    "history": [
+      {
+        "date": "2026-07-24",
+        "event": "Certification",
+        "location": "",
+        "details": ""
+      }
+    ]
+  },
+  "mosaic02": {
+    "title": "Mosaico II (+ Mosaico I)",
+    "year": "2025",
+    "technique": {
+      "pt": "Acrylique pluie",
+      "en": "Acrylique pluie",
+      "es": "Acrylique pluie"
+    },
+    "dimensions": "100 x 150 cm",
+    "image": "assets/paintings/full/mosaico02.jpeg",
+    "thumbnail": "assets/paintings/thumbnails/mosaico02.jpeg",
+    "collections": [
+      "mosaico",
+      "concept"
+    ],
+    "priceDisplay": {
+      "original": 3600,
+      "printGallery": 1080,
+      "printCollector": 360,
+      "digital": 36
+    },
+    "story": {
+      "pt": "Inspirado na tradição portuguesa dos azulejos, este Mosaico I reinventa um símbolo nacional através do movimento, conferindo cor vibrante e alegria. Aqui, a reinvenção através do movimento proporciona cor vibrante e intensidade. Cada forma é um fragmento de alegria; cada coração, uma celebração da alma portuguesa.\nVendido juntamente com o Mosaico I",
+      "en": "Inspired by the Portuguese tradition of azulejos (Portuguese tiles), this Mosaic I reinvents a national symbol through movement, vibrant color, and joy. Here, I reinvent it through movement, vibrant color, and intensity. Each form is a fragment of joy; each color, a celebration of the Portuguese soul.\nSold together with Mosaic I",
+      "es": "Inspirado en la tradición portuguesa de los azulejos, este Mosaico I reinventa un símbolo nacional a través del movimiento, el color vibrante y la alegría. Aquí, lo reinvento a través del movimiento, el color vibrante y la intensidad. Cada forma es un fragmento de alegría; cada color, una celebración del alma portuguesa.\n\nSe vende junto con el Mosaico I."
+    },
+    "status": "available",
+    "location": {
+      "pt": "Setubal, Portugal",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "de981b9f-680b-40db-9377-65faa6b4ce8a",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "",
+      "live": "https://buy.stripe.com/3cIeVefe9beV8lOd3p2VG1a"
+    },
+    "pricePrintGallery": {
+      "test": "",
+      "live": "https://buy.stripe.com/eVq7sM7LH4Qx8lO5AX2VG1c"
+    },
+    "pricePrintCollector": {
+      "test": "",
+      "live": "https://buy.stripe.com/aFa6oIaXT4QxgSk3sP2VG1b"
+    },
+    "priceDigital": {
+      "test": "",
+      "live": "https://buy.stripe.com/3cIfZi0jf4Qx59C0gD2VG1d"
+    },
+    "history": [
+      {
+        "date": "2026-07-24",
+        "event": "Certification",
+        "location": "",
+        "details": ""
+      }
+    ]
+  },
+  "bandeirola": {
+    "title": "Origem",
+    "year": "",
+    "technique": {
+      "pt": "",
+      "en": "",
+      "es": ""
+    },
+    "dimensions": "",
+    "image": "assets/paintings/full/origem.jpg",
+    "thumbnail": "assets/paintings/thumbnails/origem.jpg",
+    "collections": [
+      "mosaico",
+      "concept",
+      "bandeirola",
+      "festas-juninas",
+      "brasil",
+      "sertao",
+      "caatinga"
+    ],
+    "priceDisplay": {
+      "original": 0,
+      "printGallery": 0,
+      "printCollector": 0,
+      "digital": 0
+    },
+    "story": {
+      "pt": "",
+      "en": "",
+      "es": ""
+    },
+    "status": "available",
+    "location": {
+      "pt": "",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "34fd2c70-2e84-4d83-b3b7-85fcfcdbb624",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "",
+      "live": ""
+    },
+    "pricePrintGallery": {
+      "test": "",
+      "live": ""
+    },
+    "pricePrintCollector": {
+      "test": "",
+      "live": ""
+    },
+    "priceDigital": {
+      "test": "",
+      "live": ""
+    },
+    "history": [
+      {
+        "date": "2026-07-27",
+        "event": "Certification",
         "location": "",
         "details": ""
       }

@@ -98,6 +98,27 @@ certbot --nginx -d magnaleite.com -d www.magnaleite.com
 
 ---
 
+## Incidentes resolvidos — 24 Julho 2026
+
+### Exibições fora de ordem + sem data estruturada
+- `exhibitions.json` ganhou `startDate`/`endDate` (ISO `YYYY-MM-DD`) em cada exibição, mantendo `date` como rótulo de exibição (texto livre).
+- `index.html` → `loadExhibitions()` agora ordena por `startDate` decrescente antes de renderizar (mais recente primeiro). Sem `startDate`, a exibição cai para o fim da lista.
+- `admin/magna-exhibitions-manager.html` → campo "Data" livre virou dois `<input type="date">` (Início/Fim) que geram automaticamente o rótulo (editável) e gravam `startDate`/`endDate` no JSON.
+
+### Fotos da Mertolarte não apareciam na home
+- Causa: as 13 fotos (`00.mertola.jpeg` … `12.mertola.jpeg`) estavam soltas em `assets/exhibition/img/`, fora de qualquer subpasta — enquanto a pasta `assets/exhibition/img/mertolarte/` (nome = chave do JSON) existia vazia.
+- **Regra permanente:** o nome da subpasta em `assets/exhibition/img/` deve ser idêntico à chave da exibição no `exhibitions.json`. As fotos de cada exibição sempre vão dentro dessa subpasta — nunca soltas na raiz de `img/`.
+- Corrigido local e em produção: fotos movidas para dentro de `assets/exhibition/img/mertolarte/`.
+
+### Fotos do "About" não apareciam
+Duas causas empilhadas, ambas em produção (`brainboxmed-server-01`):
+1. **`save-artworks.js` corrompido no servidor** — tinha marcadores de conflito de merge não resolvidos (`<<<<<<< Updated upstream`) na linha 1, quebrando o `require()` e derrubando o processo PM2 num crash-loop. Corrigido com `git checkout origin/main -- save-artworks.js` (a versão do GitHub estava limpa) + `pm2 restart magna-api`.
+2. **Bloco Nginx faltando** — `/etc/nginx/sites-available/brainboxmed` não tinha `location /magna/api/about-photos` (existia só no `magnaleite`, o outro vhost). Adicionado o bloco (mesmo padrão dos outros endpoints, proxy pra `127.0.0.1:3100/about-photos`), depois `nginx -t && systemctl reload nginx`. Cópia do config salva em `_local/nginx-brainboxmed.conf` para referência (nginx não é versionado).
+
+**Lição para o futuro:** ao adicionar um novo endpoint em `save-artworks.js`, é preciso (a) dar `pm2 restart magna-api` no servidor e (b) adicionar o bloco `location` correspondente em **ambos** os vhosts (`brainboxmed` e `magnaleite`) se o endpoint precisar funcionar nos dois domínios.
+
+---
+
 ## Obras no catálogo
 
 | Slug | Título | Status |

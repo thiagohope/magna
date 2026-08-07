@@ -172,7 +172,10 @@
                     <div class="mb-6 p-4 border border-indigo-100 rounded-xl bg-indigo-50">
                         <div class="flex items-center justify-between mb-3">
                             <label class="!mb-0 text-indigo-800">Coleções</label>
-                            <span id="collectionsBadge" class="text-[10px] font-bold bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full hidden">0 selecionadas</span>
+                            <div class="flex items-center gap-2">
+                                <span id="collectionsBadge" class="text-[10px] font-bold bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full hidden">0 selecionadas</span>
+                                <button type="button" onclick="openManageCollectionsModal()" class="text-[10px] font-bold text-indigo-600 border border-indigo-300 px-2 py-0.5 rounded-full hover:bg-indigo-100 transition">⚙ Gerir coleções</button>
+                            </div>
                         </div>
 
                         <!-- Pills das coleções existentes -->
@@ -708,7 +711,11 @@
                 showStatus('⚠️ Preencha o ID, o nome em PT e o nome em EN.', 'error');
                 return;
             }
-            const id = idRaw.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+            const id = idRaw
+                .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos (á, ã, ç, ô...)
+                .toLowerCase().trim()
+                .replace(/\s+/g, '-')
+                .replace(/[^a-z0-9-]/g, '');
             if (!id) { showStatus('⚠️ ID inválido.', 'error'); return; }
             if (globalCollections[id]) { showStatus(`⚠️ Coleção "${id}" já existe.`, 'error'); return; }
 
@@ -742,6 +749,142 @@
         }
 
         // ============================================================
+        // GERIR COLEÇÕES — editar nomes e apagar (com limpeza em cascata)
+        // ============================================================
+        function getAllCollectionIds() {
+            const ids = new Set(Object.keys(globalCollections));
+            Object.values(globalArtworks).forEach(art => {
+                const cs = art.collections || (art.collection ? [art.collection] : []);
+                cs.forEach(c => ids.add(c));
+            });
+            return [...ids].sort();
+        }
+
+        function getCollectionUsageCount(id) {
+            let count = 0;
+            Object.values(globalArtworks).forEach(art => {
+                const cs = art.collections || (art.collection ? [art.collection] : []);
+                if (cs.includes(id)) count++;
+            });
+            return count;
+        }
+
+        async function persistCollections() {
+            const secret = ensureApiSecret();
+            return fetch('https://brainboxmed.com/magna/api/save-collections', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': secret },
+                body: JSON.stringify(globalCollections)
+            });
+        }
+
+        async function persistArtworks() {
+            const secret = ensureApiSecret();
+            return fetch(API_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': secret },
+                body: JSON.stringify(globalArtworks)
+            });
+        }
+
+        function openManageCollectionsModal() {
+            renderManageCollectionsModal();
+        }
+
+        function closeManageCollectionsModal() {
+            const overlay = document.getElementById('manageCollectionsOverlay');
+            if (overlay) overlay.remove();
+        }
+
+        function renderManageCollectionsModal() {
+            let overlay = document.getElementById('manageCollectionsOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'manageCollectionsOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', e => { if (e.target === overlay) closeManageCollectionsModal(); });
+            }
+
+            const ids = getAllCollectionIds();
+            const rows = ids.map(id => {
+                const known = !!globalCollections[id];
+                const pt    = globalCollections[id]?.pt || '';
+                const en    = globalCollections[id]?.en || '';
+                const count = getCollectionUsageCount(id);
+                return `
+                  <div class="mc-row" data-row-id="${id}" style="display:grid;grid-template-columns:100px 1fr 1fr 64px auto auto;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                    <span style="font-family:monospace;font-size:11px;color:${known ? '#334155' : '#dc2626'};" title="${known ? '' : 'Usada em obras mas ainda sem nome PT/EN registado'}">${id}${known ? '' : ' ⚠'}</span>
+                    <input type="text" value="${pt.replace(/"/g,'&quot;')}" data-field="pt" placeholder="Nome PT" style="font-size:12px;padding:5px 7px;border:1px solid #e2e8f0;border-radius:6px;">
+                    <input type="text" value="${en.replace(/"/g,'&quot;')}" data-field="en" placeholder="Nome EN" style="font-size:12px;padding:5px 7px;border:1px solid #e2e8f0;border-radius:6px;">
+                    <span style="font-size:11px;color:#94a3b8;text-align:center;">${count} obra${count === 1 ? '' : 's'}</span>
+                    <button type="button" data-action="save" style="font-size:11px;padding:5px 9px;background:#0f172a;color:white;border:none;border-radius:6px;cursor:pointer;">Guardar</button>
+                    <button type="button" data-action="delete" style="font-size:11px;padding:5px 9px;background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;cursor:pointer;">Apagar</button>
+                  </div>`;
+            }).join('') || '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:2rem 0;">Nenhuma coleção ainda.</p>';
+
+            overlay.innerHTML = `
+              <div style="background:white;border-radius:12px;padding:1.5rem;max-width:680px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                  <h3 style="font-size:1rem;font-weight:700;">Gerir Coleções</h3>
+                  <button type="button" id="closeManageCollectionsBtn" style="font-size:12px;color:#64748b;background:none;border:none;cursor:pointer;">✕ Fechar</button>
+                </div>
+                <p style="font-size:11px;color:#94a3b8;margin-bottom:1rem;">⚠ = usada em obras mas sem nome PT/EN registado ainda. Apagar remove a coleção de todas as obras que a usam (não pode ser desfeito).</p>
+                <div id="manageCollectionsList">${rows}</div>
+              </div>`;
+
+            document.getElementById('closeManageCollectionsBtn').onclick = closeManageCollectionsModal;
+
+            overlay.querySelectorAll('.mc-row').forEach(row => {
+                const id = row.dataset.rowId;
+
+                row.querySelector('[data-action="save"]').onclick = async (e) => {
+                    const btn = e.currentTarget;
+                    const pt = row.querySelector('[data-field="pt"]').value.trim();
+                    const en = row.querySelector('[data-field="en"]').value.trim();
+                    if (!pt || !en) { showStatus('⚠️ Preencha PT e EN antes de guardar.', 'error'); return; }
+
+                    globalCollections[id] = { pt, en };
+                    btn.textContent = '...';
+                    try {
+                        await persistCollections();
+                        showStatus(`✅ Coleção "${id}" atualizada.`, 'success');
+                    } catch(err) {
+                        showStatus(`⚠️ "${id}" atualizada localmente (erro ao guardar no servidor).`, 'error');
+                    }
+                    populateCollections([...selectedCollections]);
+                    renderManageCollectionsModal();
+                };
+
+                row.querySelector('[data-action="delete"]').onclick = async () => {
+                    const count = getCollectionUsageCount(id);
+                    const msg = count > 0
+                        ? `Apagar "${id}"? Está associada a ${count} obra${count === 1 ? '' : 's'} — será removida de todas elas. Esta ação não pode ser desfeita.`
+                        : `Apagar a coleção "${id}"? Esta ação não pode ser desfeita.`;
+                    if (!confirm(msg)) return;
+
+                    delete globalCollections[id];
+                    selectedCollections.delete(id);
+                    Object.values(globalArtworks).forEach(art => {
+                        if (Array.isArray(art.collections)) art.collections = art.collections.filter(c => c !== id);
+                        if (art.collection === id) delete art.collection;
+                    });
+
+                    try {
+                        await persistCollections();
+                        if (count > 0) await persistArtworks();
+                        showStatus(`✅ Coleção "${id}" apagada${count > 0 ? ` e removida de ${count} obra(s)` : ''}.`, 'success');
+                    } catch(err) {
+                        showStatus(`⚠️ "${id}" apagada localmente (erro ao guardar no servidor).`, 'error');
+                    }
+
+                    populateCollections([...selectedCollections]);
+                    renderManageCollectionsModal();
+                };
+            });
+        }
+
+        // ============================================================
         // LOAD ARTWORK INTO FORM
         // ============================================================
         function loadArtwork(slug) {
@@ -757,6 +900,7 @@
                 document.getElementById('historyList').innerHTML = '';
                 generateUUID();
                 addHistoryRow();
+                populateCollections([]); // reinicia coleções limpas — evita herdar seleção da obra anterior
                 updateInterface();
                 return;
             }

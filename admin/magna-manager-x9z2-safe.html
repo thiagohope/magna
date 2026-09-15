@@ -934,7 +934,7 @@
             });
 
             if (!updates.length) { showStatus('⚠️ Nada para atualizar no Stripe.', 'error'); return; }
-            if (!confirm(`Isto vai criar novos preços e trocar ${updates.length} Payment Link(s) no Stripe (live + test). Não é reversível automaticamente. Continuar?`)) return;
+            if (!confirm(`Isto vai criar ${updates.length} Payment Link(s) novo(s) no Stripe (live + test) com os preços atualizados, e desativar os antigos. Os URLs dos links vão mudar — o site atualiza-se sozinho a seguir. Não é reversível automaticamente. Continuar?`)) return;
 
             const secret = ensureApiSecret();
             const btn = document.getElementById('confirmStripeBtn');
@@ -948,15 +948,54 @@
                     body: JSON.stringify({ updates })
                 });
                 const data = await res.json();
-                const failedSlugs = new Set((data.results || []).filter(r => !r.success).map(r => r.slug));
+                const results = data.results || [];
+
+                // Aplica os novos URLs de Payment Link (o Stripe obriga-nos a criar
+                // um link novo em vez de trocar o preço do antigo).
+                const FIELD_BY_VARIATION = {
+                    original:       'priceOriginal',
+                    printGallery:   'pricePrintGallery',
+                    printCollector: 'pricePrintCollector',
+                    digital:        'priceDigital'
+                };
+                let urlsChanged = false;
+                results.forEach(r => {
+                    if (r.success && r.newUrl) {
+                        const field = FIELD_BY_VARIATION[r.variation];
+                        const art = globalArtworks[r.slug];
+                        if (field && art && art[field]) {
+                            art[field][r.env] = r.newUrl;
+                            urlsChanged = true;
+                        }
+                    }
+                });
+
+                const failedSlugs = new Set(results.filter(r => !r.success).map(r => r.slug));
                 slugs.forEach(slug => { if (!failedSlugs.has(slug)) pendingTierSlugs.delete(slug); });
 
-                const okCount  = (data.results || []).filter(r => r.success).length;
-                const errCount = (data.results || []).filter(r => !r.success).length;
-                if (errCount === 0) showStatus(`✅ Stripe atualizado — ${okCount} preço(s) trocado(s).`, 'success');
-                else {
+                const okCount  = results.filter(r => r.success).length;
+                const errCount = results.filter(r => !r.success).length;
+
+                if (urlsChanged) {
+                    try {
+                        const artRes = await fetch(API_ENDPOINT, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': secret },
+                            body: JSON.stringify(globalArtworks)
+                        });
+                        if (!artRes.ok) throw new Error(`HTTP ${artRes.status}`);
+                    } catch (e) {
+                        showStatus(`⚠️ Stripe atualizado, mas falhou guardar os novos links no site: ${e.message}. Carrega em "Guardar no Servidor" para tentar de novo.`, 'error');
+                        updateStripeConfirmButton();
+                        return;
+                    }
+                }
+
+                if (errCount === 0) {
+                    showStatus(`✅ Stripe atualizado — ${okCount} preço(s) trocado(s) (Payment Links novos criados, antigos desativados).`, 'success');
+                } else {
                     showStatus(`⚠️ ${okCount} ok, ${errCount} falharam — obras com falha continuam pendentes.`, 'error');
-                    console.warn('Falhas Stripe:', data.results.filter(r => !r.success));
+                    console.warn('Falhas Stripe:', results.filter(r => !r.success));
                 }
             } catch (err) {
                 showStatus('❌ Erro ao contactar o servidor: ' + err.message, 'error');
@@ -964,7 +1003,7 @@
                 updateStripeConfirmButton();
             }
         }
-
+                
         // ============================================================
         // DROPDOWN
         // ============================================================

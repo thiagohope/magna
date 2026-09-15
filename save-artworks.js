@@ -131,7 +131,7 @@ async function findPaymentLinkAndPrice(stripeClient, url) {
 
 // Cria novo price no mesmo produto, troca-o no Payment Link (URL não muda), arquiva o antigo.
 async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
-    const { paymentLinkId, oldPriceId, productId, currency, quantity } = await findPaymentLinkAndPrice(stripeClient, url);
+    const { paymentLinkId: oldPaymentLinkId, oldPriceId, productId, currency, quantity } = await findPaymentLinkAndPrice(stripeClient, url);
 
     const newPrice = await stripeClient.prices.create({
         product: productId,
@@ -139,16 +139,32 @@ async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
         currency
     });
 
-    // A API do Stripe não deixa indicar "id" (item existente) e "price" (novo)
-    // ao mesmo tempo — o line_items no update SUBSTITUI o item por um novo,
-    // sem "id", só com "price" + "quantity" (a mesma do item original).
-    await stripeClient.paymentLinks.update(paymentLinkId, {
+    // A API do Stripe NÃO permite trocar o preço de um Payment Link já
+    // criado — o update só aceita "id" (item existente, para mudar
+    // quantidade) OU "price" (item novo), nunca os dois juntos, e um Price
+    // é imutável no valor depois de criado. A única forma real de "mudar o
+    // preço" é criar um Payment Link novo com o Price novo e desativar o
+    // antigo — por isso o URL muda sempre que um preço é atualizado. O
+    // artworks.json é atualizado com o URL novo pelo cliente (admin),
+    // usando o "newUrl" devolvido aqui.
+    const newLink = await stripeClient.paymentLinks.create({
         line_items: [{ price: newPrice.id, quantity }]
+    });
+
+    await stripeClient.paymentLinks.update(oldPaymentLinkId, {
+        active: false,
+        inactive_message: 'Este link deixou de estar ativo — o preço foi atualizado. Visita magnaleite.com para o preço e link atuais.'
     });
 
     await stripeClient.prices.update(oldPriceId, { active: false });
 
-    return { paymentLinkId, oldPriceId, newPriceId: newPrice.id };
+    return {
+        oldPaymentLinkId,
+        newPaymentLinkId: newLink.id,
+        newUrl: newLink.url,
+        oldPriceId,
+        newPriceId: newPrice.id
+    };
 }
 
 function isValidFilename(name) {

@@ -124,13 +124,14 @@ async function findPaymentLinkAndPrice(stripeClient, url) {
         lineItemId: item.id,
         oldPriceId: item.price.id,
         productId: item.price.product.id,
-        currency: item.price.currency
+        currency: item.price.currency,
+        quantity: item.quantity || 1
     };
 }
 
 // Cria novo price no mesmo produto, troca-o no Payment Link (URL não muda), arquiva o antigo.
 async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
-    const { paymentLinkId, lineItemId, oldPriceId, productId, currency } = await findPaymentLinkAndPrice(stripeClient, url);
+    const { paymentLinkId, oldPriceId, productId, currency, quantity } = await findPaymentLinkAndPrice(stripeClient, url);
 
     const newPrice = await stripeClient.prices.create({
         product: productId,
@@ -138,8 +139,11 @@ async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
         currency
     });
 
+    // A API do Stripe não deixa indicar "id" (item existente) e "price" (novo)
+    // ao mesmo tempo — o line_items no update SUBSTITUI o item por um novo,
+    // sem "id", só com "price" + "quantity" (a mesma do item original).
     await stripeClient.paymentLinks.update(paymentLinkId, {
-        line_items: [{ id: lineItemId, price: newPrice.id }]
+        line_items: [{ price: newPrice.id, quantity }]
     });
 
     await stripeClient.prices.update(oldPriceId, { active: false });

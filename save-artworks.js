@@ -119,34 +119,81 @@ async function findPaymentLinkAndPrice(stripeClient, url) {
     const item = lineItems.data[0];
     if (!item) throw new Error(`Payment Link ${link.id} não tem line items`);
 
+    const oldPrice = item.price;
+    const product  = oldPrice.product; // expandido acima
+
+    // default_price no objeto product vem só como string (o id) a menos que
+    // seja explicitamente expandido — cobre os dois casos.
+    const productDefaultPriceId = typeof product.default_price === 'string'
+        ? product.default_price
+        : (product.default_price ? product.default_price.id : null);
+
     return {
         paymentLinkId: link.id,
         lineItemId: item.id,
-        oldPriceId: item.price.id,
-        productId: item.price.product.id,
-        currency: item.price.currency,
+        oldPriceId: oldPrice.id,
+        oldPriceNickname: oldPrice.nickname || null,
+        oldPriceMetadata: oldPrice.metadata || null,
+        oldPriceTaxBehavior: (oldPrice.tax_behavior && oldPrice.tax_behavior !== 'unspecified') ? oldPrice.tax_behavior : null,
+        productId: product.id,
+        productDefaultPriceId,
+        currency: oldPrice.currency,
         quantity: item.quantity || 1
     };
 }
 
-// Cria novo price no mesmo produto, troca-o no Payment Link (URL não muda), arquiva o antigo.
+// Cria um novo Price + um novo Payment Link (a Stripe API não permite trocar
+// o price de um Payment Link existente nem alterar o valor de um Price já
+// criado — ver manual, secção Stripe), desativa o Payment Link antigo e
+// tenta arquivar o Price antigo.
+//
+// O novo Price herda do antigo o nickname (aparece como "Description" na
+// lista de Prices do Dashboard), o tax_behavior e o metadata — sem isto, a
+// troca "esquecia" a descrição/características do price antigo (ex.:
+// "Original", "Print Fine Art | Limited Edition...") e o novo ficava sem
+// nenhuma. Só o valor (unit_amount) deve mudar.
+//
+// IMPORTANTE: se o Price antigo for o "default price" do Product, a Stripe
+// recusa-se a arquivá-lo ("This price cannot be archived because it is the
+// default price of its product."). Isso NÃO pode abortar a troca: a essa
+// altura o novo Price e o novo Payment Link já existem e o antigo já foi
+// desativado — se deixássemos a exceção propagar, o servidor devolvia
+// "falhou" sem nunca reportar o novo URL, o site ficava a apontar para o
+// link antigo (agora desativado) e ninguém conseguia comprar. Por isso:
+// 1) só reatribuímos o default price do Product quando o Price antigo era
+//    de facto o default (nunca incondicionalmente — um Product da Magna
+//    tem várias variações de preço, "original"/"print gallery"/"print
+//    collector"/"digital", todas no MESMO Product; reatribuir o default a
+//    cada troca, mesmo quando a variação trocada não era a default,
+//    corrompia silenciosamente qual price aparece como principal no
+//    Dashboard), e
+// 2) mesmo que o arquivamento do Price antigo falhe por outro motivo
+//    qualquer, isso é tratado como aviso (fica órfão e inativo no
+//    Dashboard, sem efeito no checkout) e não impede o sucesso da troca.
 async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
-    const { paymentLinkId: oldPaymentLinkId, oldPriceId, productId, currency, quantity } = await findPaymentLinkAndPrice(stripeClient, url);
+    const {
+        paymentLinkId: oldPaymentLinkId,
+        oldPriceId,
+        oldPriceNickname,
+        oldPriceMetadata,
+        oldPriceTaxBehavior,
+        productId,
+        productDefaultPriceId,
+        currency,
+        quantity
+    } = await findPaymentLinkAndPrice(stripeClient, url);
 
-    const newPrice = await stripeClient.prices.create({
+    const newPriceParams = {
         product: productId,
         unit_amount: Math.round(newAmountUnits * 100),
         currency
-    });
+    };
+    if (oldPriceNickname)   newPriceParams.nickname     = oldPriceNickname;
+    if (oldPriceTaxBehavior) newPriceParams.tax_behavior = oldPriceTaxBehavior;
+    if (oldPriceMetadata && Object.keys(oldPriceMetadata).length) newPriceParams.metadata = oldPriceMetadata;
 
-    // A API do Stripe NÃO permite trocar o preço de um Payment Link já
-    // criado — o update só aceita "id" (item existente, para mudar
-    // quantidade) OU "price" (item novo), nunca os dois juntos, e um Price
-    // é imutável no valor depois de criado. A única forma real de "mudar o
-    // preço" é criar um Payment Link novo com o Price novo e desativar o
-    // antigo — por isso o URL muda sempre que um preço é atualizado. O
-    // artworks.json é atualizado com o URL novo pelo cliente (admin),
-    // usando o "newUrl" devolvido aqui.
+    const newPrice = await stripeClient.prices.create(newPriceParams);
+
     const newLink = await stripeClient.paymentLinks.create({
         line_items: [{ price: newPrice.id, quantity }]
     });
@@ -156,14 +203,30 @@ async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
         inactive_message: 'Este link deixou de estar ativo — o preço foi atualizado. Visita magnaleite.com para o preço e link atuais.'
     });
 
-    await stripeClient.prices.update(oldPriceId, { active: false });
+    const wasDefault = productDefaultPriceId === oldPriceId;
+    let oldPriceArchived = false;
+    let archiveWarning = null;
+    try {
+        // Só toca no default price do Product se o price trocado era de
+        // facto o default — nunca para as outras variações.
+        if (wasDefault) {
+            await stripeClient.products.update(productId, { default_price: newPrice.id });
+        }
+        await stripeClient.prices.update(oldPriceId, { active: false });
+        oldPriceArchived = true;
+    } catch (err) {
+        archiveWarning = err.message;
+        console.warn(`[${new Date().toISOString()}] Aviso: não foi possível arquivar o Price antigo ${oldPriceId} (fica inativo/órfão no Dashboard, sem efeito no checkout): ${err.message}`);
+    }
 
     return {
         oldPaymentLinkId,
         newPaymentLinkId: newLink.id,
         newUrl: newLink.url,
         oldPriceId,
-        newPriceId: newPrice.id
+        newPriceId: newPrice.id,
+        oldPriceArchived,
+        archiveWarning
     };
 }
 

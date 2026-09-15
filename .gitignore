@@ -24,6 +24,7 @@ assets/img/*.webp
 
 # --- Server-generated ---
 backups/
+*.backup
 *.tmp
 
 # --- Node ---

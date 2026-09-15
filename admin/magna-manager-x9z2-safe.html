@@ -435,6 +435,7 @@
         let globalArtworks = {};
 
         let pendingTierSlugs = new Set();
+        let loadedPriceDisplay = null; // preços tal como estavam quando a obra foi carregada — usado para detetar mudança manual de preço
 
         const PRICE_TIERS_ENDPOINT = 'https://brainboxmed.com/magna/api/save-price-tiers';
         let PRICE_TIERS = [];
@@ -602,6 +603,25 @@
             const snippet = buildArtworkData();
             if (!snippet) return;
             const slug = document.getElementById('slug').value.trim();
+
+            // Se o preço mudou manualmente (fora do fluxo de Tiers), marca esta
+            // obra como pendente de confirmação no Stripe — o mesmo mecanismo
+            // que o "Aplicar Tier" já usa.
+            const pd = snippet.priceDisplay;
+            const hasPrice = pd.original > 0 || pd.printGallery > 0 || pd.printCollector > 0 || pd.digital > 0;
+            const priceChanged = hasPrice && (
+                !loadedPriceDisplay ||
+                pd.original       !== loadedPriceDisplay.original ||
+                pd.printGallery   !== loadedPriceDisplay.printGallery ||
+                pd.printCollector !== loadedPriceDisplay.printCollector ||
+                pd.digital        !== loadedPriceDisplay.digital
+            );
+            if (priceChanged) {
+                pendingTierSlugs.add(slug);
+                updateStripeConfirmButton();
+            }
+            loadedPriceDisplay = { ...pd };
+
             globalArtworks[slug] = snippet;
 
             btn.textContent = '⏳ A guardar...';
@@ -1268,6 +1288,7 @@
             if (!slug) {
                 btn.innerHTML = `<span>Criando Nova Obra...</span>`;
                 document.getElementById('artForm').reset();
+                loadedPriceDisplay = null;
                 document.getElementById('slug').value = '';
                 document.getElementById('slug').readOnly = false;
                 document.getElementById('historyList').innerHTML = '';
@@ -1296,13 +1317,18 @@
             document.getElementById('loc_pt').value    = (typeof data.location === 'object') ? data.location.pt : (data.location || '');
             document.getElementById('originalHash').value = data.originalHash || '';
             if (!data.originalHash) generateUUID();
-
             // Price display
             const pd = data.priceDisplay || {};
             document.getElementById('price_original').value  = pd.original  || '';
             document.getElementById('price_gallery').value   = pd.printGallery  || '';
             document.getElementById('price_collector').value = pd.printCollector || '';
             document.getElementById('price_digital').value   = pd.digital   || '';
+            loadedPriceDisplay = {
+                original:       pd.original       || 0,
+                printGallery:   pd.printGallery   || 0,
+                printCollector: pd.printCollector || 0,
+                digital:        pd.digital        || 0
+            };
 
             // Editions sold
             document.getElementById('sold_gallery').value   = data.editionsSold?.gallery   || 0;

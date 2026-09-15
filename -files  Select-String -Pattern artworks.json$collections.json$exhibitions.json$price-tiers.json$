@@ -1,0 +1,44 @@
+[33mcommit bf22567ac9ebb361b4e6b0b153ced3837beddb40[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: thiagohope <thiagodinizcoelho@gmail.com>
+Date:   Tue Sep 15 14:07:27 2026 +0100
+
+    Reforça segurança do admin + adiciona Price Tiers e sync Stripe
+    
+    Segurança:
+    - MAGNA_API_SECRET passa a ser obrigatório (min. 16 chars), sem fallback
+      inseguro; processo recusa arrancar se estiver mal configurado
+    - Comparação do secret em tempo constante (crypto.timingSafeEqual)
+    - Login do Manager valida o secret ao vivo contra o servidor
+      (/verify-secret) em vez de um hash SHA-256 fixo no HTML
+    - Secret guardado localmente (localStorage/sessionStorage) só após
+      validação, nunca hardcoded
+    - Falha ao guardar collections.json deixa de ser silenciosa; novo botão
+      'Sincronizar Coleções' para recuperação manual
+    - Novo endpoint /check-image
+    
+    Price Tiers + Stripe:
+    - Gestão de tiers de preço (novo price-tiers.json via /save-price-tiers)
+    - Aplicação de tier em massa a várias obras
+    - Confirmação no Stripe: cria novo Price, troca no Payment Link
+      (live + test), arquiva o Price antigo (/update-stripe-price)
+    
+    Infra:
+    - Cópia de referência do vhost magnaleite + nota sobre blocos de API
+      mortos nesse vhost
+    - Script de backup fora do droplet (_local/backup-offsite.sh)
+
+ .gitignore                         |   2 [32m+[m
+ _local/backup-offsite.sh           |  64 [32m+++++[m
+ _local/catalogo_obras_arte.xlsx    | Bin [31m21679[m -> [32m24360[m bytes
+ _local/magna-manual-tecnico.md     | 423 [32m+++++++++++++++++++++++++++++++++[m
+ _local/nginx-brainboxmed.conf      |  52 [32m++++[m
+ _local/nginx-magnaleite.conf       | 132 [32m+++++++++++[m
+ admin/magna-manager-x9z2-safe.html | 475 [32m+++++++++++++++++++++++++++++++++[m[31m----[m
+ artworks.json                      | 278 [32m++++++++++++++++++[m[31m----[m
+ ecosystem.config.example.js        |   4 [32m+[m[31m-[m
+ index.html                         |   4 [32m+[m[31m-[m
+ package-lock.json                  |  29 [32m+++[m
+ package.json                       |   5 [32m+[m
+ qrcode.html                        |  46 [32m++[m[31m--[m
+ save-artworks.js                   | 229 [32m+++++++++++++++++[m[31m-[m
+ 14 files changed, 1616 insertions(+), 127 deletions(-)

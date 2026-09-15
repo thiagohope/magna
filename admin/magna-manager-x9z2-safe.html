@@ -69,13 +69,14 @@
         <div class="bg-white p-10 rounded-2xl shadow-2xl max-w-sm w-full text-center">
             <h1 class="font-serif text-3xl mb-2 text-black">Magna Manager</h1>
             <p class="text-gray-400 text-xs uppercase tracking-widest mb-8">Controle de Acesso</p>
-            <input type="password" id="passwordInput" placeholder="Senha" class="text-center mb-4">
+            <input type="password" id="passwordInput" placeholder="MAGNA_API_SECRET" class="text-center mb-4" autocomplete="off">
             <label class="flex items-center justify-center gap-2 text-xs text-gray-500 mb-4 cursor-pointer">
                 <input type="checkbox" id="trustDeviceCheckbox" checked class="cursor-pointer">
-                <span>Confiar neste dispositivo</span>
+                <span>Guardar neste dispositivo</span>
             </label>
-            <button onclick="checkLogin()" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:opacity-80 transition">ENTRAR</button>
+            <button id="loginBtn" onclick="checkLogin()" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:opacity-80 transition">ENTRAR</button>
             <p id="errorMsg" class="text-red-500 text-xs mt-4 hidden">Acesso Negado</p>
+            <p class="text-gray-500 text-[10px] mt-6 leading-relaxed">O código é validado diretamente contra o servidor (o mesmo MAGNA_API_SECRET do <code>ecosystem.config.js</code>) — não há password separada.</p>
         </div>
     </div>
 
@@ -85,6 +86,7 @@
         <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
             <div>
                 <a href="admin-hub.html" class="inline-block text-xs text-gray-400 hover:text-black mb-2 no-underline">← Voltar ao Admin Hub</a>
+                <button onclick="forgetSecret()" class="inline-block text-xs text-gray-400 hover:text-red-600 mb-2 ml-3 bg-transparent border-none cursor-pointer" title="Esquece o MAGNA_API_SECRET guardado neste dispositivo">Sair ↦</button>
                 <h1 class="font-serif text-2xl font-bold text-gray-900">Magna Manager <span class="text-sm font-normal text-gray-400">v4.0</span></h1>
                 <p class="text-sm text-gray-500">Gestão de Obras, Preços, Proveniência & Coleções</p>
             </div>
@@ -96,6 +98,19 @@
                 <!-- Export local copy -->
                 <button onclick="exportArtworksJson()" class="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-medium text-sm hover:bg-emerald-700 transition">
                     ⬇ Exportar artworks.json
+                </button>
+                <!-- Apply a price tier to several artworks at once -->
+                <button onclick="openTierModal()" class="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition">
+                    🏷 Aplicar Tier de Preço
+                </button>
+                <!-- Manual recovery: recompute + re-persist collections.json from the artworks currently loaded -->
+                <button onclick="syncCollectionsNow()" class="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white rounded-lg font-medium text-sm hover:bg-teal-700 transition">
+                    🔄 Sincronizar Coleções
+                </button>
+                <!-- Push pending tier changes to live Stripe Payment Links -->
+                <button id="confirmStripeBtn" onclick="confirmStripePrices()" disabled
+                  class="flex items-center gap-2 px-4 py-2.5 bg-rose-600 text-white rounded-lg font-medium text-sm hover:bg-rose-700 transition disabled:opacity-40 disabled:cursor-not-allowed">
+                    🔒 Confirmar no Stripe (0)
                 </button>
                 <!-- Load from file (fallback) -->
                 <div class="relative">
@@ -395,72 +410,144 @@
 
     <script>
         // ============================================================
-        // CONFIG — set MAGNA_API_SECRET in server env, paste same value here
+        // CONFIG
         // ============================================================
-        const API_ENDPOINT = 'https://brainboxmed.com/magna/api/save-artworks';
-        let API_SECRET = sessionStorage.getItem('magna_api_secret') || '';
+        const API_ENDPOINT      = 'https://brainboxmed.com/magna/api/save-artworks';
+        const STRIPE_UPDATE_ENDPOINT = 'https://brainboxmed.com/magna/api/update-stripe-price';
+        const VERIFY_SECRET_ENDPOINT = 'https://brainboxmed.com/magna/api/verify-secret';
+        const SECRET_STORAGE_KEY     = 'magna_api_secret';
 
+        // O MAGNA_API_SECRET nunca fica escrito no código — é sempre pedido
+        // ao utilizador e validado ao vivo contra o servidor (endpoint
+        // /verify-secret). Depois de validado com sucesso, fica guardado
+        // localmente (localStorage, "Guardar neste dispositivo" — ou
+        // sessionStorage só para essa aba, se a checkbox ficar desmarcada)
+        // para não teres de o reintroduzir sempre que abres a página.
+        let API_SECRET = localStorage.getItem(SECRET_STORAGE_KEY) || sessionStorage.getItem(SECRET_STORAGE_KEY) || '';
+
+        // Já não faz prompt() — a essa altura o login já garantiu que
+        // API_SECRET está preenchido e validado. Mantido só para não obrigar
+        // a tocar em todas as chamadas existentes que o invocam.
         function ensureApiSecret() {
-            if (!API_SECRET) {
-                API_SECRET = prompt('API Secret (deixe em branco se não configurado ainda):') || '';
-                sessionStorage.setItem('magna_api_secret', API_SECRET);
-            }
             return API_SECRET;
         }
 
         let globalArtworks = {};
 
+        let pendingTierSlugs = new Set();
+
+        const PRICE_TIERS_ENDPOINT = 'https://brainboxmed.com/magna/api/save-price-tiers';
+        let PRICE_TIERS = [];
+
+        async function persistPriceTiers() {
+            const secret = ensureApiSecret();
+            return fetch(PRICE_TIERS_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': secret },
+                body: JSON.stringify(PRICE_TIERS)
+            });
+        }
+
+        function computeTierPrices(original) {
+            return {
+                original:       original,
+                printGallery:   Math.round(original * 0.30),
+                printCollector: Math.round(original * 0.10),
+                digital:        Math.round(original * 0.01)
+            };
+        }
+
         // ============================================================
-        // LOGIN
+        // LOGIN — validado ao vivo contra o servidor, sem hash fixo no HTML
         // ============================================================
-// --- Device trust helpers ---
-        const TRUST_KEY = 'magna_trust_token';
-        const TRUST_EXPIRY_KEY = 'magna_trust_expiry';
-        const TRUST_DURATION_MS = 90 * 24 * 60 * 60 * 1000; // 90 dias
-
-        function isDeviceTrusted() {
-            const token = localStorage.getItem(TRUST_KEY);
-            const expiry = parseInt(localStorage.getItem(TRUST_EXPIRY_KEY) || '0', 10);
-            return !!token && Date.now() < expiry;
-        }
-
-        function trustThisDevice() {
-            const token = crypto.randomUUID();
-            localStorage.setItem(TRUST_KEY, token);
-            localStorage.setItem(TRUST_EXPIRY_KEY, String(Date.now() + TRUST_DURATION_MS));
-        }
-
-        function clearDeviceTrust() {
-            localStorage.removeItem(TRUST_KEY);
-            localStorage.removeItem(TRUST_EXPIRY_KEY);
-        }
+        // Antes: a password era comparada com um hash SHA-256 embutido no
+        // HTML — isso não protegia nada (a página é servida publicamente
+        // como qualquer outro ficheiro estático; o hash é visível a quem
+        // vir o código-fonte e pode ser atacado offline). Agora o único
+        // "login" que existe é o próprio MAGNA_API_SECRET, confirmado contra
+        // o servidor real (/verify-secret) — a mesma chave que protege as
+        // escritas. Não há uma segunda credencial fictícia.
 
         function unlockAdmin() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('adminContent').style.display = 'block';
         }
 
+        async function verifySecretOnServer(secret) {
+            if (!secret) return false;
+            try {
+                const res = await fetch(VERIFY_SECRET_ENDPOINT, {
+                    headers: { 'X-Magna-Secret': secret }
+                });
+                return res.ok;
+            } catch (e) {
+                // Rede/servidor em baixo — trata como não validado, nunca desbloqueia
+                // "otimisticamente" com um secret que pode já ter sido rodado.
+                return false;
+            }
+        }
+
+        function storeSecret(secret, persist) {
+            if (persist) {
+                localStorage.setItem(SECRET_STORAGE_KEY, secret);
+                sessionStorage.removeItem(SECRET_STORAGE_KEY);
+            } else {
+                sessionStorage.setItem(SECRET_STORAGE_KEY, secret);
+                localStorage.removeItem(SECRET_STORAGE_KEY);
+            }
+        }
+
+        function forgetSecret() {
+            localStorage.removeItem(SECRET_STORAGE_KEY);
+            sessionStorage.removeItem(SECRET_STORAGE_KEY);
+            API_SECRET = '';
+            location.reload();
+        }
+
         async function checkLogin() {
-            const p = document.getElementById('passwordInput').value;
-            const msgBuffer  = new TextEncoder().encode(p);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
-            if (hash === "13f020a2bf9d1113807cf1c1c78a2e8f85b31a652ea4db3ccdf1877339c8dcef") {
-                if (document.getElementById('trustDeviceCheckbox').checked) {
-                    trustThisDevice();
-                }
-                document.getElementById('errorMsg').classList.add('hidden');
+            const p = document.getElementById('passwordInput').value.trim();
+            const btn = document.getElementById('loginBtn');
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (!p) {
+                errorMsg.textContent = 'Introduz o MAGNA_API_SECRET.';
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = 'A verificar...';
+            errorMsg.classList.add('hidden');
+
+            const ok = await verifySecretOnServer(p);
+
+            btn.disabled = false;
+            btn.textContent = 'ENTRAR';
+
+            if (ok) {
+                API_SECRET = p;
+                storeSecret(p, document.getElementById('trustDeviceCheckbox').checked);
                 unlockAdmin();
             } else {
-                document.getElementById('errorMsg').classList.remove('hidden');
+                errorMsg.textContent = 'Secret inválido, ou servidor inacessível.';
+                errorMsg.classList.remove('hidden');
             }
         }
         document.getElementById('passwordInput').addEventListener('keypress', e => { if(e.key==='Enter') checkLogin(); });
 
-        // Auto-unlock on trusted devices
-        if (isDeviceTrusted()) {
-            unlockAdmin();
-        }
+        // Auto-unlock se já houver um secret guardado E ele continuar válido
+        // no servidor (evita desbloquear com um secret entretanto rodado).
+        (async function tryAutoUnlock() {
+            if (!API_SECRET) return;
+            const ok = await verifySecretOnServer(API_SECRET);
+            if (ok) {
+                unlockAdmin();
+            } else {
+                localStorage.removeItem(SECRET_STORAGE_KEY);
+                sessionStorage.removeItem(SECRET_STORAGE_KEY);
+                API_SECRET = '';
+            }
+        })();
 
         // ============================================================
         // LOAD FROM SERVER
@@ -468,13 +555,15 @@
         async function loadFromServer() {
             showStatus('A carregar dados do servidor...', 'info');
             try {
-                const [artRes, colRes] = await Promise.all([
+                const [artRes, colRes, tiersRes] = await Promise.all([
                     fetch('../artworks.json?v=' + Date.now()),
-                    fetch('../collections.json?v=' + Date.now())
+                    fetch('../collections.json?v=' + Date.now()),
+                    fetch('../price-tiers.json?v=' + Date.now())
                 ]);
                 if (!artRes.ok) throw new Error('Falha ao carregar artworks.json');
                 globalArtworks = await artRes.json();
                 if (colRes.ok) globalCollections = await colRes.json();
+                if (tiersRes.ok) PRICE_TIERS = await tiersRes.json();
                 renderDropdownOptions();
                 populateCollections();
                 showStatus(`✅ ${Object.keys(globalArtworks).length} obras carregadas do servidor.`, 'success');
@@ -533,20 +622,41 @@
 
                 btn.textContent = '✅ GUARDADO!';
                 btn.classList.add('success');
-                showStatus(`✅ Site atualizado! ${data.artworks} obras guardadas no servidor.`, 'success');
 
-                // Guardar collections.json em simultâneo
+                // Guardar collections.json em simultâneo. Antes, um erro aqui só
+                // ia para console.warn — invisível na interface — e a mensagem
+                // de sucesso da obra escondia por cima que as coleções podiam
+                // ter ficado dessincronizadas. Agora o resultado é sempre
+                // mostrado no status bar, e um erro NÃO se auto-esconde (fica
+                // visível até seres tu a resolver, ex. com "🔄 Sincronizar
+                // Coleções").
+                let collectionsOk = true;
+                let collectionsError = null;
                 try {
                     const newlyAdded = syncCollectionsFromArtworks();
                     if (newlyAdded.length) {
                         console.info('Coleções auto-registadas em collections.json:', newlyAdded.join(', '));
                     }
-                    await fetch('https://brainboxmed.com/magna/api/save-collections', {
+                    const colRes = await fetch('https://brainboxmed.com/magna/api/save-collections', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': API_SECRET },
                         body: JSON.stringify(globalCollections)
                     });
-                } catch(e) { console.warn('collections.json não guardado:', e); }
+                    if (!colRes.ok) {
+                        const errData = await colRes.json().catch(() => ({}));
+                        throw new Error(errData.error || `HTTP ${colRes.status}`);
+                    }
+                } catch(e) {
+                    collectionsOk = false;
+                    collectionsError = e.message;
+                    console.warn('collections.json não guardado:', e);
+                }
+
+                if (collectionsOk) {
+                    showStatus(`✅ Site atualizado! ${data.artworks} obras e coleções guardadas no servidor.`, 'success');
+                } else {
+                    showStatus(`⚠️ Obra guardada, mas collections.json FALHOU: ${collectionsError}. Usa "🔄 Sincronizar Coleções" para tentar de novo depois de resolveres a causa.`, 'error');
+                }
 
                 setTimeout(() => {
                     btn.textContent = '💾 GUARDAR NO SERVIDOR';
@@ -602,6 +712,240 @@
         }
 
         // ============================================================
+        // PRICE TIERS — aplicar em massa + confirmar no Stripe
+        // ============================================================
+        function openTierModal() { renderTierModal(); }
+
+        function closeTierModal() {
+            const overlay = document.getElementById('tierModalOverlay');
+            if (overlay) overlay.remove();
+        }
+
+        // ============================================================
+        // GERIR TIERS — adicionar/editar/apagar, guardado no servidor (price-tiers.json)
+        // ============================================================
+        function openManageTiersModal() { renderManageTiersModal(); }
+
+        function closeManageTiersModal() {
+            const overlay = document.getElementById('manageTiersOverlay');
+            if (overlay) overlay.remove();
+            // Se o modal "Aplicar Tier" estiver aberto por trás, refresca-o com a lista atualizada.
+            if (document.getElementById('tierModalOverlay')) renderTierModal();
+        }
+
+        function renderManageTiersModal() {
+            let overlay = document.getElementById('manageTiersOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'manageTiersOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:10000;display:flex;align-items:center;justify-content:center;padding:1rem;';
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', e => { if (e.target === overlay) closeManageTiersModal(); });
+            }
+
+            const rows = PRICE_TIERS.map((t, i) => `
+              <div class="pt-row" data-index="${i}" style="display:grid;grid-template-columns:1fr 100px auto auto;gap:6px;align-items:center;padding:7px 0;border-bottom:1px solid #f1f5f9;">
+                <input type="text" value="${(t.label || '').replace(/"/g,'&quot;')}" data-field="label" placeholder="Nome / tamanho" style="font-size:12px;padding:5px 7px;border:1px solid #e2e8f0;border-radius:6px;">
+                <input type="number" value="${t.original}" data-field="original" placeholder="€ Original" style="font-size:12px;padding:5px 7px;border:1px solid #e2e8f0;border-radius:6px;">
+                <button type="button" data-action="save" style="font-size:11px;padding:5px 9px;background:#0f172a;color:white;border:none;border-radius:6px;cursor:pointer;">Guardar</button>
+                <button type="button" data-action="delete" style="font-size:11px;padding:5px 9px;background:#fee2e2;color:#b91c1c;border:none;border-radius:6px;cursor:pointer;">Apagar</button>
+              </div>`).join('') || '<p style="font-size:12px;color:#94a3b8;text-align:center;padding:1.5rem 0;">Nenhum tier ainda. Cria o primeiro abaixo.</p>';
+
+            overlay.innerHTML = `
+              <div style="background:white;border-radius:12px;padding:1.5rem;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                  <h3 style="font-size:1rem;font-weight:700;">Gerir Price Tiers</h3>
+                  <button type="button" id="closeManageTiersBtn" style="font-size:12px;color:#64748b;background:none;border:none;cursor:pointer;">✕ Fechar</button>
+                </div>
+                <p style="font-size:11px;color:#94a3b8;margin-bottom:1rem;">
+                  Gallery/Collector/Digital calculam-se automaticamente (30%/10%/1% do Original). Guardado no servidor — visível para quem abrir o Manager.
+                </p>
+                <div id="tiersList">${rows}</div>
+                <div style="display:grid;grid-template-columns:1fr 100px auto;gap:6px;align-items:center;margin-top:1rem;padding-top:1rem;border-top:1px solid #e2e8f0;">
+                  <input type="text" id="newTierLabel" placeholder="Nome / tamanho" style="font-size:12px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;">
+                  <input type="number" id="newTierOriginal" placeholder="€ Original" style="font-size:12px;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;">
+                  <button type="button" id="addTierBtn" style="font-size:12px;font-weight:700;padding:6px 10px;background:#0f172a;color:white;border:none;border-radius:6px;cursor:pointer;">+ Adicionar</button>
+                </div>
+              </div>`;
+
+            document.getElementById('closeManageTiersBtn').onclick = closeManageTiersModal;
+
+            document.getElementById('addTierBtn').onclick = async () => {
+                const label = document.getElementById('newTierLabel').value.trim();
+                const original = parseFloat(document.getElementById('newTierOriginal').value);
+                if (!label || !(original > 0)) { showStatus('⚠️ Preenche nome e preço válido.', 'error'); return; }
+                PRICE_TIERS.push({ label, original });
+                try {
+                    await persistPriceTiers();
+                    showStatus(`✅ Tier "${label}" criado e guardado no servidor.`, 'success');
+                } catch (err) {
+                    showStatus(`⚠️ "${label}" criado localmente (erro ao guardar no servidor).`, 'error');
+                }
+                renderManageTiersModal();
+            };
+
+            overlay.querySelectorAll('.pt-row').forEach(row => {
+                const idx = parseInt(row.dataset.index, 10);
+
+                row.querySelector('[data-action="save"]').onclick = async () => {
+                    const label = row.querySelector('[data-field="label"]').value.trim();
+                    const original = parseFloat(row.querySelector('[data-field="original"]').value);
+                    if (!label || !(original > 0)) { showStatus('⚠️ Preenche nome e preço válido.', 'error'); return; }
+                    PRICE_TIERS[idx] = { label, original };
+                    try {
+                        await persistPriceTiers();
+                        showStatus(`✅ Tier "${label}" atualizado no servidor.`, 'success');
+                    } catch (err) {
+                        showStatus(`⚠️ "${label}" atualizado localmente (erro ao guardar no servidor).`, 'error');
+                    }
+                };
+
+                row.querySelector('[data-action="delete"]').onclick = async () => {
+                    if (!confirm(`Apagar o tier "${PRICE_TIERS[idx].label}"? Não afeta obras que já tenham este preço aplicado.`)) return;
+                    const removedLabel = PRICE_TIERS[idx].label;
+                    PRICE_TIERS.splice(idx, 1);
+                    try {
+                        await persistPriceTiers();
+                        showStatus(`✅ Tier "${removedLabel}" apagado do servidor.`, 'success');
+                    } catch (err) {
+                        showStatus(`⚠️ "${removedLabel}" apagado localmente (erro ao guardar no servidor).`, 'error');
+                    }
+                    renderManageTiersModal();
+                };
+            });
+        }
+
+        function renderTierModal() {
+            let overlay = document.getElementById('tierModalOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'tierModalOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', e => { if (e.target === overlay) closeTierModal(); });
+            }
+
+            const slugs = Object.keys(globalArtworks).sort();
+            const rows = slugs.map(slug => {
+                const art = globalArtworks[slug];
+                const pd = art.priceDisplay || {};
+                return `
+                  <label style="display:grid;grid-template-columns:20px 1fr 90px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;cursor:pointer;">
+                    <input type="checkbox" class="tier-check" data-slug="${slug}">
+                    <span style="font-size:13px;">${art.title || slug} <span style="color:#94a3b8;font-size:11px;">(${slug})</span></span>
+                    <span style="font-size:11px;color:#64748b;text-align:right;">€${pd.original || 0}</span>
+                  </label>`;
+            }).join('');
+
+            const tierOptions = PRICE_TIERS.map((t, i) => `<option value="${i}">${t.label} — Original €${t.original}</option>`).join('');
+
+            overlay.innerHTML = `
+              <div style="background:white;border-radius:12px;padding:1.5rem;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+                  <h3 style="font-size:1rem;font-weight:700;">Aplicar Tier de Preço</h3>
+                  <button type="button" id="closeTierModalBtn" style="font-size:12px;color:#64748b;background:none;border:none;cursor:pointer;">✕ Fechar</button>
+                </div>
+                <button type="button" id="openManageTiersBtn" style="text-align:left;font-size:10px;font-weight:700;color:#4f46e5;border:none;background:none;cursor:pointer;padding:0;margin-bottom:0.75rem;">⚙ Gerir Tiers</button>
+                <p style="font-size:11px;color:#94a3b8;margin-bottom:1rem;">
+                  Marca as obras, escolhe o tier e aplica. Gallery/Collector/Digital calculam-se automaticamente (30%/10%/1%).
+                  Isto só altera o priceDisplay em memória — carrega em "Guardar no Servidor" depois para persistir.
+                </p>
+                ${PRICE_TIERS.length
+                    ? `<select id="tierSelect" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;margin-bottom:1rem;">${tierOptions}</select>`
+                    : `<p style="font-size:12px;color:#b91c1c;background:#fef2f2;padding:10px;border-radius:8px;margin-bottom:1rem;">Ainda não tens tiers criados — clica em "⚙ Gerir Tiers" acima para criar o primeiro.</p>`}
+                <div id="tierArtworkList">${rows}</div>
+                <div style="display:flex;gap:8px;margin-top:1rem;">
+                  <button type="button" id="tierSelectAllBtn" style="font-size:12px;padding:8px 12px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer;">Selecionar todas</button>
+                  <button type="button" id="tierApplyBtn" ${PRICE_TIERS.length ? '' : 'disabled'} style="flex:1;font-size:13px;font-weight:700;padding:8px 12px;background:#0f172a;color:white;border:none;border-radius:8px;cursor:pointer;opacity:${PRICE_TIERS.length ? '1' : '0.4'};">Aplicar às selecionadas</button>
+                </div>
+              </div>`;
+
+            document.getElementById('closeTierModalBtn').onclick = closeTierModal;
+            document.getElementById('openManageTiersBtn').onclick = openManageTiersModal;
+            document.getElementById('tierSelectAllBtn').onclick = () => overlay.querySelectorAll('.tier-check').forEach(cb => cb.checked = true);
+
+            document.getElementById('tierApplyBtn').onclick = () => {
+                if (!PRICE_TIERS.length) return;
+                const tier = PRICE_TIERS[parseInt(document.getElementById('tierSelect').value, 10)];
+                const checked = [...overlay.querySelectorAll('.tier-check:checked')].map(cb => cb.dataset.slug);
+                if (!checked.length) { showStatus('⚠️ Marca pelo menos uma obra.', 'error'); return; }
+
+                const prices = computeTierPrices(tier.original);
+                checked.forEach(slug => {
+                    if (!globalArtworks[slug].priceDisplay) globalArtworks[slug].priceDisplay = {};
+                    Object.assign(globalArtworks[slug].priceDisplay, prices);
+                });
+
+                const openSlug = document.getElementById('slug').value.trim();
+                if (checked.includes(openSlug)) loadArtwork(openSlug);
+
+                checked.forEach(slug => pendingTierSlugs.add(slug));
+                updateStripeConfirmButton();
+
+                showStatus(`✅ Tier "${tier.label}" aplicado a ${checked.length} obra(s) em memória. Carrega em "Guardar no Servidor" para persistir.`, 'success');
+                closeTierModal();
+            };
+        }
+
+        function updateStripeConfirmButton() {
+            const btn = document.getElementById('confirmStripeBtn');
+            btn.innerHTML = `🔒 Confirmar no Stripe (${pendingTierSlugs.size})`;
+            btn.disabled = pendingTierSlugs.size === 0;
+        }
+
+        async function confirmStripePrices() {
+            if (!pendingTierSlugs.size) return;
+            const slugs = [...pendingTierSlugs];
+            const updates = [];
+
+            slugs.forEach(slug => {
+                const art = globalArtworks[slug];
+                const pd  = art.priceDisplay || {};
+                [
+                    ['original',       pd.original,       art.priceOriginal],
+                    ['printGallery',   pd.printGallery,   art.pricePrintGallery],
+                    ['printCollector', pd.printCollector, art.pricePrintCollector],
+                    ['digital',        pd.digital,        art.priceDigital]
+                ].forEach(([variation, amount, links]) => {
+                    const liveUrl = links?.live || '';
+                    const testUrl = links?.test || '';
+                    if (amount > 0 && (liveUrl || testUrl)) updates.push({ slug, variation, amount, liveUrl, testUrl });
+                });
+            });
+
+            if (!updates.length) { showStatus('⚠️ Nada para atualizar no Stripe.', 'error'); return; }
+            if (!confirm(`Isto vai criar novos preços e trocar ${updates.length} Payment Link(s) no Stripe (live + test). Não é reversível automaticamente. Continuar?`)) return;
+
+            const secret = ensureApiSecret();
+            const btn = document.getElementById('confirmStripeBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ A atualizar Stripe...';
+
+            try {
+                const res = await fetch(STRIPE_UPDATE_ENDPOINT, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': secret },
+                    body: JSON.stringify({ updates })
+                });
+                const data = await res.json();
+                const failedSlugs = new Set((data.results || []).filter(r => !r.success).map(r => r.slug));
+                slugs.forEach(slug => { if (!failedSlugs.has(slug)) pendingTierSlugs.delete(slug); });
+
+                const okCount  = (data.results || []).filter(r => r.success).length;
+                const errCount = (data.results || []).filter(r => !r.success).length;
+                if (errCount === 0) showStatus(`✅ Stripe atualizado — ${okCount} preço(s) trocado(s).`, 'success');
+                else {
+                    showStatus(`⚠️ ${okCount} ok, ${errCount} falharam — obras com falha continuam pendentes.`, 'error');
+                    console.warn('Falhas Stripe:', data.results.filter(r => !r.success));
+                }
+            } catch (err) {
+                showStatus('❌ Erro ao contactar o servidor: ' + err.message, 'error');
+            } finally {
+                updateStripeConfirmButton();
+            }
+        }
+
+        // ============================================================
         // DROPDOWN
         // ============================================================
         function toggleDropdown() {
@@ -639,6 +983,35 @@
                 });
             });
             return added;
+        }
+
+        // ============================================================
+        // SINCRONIZAR COLEÇÕES — recuperação manual
+        // ============================================================
+        // Botão "🔄 Sincronizar Coleções" no cabeçalho. Recalcula
+        // globalCollections a partir de todas as obras carregadas (regista
+        // qualquer ID de coleção "órfão") e volta a gravar collections.json
+        // no servidor. Usa isto sempre que suspeitares que collections.json
+        // ficou dessincronizado das obras (ex. depois de um erro visto no
+        // status bar ao gravar uma obra, ou depois de restaurar um backup).
+        async function syncCollectionsNow() {
+            if (Object.keys(globalArtworks).length === 0) {
+                showStatus('⚠️ Carrega os dados do servidor primeiro ("↓ Carregar do Servidor").', 'error');
+                return;
+            }
+            showStatus('A sincronizar coleções...', 'info');
+            const added = syncCollectionsFromArtworks();
+            try {
+                const res = await persistCollections();
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || `HTTP ${res.status}`);
+                }
+                populateCollections([...selectedCollections]);
+                showStatus(`✅ Coleções sincronizadas e guardadas no servidor${added.length ? ` (${added.length} nova(s) registada(s): ${added.join(', ')})` : ''}.`, 'success');
+            } catch (err) {
+                showStatus(`❌ Falha ao sincronizar coleções: ${err.message}`, 'error');
+            }
         }
 
         let globalCollections = {};

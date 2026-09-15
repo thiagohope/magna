@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magna - Gallery QR Code (A4)</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <link rel="canonical" href="https://magnaleite.com/qrcode.html">
     
@@ -70,42 +71,43 @@
     <div class="page text-center">
         
         <header class="mb-8 md:mb-12">
-            <h1 class="serif text-4xl md:text-6xl tracking-widest text-black mb-2">MAGNA</h1>
+            <h1 class="serif text-4xl md:text-6xl tracking-widest text-black mb-2">Magna Leite</h1>
             <p class="text-[10px] md:text-sm uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400">Artworks & Exhibitions</p>
         </header>
 
         <div class="mb-8 md:mb-12 w-full flex justify-center">
-            <img id="qrHighRes" src="" alt="Scan to Visit Gallery" class="w-full max-w-[250px] md:max-w-[180mm] h-auto object-contain" style="image-rendering: pixelated;">
+            <div id="qrHighRes" class="mx-auto" style="width: 250px; height: 250px; max-width: 100%;"></div>
         </div>
 
         <footer class="mt-auto">
             <p class="serif italic text-lg md:text-2xl text-gray-800 mb-2">Scan to visit the digital gallery</p>
-            <p class="text-[10px] md:text-xs text-gray-400 uppercase tracking-widest">brainboxmed.com/magna</p>
+            <p class="text-[10px] md:text-xs text-gray-400 uppercase tracking-widest">magnaleite.com</p>
         </footer>
 
     </div>
 
-    <script>
-        // Função para Fechar a Janela
-        function closeTab() {
-            window.close();
-            setTimeout(() => {
-                if (!window.closed) {
-                    alert("O navegador impediu o fecho automático.\nPor favor, feche esta aba manualmente.");
-                }
-            }, 100);
-        }
+<script>
 
-        // Geração do QR Code
-        document.addEventListener("DOMContentLoaded", () => {
-            // URL Dinâmica
-            let galleryUrl = window.location.href.substring(0, window.location.href.lastIndexOf('/')) + '/';
-            console.log("QR Code aponta para:", galleryUrl);
+    function closeTab() {
+        window.close();
+        setTimeout(() => {
+            if (!window.closed) {
+                alert("O navegador impediu o fecho automático.\nPor favor, feche esta aba manualmente.");
+            }
+        }, 100);
+    }
 
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1000x1000&color=000000&bgcolor=FFFFFF&data=${encodeURIComponent(galleryUrl)}`;
-            document.getElementById('qrHighRes').src = qrUrl;
+    document.addEventListener("DOMContentLoaded", () => {
+        const PUBLIC_GALLERY_URL = 'https://magnaleite.com/';
+        new QRCode(document.getElementById('qrHighRes'), {
+            text: PUBLIC_GALLERY_URL,
+            width: 600,
+            height: 600,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.H
         });
-    </script>
-
+    });
+</script>
 </body>
 </html>

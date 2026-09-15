@@ -699,6 +699,7 @@
       // ── CONFIG ──
       const IS_DEV            = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
       const BASE_URL          = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
+      const PUBLIC_GALLERY_URL = 'https://magnaleite.com/';
       const EMAIL_PUBLIC_KEY  = "HWTMdAMNN0xr1HflZ";
       const EMAIL_SERVICE_ID  = "service_u52vj5f";
       const EMAIL_TEMPLATE_ID = "template_6tvxcd9";
@@ -1256,8 +1257,7 @@
       function generateQR() {
         const el = document.getElementById('siteQrCode');
         if (!el || typeof QRCode === 'undefined') return;
-        new QRCode(el, { text: BASE_URL, width:72, height:72, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.M });
-      }
+        new QRCode(el, { text: PUBLIC_GALLERY_URL, width:72, height:72, colorDark:'#000', colorLight:'#fff', correctLevel: QRCode.CorrectLevel.M });      }
 
       // ── INIT ──
       document.addEventListener('DOMContentLoaded', () => {

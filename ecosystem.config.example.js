@@ -22,7 +22,9 @@ module.exports = {
     script: 'save-artworks.js',
     cwd: '/home/brainboxmed/magna',
     env: {
-      MAGNA_API_SECRET: 'CHANGE_THIS_SECRET'
+      MAGNA_API_SECRET: 'CHANGE_THIS_SECRET',
+      STRIPE_SECRET_KEY_LIVE: 'CHANGE_THIS_SECRET',
+      STRIPE_SECRET_KEY_TEST: 'CHANGE_THIS_SECRET'
     }
   }]
 };

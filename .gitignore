@@ -12,6 +12,8 @@ assets/exhibition/img/
 assets/downloads/
 artworks.json
 exhibitions.json
+collections.json
+price-tiers.json
 
 # --- Hero / about images (large binaries, SCP only) ---
 assets/img/*.jpg

@@ -385,9 +385,9 @@
     "title": "Mértola",
     "year": "2026",
     "technique": {
-      "pt": "Acrylique pluie",
-      "en": "Acrylique pluie",
-      "es": "Acrylique pluie"
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
     "dimensions": "100 x 100 cm",
     "image": "assets/paintings/full/mertola.jpeg",
@@ -451,9 +451,9 @@
     "title": "A Rainha",
     "year": "2026",
     "technique": {
-      "pt": "",
-      "en": "",
-      "es": ""
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
     "dimensions": "100 x 150 cm",
     "image": "assets/paintings/full/rainha.jpeg",
@@ -514,9 +514,9 @@
     "title": "Tempo",
     "year": "2026",
     "technique": {
-      "pt": "",
-      "en": "",
-      "es": ""
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
     "dimensions": "100 x 100 cm",
     "image": "assets/paintings/full/tempo.jpeg",
@@ -578,9 +578,9 @@
     "title": "Mente I",
     "year": "2026",
     "technique": {
-      "pt": "Acrylique pluie",
-      "en": "Acrylique pluie",
-      "es": "Acrylique pluie"
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
     "dimensions": "100 x 100 cm",
     "image": "assets/paintings/full/mente1.jpeg",
@@ -613,19 +613,19 @@
     },
     "priceOriginal": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/bJeaEYfe982J59C9Rd2VG0J"
     },
     "pricePrintGallery": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/bJecN6d611ElfOg6F12VG0K"
     },
     "pricePrintCollector": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/fZu5kEd612Ip9pS7J52VG0L"
     },
     "priceDigital": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/6oUbJ2fe95UB9pS6F12VG0M"
     },
     "history": [
       {
@@ -640,9 +640,9 @@
     "title": "Alcube",
     "year": "2026",
     "technique": {
-      "pt": "Acrylique pluie",
-      "en": "Acrylique pluie",
-      "es": "Acrylique pluie"
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
     "dimensions": "205 x 220 cm",
     "image": "assets/paintings/full/alcube.JPG",
@@ -677,19 +677,19 @@
     },
     "priceOriginal": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/aFa14o5Dz5UBatW0gD2VG1q"
     },
     "pricePrintGallery": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/28EeVe9TP4QxcC44wT2VG1r"
     },
     "pricePrintCollector": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/6oU4gA8PL82JdG8aVh2VG1s"
     },
     "priceDigital": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/28EaEY4zver7cC43sP2VG1t"
     },
     "history": [
       {
@@ -704,9 +704,9 @@
     "title": "Mosaico I (+ Mosaico II)",
     "year": "2025",
     "technique": {
-      "pt": "Acrylique pluie",
-      "en": "Acrylique pluie",
-      "es": "Acrylique pluie"
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
     "dimensions": "100 x 150 cm",
     "image": "assets/paintings/full/mosaico01.jpeg",
@@ -767,9 +767,9 @@
     "title": "Mosaico II (+ Mosaico I)",
     "year": "2025",
     "technique": {
-      "pt": "Acrylique pluie",
-      "en": "Acrylique pluie",
-      "es": "Acrylique pluie"
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
     "dimensions": "100 x 150 cm",
     "image": "assets/paintings/full/mosaico02.jpeg",
@@ -828,13 +828,13 @@
   },
   "bandeirola": {
     "title": "Origem",
-    "year": "",
+    "year": "2026",
     "technique": {
-      "pt": "",
-      "en": "",
-      "es": ""
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
     },
-    "dimensions": "",
+    "dimensions": "52 x 30 cm",
     "image": "assets/paintings/full/origem.jpg",
     "thumbnail": "assets/paintings/thumbnails/origem.jpg",
     "collections": [
@@ -853,13 +853,13 @@
       "digital": 0
     },
     "story": {
-      "pt": "",
-      "en": "",
-      "es": ""
+      "pt": "Esta obra nasceu porque o meu amor por Setúbal apenas reforça a minha ligação às minhas origens. Nela, pintei o São João das minhas memórias com as mesmas cores vibrantes e a técnica que uso para retratar cenas do meu quotidiano em Setúbal. Ainda bem que o coração tem espaço para amar muitos lugares ao mesmo tempo.\n",
+      "en": "This piece was born because my love for Setúbal only strengthens my connection to my origins. In it, I painted the São João of my memories with the same vibrant colours and the technique I use to portray the everyday scenes of my life in Setúbal.\nIt’s a good thing the heart has room to love many places at the same time.",
+      "es": "Esta obra nació porque mi amor por Setúbal solo refuerza mi vínculo con mis orígenes. En ella pinté el São João de mis recuerdos con los mismos colores vibrantes y la técnica que utilizo para retratar las escenas cotidianas de mi vida en Setúbal.\nQué bueno que el corazón tenga espacio para amar muchos lugares al mismo tiempo."
     },
-    "status": "available",
+    "status": "sold_private",
     "location": {
-      "pt": "",
+      "pt": "Setúbal, Portugal",
       "en": "Setubal",
       "es": "Setubal"
     },
@@ -871,23 +871,217 @@
     },
     "priceOriginal": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/28E5kEgidgzfgSkbZl2VG1i"
     },
     "pricePrintGallery": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/8x214o2rn96NcC4d3p2VG1j"
     },
     "pricePrintCollector": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/8x200k4zv0AhcC4bZl2VG1k"
     },
     "priceDigital": {
       "test": "",
-      "live": ""
+      "live": "https://buy.stripe.com/dRm8wQ8PLdn3dG86F12VG1l"
     },
     "history": [
       {
         "date": "2026-07-27",
+        "event": "Transfer",
+        "location": "Setúbal, Portugal",
+        "details": "Acervo pessoal da autora"
+      }
+    ]
+  },
+  "nova_anfora": {
+    "title": "A Nova Ânfora",
+    "year": "2026",
+    "technique": {
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "24 x 30 cm",
+    "image": "assets/paintings/full/novaanfora.jpg",
+    "thumbnail": "assets/paintings/thumbnails/novaanfora.jpg",
+    "collections": [
+      "anfora",
+      "vinho"
+    ],
+    "priceDisplay": {
+      "original": 72,
+      "printGallery": 21,
+      "printCollector": 7,
+      "digital": 0
+    },
+    "story": {
+      "pt": "Nesta obra, a ânfora mantém as marcas da sua história, mas é retratada com a extravagância de cor do meu agora. Não há aqui qualquer tentativa de negar a cor do barro, nem as características do seu passado, apenas a vontade de partilhar a forma como a enxergo.",
+      "en": "In this work, the amphora retains the marks of its history, but is portrayed with the extravagant color of my present. There is no attempt here to deny the color of the clay, nor the characteristics of its past, only the desire to share the way I see it.",
+      "es": "En esta obra, la ánfora conserva las huellas de su historia, pero se representa con el colorido exuberante de mi presente. No pretendo negar el color de la arcilla ni las características de su pasado, sino simplemente compartir mi visión de ella."
+    },
+    "status": "available",
+    "location": {
+      "pt": "",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "19986c2e-5265-43c7-b54e-856819259f83",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "",
+      "live": "https://buy.stripe.com/aFa3cwd61dn38lO3sP2VG1u"
+    },
+    "pricePrintGallery": {
+      "test": "",
+      "live": "https://buy.stripe.com/fZueVeaXT5UB8lO1kH2VG1x"
+    },
+    "pricePrintCollector": {
+      "test": "",
+      "live": "https://buy.stripe.com/8x25kE2rnaaR7hK9Rd2VG1w"
+    },
+    "priceDigital": {
+      "test": "",
+      "live": "https://buy.stripe.com/7sY00k3vr5UBgSk0gD2VG1v"
+    },
+    "history": [
+      {
+        "date": "2026-07-28",
+        "event": "Certification",
+        "location": "",
+        "details": ""
+      }
+    ]
+  },
+  "barcos": {
+    "title": "Os Barcos",
+    "year": "2026",
+    "technique": {
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "100 x 100 cm",
+    "image": "assets/paintings/full/barcos.jpg",
+    "thumbnail": "assets/paintings/thumbnails/barcos.jpg",
+    "collections": [
+      "barcos",
+      "setubal",
+      "mar",
+      "marina"
+    ],
+    "priceDisplay": {
+      "original": 1100,
+      "printGallery": 330,
+      "printCollector": 110,
+      "digital": 11
+    },
+    "story": {
+      "pt": "Fui trazendo Setúbal inteira para as minhas obras. Foi assim com a Praia da Figueirinha, a Guarita do Forte de Albarquel, com o Choco etc. Agora, chegam os barcos que despertam a alegria que sinto sempre que estou sentada no meu banco preferido, no Porto de Pesca de Setúbal. A minha vontade de dar cor às cenas do quotidiano que tanto amo está aqui concretizada. Só peço para continuar a sentir todos estes sentimentos e conseguir colocá-los nas minhas obras.\n",
+      "en": "I have been bringing all of Setúbal into my works. It was like this with Praia da Figueirinha, the Guarita do Forte de Albarquel, with the Choco, and so on. Now, the boats arrive, awakening the joy I always feel when I’m sitting on my favourite bench at the Setúbal Fishing Harbour.\nMy desire to give colour to the everyday scenes I love so deeply is materialised here.\nI only ask to continue feeling all these emotions and to be able to place them into my works.",
+      "es": "He ido trayendo todo Setúbal a mis obras. Así ocurrió con la Praia da Figueirinha, la Guarita do Forte de Albarquel, con el Choco, etc. Ahora llegan los barcos que despiertan la alegría que siempre siento cuando estoy sentada en mi banco preferido, en el Puerto Pesquero de Setúbal.\nMi deseo de dar color a las escenas cotidianas que tanto amo está aquí concretado.\nSolo pido seguir sintiendo todas estas emociones y poder colocarlas en mis obras."
+    },
+    "status": "available",
+    "location": {
+      "pt": "",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "e46f45c0-c838-42f4-8e10-442db7bd0ec7",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "",
+      "live": "https://buy.stripe.com/6oU5kE4zvbeVatW4wT2VG1e"
+    },
+    "pricePrintGallery": {
+      "test": "",
+      "live": "https://buy.stripe.com/3cI28s1njdn39pSaVh2VG1h"
+    },
+    "pricePrintCollector": {
+      "test": "",
+      "live": "https://buy.stripe.com/00wbJ26HDer70Tm2oL2VG1g"
+    },
+    "priceDigital": {
+      "test": "",
+      "live": "https://buy.stripe.com/fZucN69TP82J6dG4wT2VG1f"
+    },
+    "history": [
+      {
+        "date": "2026-08-06",
+        "event": "Certification",
+        "location": "",
+        "details": ""
+      }
+    ]
+  },
+  "coraldueto": {
+    "title": "COR(al) Dueto",
+    "year": "2026",
+    "technique": {
+      "pt": "Acrílico sobre tela",
+      "en": "Acrylic on canvas",
+      "es": "Acrilico sobre lienzo"
+    },
+    "dimensions": "100 x 100 cm",
+    "image": "assets/paintings/full/coraldueto.jpg",
+    "thumbnail": "assets/paintings/thumbnails/coraldueto.jpg",
+    "collections": [
+      "setubal",
+      "mar",
+      "nature",
+      "caravela",
+      "coral"
+    ],
+    "priceDisplay": {
+      "original": 2100,
+      "printGallery": 630,
+      "printCollector": 210,
+      "digital": 21
+    },
+    "story": {
+      "pt": "Magna Leite e Carlos Pereira da Silva aceitaram, pela primeira vez, e sem planeamento rígido, espontaneamente, dar corpo a uma obra de arte, sabendo à partida, que seriam mutuamente influenciados.  Magna com a sua paleta de cores muito vivas e o poder das cores neon; Carlos com uma paleta mais sóbria, contida. As ideias e as emoções de cada um deles moldaram diretamente os resultados. \"COR(al) Dueto\" tem, na plasticidade dos materiais, e na própria composição, as duas formas, o Dueto, que constituem o \"focal point\". Estas estabelecem entre si, também, uma relação/ diálogo pictórico emocional. E é precisamente aqui que a Magna Leite eleva os padrões e, em sinergia com o Carlos P. S. conseguiram criar um ambiente fascinante pra essa duas formas brilharem, dançarem, brincarem...\n",
+      "en": "Magna Leite and Carlos Pereira da Silva agreed, for the first time and without rigid planning, to spontaneously give shape to a work of art, fully aware from the beginning that they would influence each other.\nMagna brought her palette of vivid colors and the power of neon tones; Carlos contributed a more sober, restrained palette.\nTheir ideas and emotions directly shaped the outcome.\n\n“COR(al) Dueto” carries, in the plasticity of its materials and in its very composition, the two forms — the Duet — that serve as the focal point. These forms establish an emotional pictorial relationship, a dialogue between them.\n\nAnd it is precisely here that Magna Leite raises the bar, and in synergy with Carlos P. S., they created a fascinating environment for these two forms to shine, dance, and play.",
+      "es": "Magna Leite y Carlos Pereira da Silva aceptaron, por primera vez y sin una planificación rígida, de manera espontánea, dar cuerpo a una obra de arte, sabiendo desde el principio que se influenciarían mutuamente.\nMagna con su paleta de colores muy vivos y el poder de los tonos neón; Carlos con una paleta más sobria y contenida.\nLas ideas y emociones de cada uno moldearon directamente los resultados.\n\n“COR(al) Dueto” tiene, en la plasticidad de los materiales y en su propia composición, las dos formas — el Dueto — que constituyen el punto focal. Estas formas establecen entre sí una relación/diálogo pictórico emocional.\n\nY es precisamente aquí donde Magna Leite eleva los estándares y, en sinergia con Carlos P. S., lograron crear un ambiente fascinante para que esas dos formas brillen, bailen, jueguen…"
+    },
+    "status": "available",
+    "location": {
+      "pt": "Setubal, Portugal",
+      "en": "Setubal",
+      "es": "Setubal"
+    },
+    "originalHash": "32dbef18-f3d3-4237-8c5f-ad27eab8844d",
+    "editionsSold": {
+      "gallery": 0,
+      "collector": 0,
+      "digital": 0
+    },
+    "priceOriginal": {
+      "test": "",
+      "live": "https://buy.stripe.com/aFabJ2d614QxcC4d3p2VG1m"
+    },
+    "pricePrintGallery": {
+      "test": "",
+      "live": "https://buy.stripe.com/9B6eVe9TPer7dG81kH2VG1n"
+    },
+    "pricePrintCollector": {
+      "test": "",
+      "live": "https://buy.stripe.com/9B6bJ21nj2IpatW1kH2VG1o"
+    },
+    "priceDigital": {
+      "test": "",
+      "live": "https://buy.stripe.com/fZufZi6HD96NeKce7t2VG1p"
+    },
+    "history": [
+      {
+        "date": "2026-08-07",
         "event": "Certification",
         "location": "",
         "details": ""

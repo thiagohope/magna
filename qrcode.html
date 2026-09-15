@@ -6,7 +6,7 @@
     <title>Magna - Gallery QR Code (A4)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Pathway+Gothic+One&display=swap" rel="stylesheet">
     <link rel="canonical" href="https://magnaleite.com/qrcode.html">
     
     <style>
@@ -21,7 +21,10 @@
             justify-content: center;
         }
         .serif { font-family: 'Playfair Display', serif; }
-        
+        .qr-title {
+        font-family: 'Pathway Gothic One', sans-serif;
+        letter-spacing: -0.045em;
+}
         /* Configuração de Página (Híbrida: Ecrã vs Impressão) */
         .page {
             background: white;
@@ -71,7 +74,7 @@
     <div class="page text-center">
         
         <header class="mb-8 md:mb-12">
-            <h1 class="serif text-4xl md:text-6xl tracking-widest text-black mb-2">Magna Leite</h1>
+            <h1 class="qr-title text-4xl md:text-6xl text-black mb-2">Magna Leite</h1>
             <p class="text-[10px] md:text-sm uppercase tracking-[0.3em] md:tracking-[0.4em] text-gray-400">Artworks & Exhibitions</p>
         </header>
 

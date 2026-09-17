@@ -167,6 +167,54 @@ async function listAllPaymentLinks(stripeClient) {
     return all;
 }
 
+// Lista TODOS os Products de um cliente Stripe (live ou test), com paginação.
+// Usado como último recurso, quando o Payment Link antigo em si já não pode
+// ser lido (ex.: "coraldueto"/"barcos" — a Stripe devolve erro ao tentar
+// listar os line items desse link específico) e por isso não há forma de
+// descobrir o productId a partir dele. Nesse caso, tentamos encontrar o
+// Product pelo NOME (Products na Magna são criados com o título da obra).
+async function listAllProducts(stripeClient) {
+    let all = [];
+    let startingAfter;
+    while (true) {
+        const page = await stripeClient.products.list({ limit: 100, starting_after: startingAfter });
+        all = all.concat(page.data);
+        if (!page.has_more) break;
+        startingAfter = page.data[page.data.length - 1].id;
+    }
+    return all;
+}
+
+// Normaliza um nome para comparação tolerante (minúsculas, sem acentos, sem
+// espaços/pontuação a mais) — títulos de obras podem ter sido escritos de
+// formas ligeiramente diferentes no artworks.json vs. no nome do Product.
+function normalizeTitleForMatch(str) {
+    return (str || '')
+        .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+}
+
+// Tenta encontrar o Product certo pelo título da obra (artworks[slug].title)
+// quando o link antigo não pôde ser lido. Aceita nome EXATO (normalizado) ou,
+// na falta desse, um único Product cujo nome CONTENHA o título — nunca
+// escolhe entre vários candidatos por adivinhação.
+function findProductByTitle(allProducts, title) {
+    const target = normalizeTitleForMatch(title);
+    if (!target) return { product: null, reason: 'Obra sem título em artworks.json — impossível procurar por nome.' };
+
+    const exact = allProducts.filter(p => normalizeTitleForMatch(p.name) === target);
+    if (exact.length === 1) return { product: exact[0], reason: null };
+    if (exact.length > 1) return { product: null, reason: `${exact.length} Products no Stripe têm exatamente o nome "${title}" — ambíguo, precisa de decisão manual.` };
+
+    const partial = allProducts.filter(p => normalizeTitleForMatch(p.name).includes(target) || target.includes(normalizeTitleForMatch(p.name)));
+    if (partial.length === 1) return { product: partial[0], reason: null };
+    if (partial.length > 1) return { product: null, reason: `${partial.length} Products no Stripe têm nome parecido com "${title}" — ambíguo, precisa de decisão manual.` };
+
+    return { product: null, reason: `Nenhum Product no Stripe com nome igual ou parecido com "${title}".` };
+}
+
 // Lê o line item (price + product, com nickname) de UM Payment Link já
 // conhecido (objeto devolvido por listAllPaymentLinks). Usado pela sugestão
 // de correção de links mortos — devolve null se o link não tiver line items
@@ -799,14 +847,35 @@ const server = http.createServer((req, res) => {
                     const suggestions = [];
                     const unresolved = [];
 
+                    // Lista de Products só é buscada se e quando for mesmo precisa
+                    // (fallback abaixo) — evita uma chamada extra à Stripe sempre
+                    // que todos os links antigos são legíveis normalmente.
+                    let allProductsCache = null;
+                    async function getAllProductsCached() {
+                        if (!allProductsCache) allProductsCache = await listAllProducts(stripeClient);
+                        return allProductsCache;
+                    }
+
                     await runWithConcurrency(brokenEntries, 8, async (entry) => {
                         const oldLink = oldLinkByUrl.get(entry.oldUrl);
                         if (!oldLink || oldLink.active) return; // não é um problema — já está ativo
 
-                        const oldInfo = await getLinkPriceInfo(stripeClient, oldLink);
+                        let oldInfo = await getLinkPriceInfo(stripeClient, oldLink);
+                        let resolvedByTitle = false;
+
                         if (!oldInfo) {
-                            unresolved.push({ ...entry, env, reason: 'Não foi possível ler o Payment Link antigo (produto desconhecido)' });
-                            return;
+                            // Fallback: o link antigo em si não pôde ser lido (aconteceu
+                            // com "coraldueto" e "barcos"/printCollector) — tenta achar
+                            // o Product certo pelo TÍTULO da obra em vez de desistir.
+                            const title = artworks[entry.slug]?.title;
+                            const allProducts = await getAllProductsCached();
+                            const { product, reason } = findProductByTitle(allProducts, title);
+                            if (!product) {
+                                unresolved.push({ ...entry, env, reason: `Não foi possível ler o Payment Link antigo (produto desconhecido), e a busca por título falhou: ${reason}` });
+                                return;
+                            }
+                            oldInfo = { productId: product.id };
+                            resolvedByTitle = true;
                         }
 
                         let candidates = (activeByProduct.get(oldInfo.productId) || [])
@@ -866,12 +935,13 @@ const server = http.createServer((req, res) => {
                                 suggestedNickname: candidates[0].nickname,
                                 confirmadoPeloPreco: priceMatchedTiebreak,
                                 duplicadoMesmoValorEscolhidoPelaMaisRecente: duplicateSameAmountTiebreak,
+                                productEncontradoPeloTitulo: resolvedByTitle,
                                 priceDisplayNaoBateuCerto: duplicateSameAmountTiebreak && !priceMatchedTiebreak
                                     ? { expectedEuros: expectedEuros ?? null, valorEscolhidoCents: candidates[0].unitAmount }
                                     : undefined
                             });
                         } else if (candidates.length === 0) {
-                            unresolved.push({ ...entry, env, reason: `Nenhuma Price ativa encontrada no Product ${oldInfo.productId} com nickname compatível com "${entry.variation}"` });
+                            unresolved.push({ ...entry, env, reason: `Nenhuma Price ativa encontrada no Product ${oldInfo.productId}${resolvedByTitle ? ' (encontrado pelo título)' : ''} com nickname compatível com "${entry.variation}"` });
                         } else {
                             unresolved.push({
                                 ...entry, env,

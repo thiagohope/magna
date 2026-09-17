@@ -182,7 +182,7 @@ async function getLinkPriceInfo(stripeClient, link) {
         const price = item.price;
         const product = price.product;
         const productId = typeof product === 'string' ? product : product.id;
-        return { productId, priceId: price.id, nickname: price.nickname || '', url: link.url, active: link.active, unitAmount: price.unit_amount };
+        return { productId, priceId: price.id, nickname: price.nickname || '', url: link.url, active: link.active, unitAmount: price.unit_amount, created: price.created };
     } catch (err) {
         return null;
     }
@@ -819,16 +819,33 @@ const server = http.createServer((req, res) => {
                         // (priceDisplay, em euros) para escolher a Price certa por
                         // valor em cêntimos — nunca por ordem/data, que não é fiável.
                         let priceMatchedTiebreak = false;
+                        let duplicateSameAmountTiebreak = false;
+                        const expectedEuros = artworks[entry.slug]?.priceDisplay?.[entry.variation];
+
+                        if (candidates.length > 1 && typeof expectedEuros === 'number') {
+                            const expectedCents = Math.round(expectedEuros * 100);
+                            const byPrice = candidates.filter(c => c.unitAmount === expectedCents);
+                            if (byPrice.length === 1) {
+                                candidates = byPrice;
+                                priceMatchedTiebreak = true;
+                            }
+                        }
+
+                        // Ainda há mais do que uma candidata (ou porque nenhuma bateu
+                        // com o priceDisplay, ou porque bateram várias ao mesmo
+                        // tempo — duas Prices "iguais" ativas em simultâneo, o que
+                        // aconteceu bastante nesta conta por causa dos arquivamentos
+                        // que falharam silenciosamente ao longo de meses). Se todas
+                        // as que sobram tiverem exatamente o MESMO valor entre si,
+                        // não há ambiguidade real quanto ao que o cliente paga — só
+                        // sujidade de duplicados por trás — então escolhe-se a mais
+                        // recente, e assinala-se isso claramente para revisão do
+                        // Dashboard (não é o mesmo que "confirmado pelo preço").
                         if (candidates.length > 1) {
-                            const art = artworks[entry.slug];
-                            const expectedEuros = art?.priceDisplay?.[entry.variation];
-                            if (typeof expectedEuros === 'number') {
-                                const expectedCents = Math.round(expectedEuros * 100);
-                                const byPrice = candidates.filter(c => c.unitAmount === expectedCents);
-                                if (byPrice.length === 1) {
-                                    candidates = byPrice;
-                                    priceMatchedTiebreak = true;
-                                }
+                            const amounts = new Set(candidates.map(c => c.unitAmount));
+                            if (amounts.size === 1) {
+                                candidates = [...candidates].sort((a, b) => (b.created || 0) - (a.created || 0)).slice(0, 1);
+                                duplicateSameAmountTiebreak = true;
                             }
                         }
 
@@ -840,15 +857,19 @@ const server = http.createServer((req, res) => {
                                 oldUrl: entry.oldUrl,
                                 suggestedUrl: candidates[0].url,
                                 suggestedNickname: candidates[0].nickname,
-                                confirmadoPeloPreco: priceMatchedTiebreak
+                                confirmadoPeloPreco: priceMatchedTiebreak,
+                                duplicadoMesmoValorEscolhidoPelaMaisRecente: duplicateSameAmountTiebreak,
+                                priceDisplayNaoBateuCerto: duplicateSameAmountTiebreak && !priceMatchedTiebreak
+                                    ? { expectedEuros: expectedEuros ?? null, valorEscolhidoCents: candidates[0].unitAmount }
+                                    : undefined
                             });
                         } else if (candidates.length === 0) {
                             unresolved.push({ ...entry, env, reason: `Nenhuma Price ativa encontrada no Product ${oldInfo.productId} com nickname compatível com "${entry.variation}"` });
                         } else {
                             unresolved.push({
                                 ...entry, env,
-                                reason: `AMBÍGUO — ${candidates.length} Prices ativas no Product ${oldInfo.productId} parecem corresponder a "${entry.variation}" e o preço guardado (priceDisplay) não bateu certo com nenhuma ou com mais do que uma`,
-                                expectedEuros: artworks[entry.slug]?.priceDisplay?.[entry.variation] ?? null,
+                                reason: `AMBÍGUO DE VERDADE — ${candidates.length} Prices ativas no Product ${oldInfo.productId} para "${entry.variation}", com VALORES DIFERENTES entre si, e nenhuma bate com o priceDisplay guardado — precisa de decisão manual`,
+                                expectedEuros: expectedEuros ?? null,
                                 candidates: candidates.map(c => ({ url: c.url, nickname: c.nickname, priceId: c.priceId, unitAmountCents: c.unitAmount }))
                             });
                         }

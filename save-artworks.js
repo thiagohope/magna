@@ -93,6 +93,64 @@ function makeBackup(filePath, prefix) {
 const FILENAME_PATTERN = /^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$/i;
 const SLUG_PATTERN     = /^[a-z0-9-]+$/;
 
+// ── LOCK por slug para /update-stripe-price ─────────────────────────────────
+// Evita que dois pedidos concorrentes (duplo clique, retry depois de um
+// "Failed to fetch", ou um pedido a chegar mesmo à volta de um `pm2 restart`)
+// processem a MESMA obra ao mesmo tempo. Sem isto, um 2º pedido pode resolver
+// o Payment Link "antigo" que o 1º pedido acabou de desativar — antes de o
+// artworks.json ter sido atualizado com o novo URL — e criar um Price novo a
+// mais, sem nunca corrigir o default (foi exatamente isto que aconteceu com
+// "Tempo" em 17/09). Ver diagnóstico completo no histórico do projeto.
+const busySlugs = new Set();
+
+// Mapeia a variação de preço para o campo correspondente em artworks.json —
+// tem de ficar em sync com FIELD_BY_VARIATION no admin/magna-manager-x9z2-safe.html
+const FIELD_BY_VARIATION = {
+    original:       'priceOriginal',
+    printGallery:   'pricePrintGallery',
+    printCollector: 'pricePrintCollector',
+    digital:        'priceDigital'
+};
+
+// Depois de um swap bem-sucedido no Stripe, grava o(s) novo(s) URL(s) de
+// Payment Link diretamente no artworks.json em disco — sem depender de um
+// 2º pedido HTTP separado vindo do browser (o Manager também faz esse 2º
+// pedido, por segurança/redundância, mas já não é a ÚNICA forma de os novos
+// URLs ficarem persistidos). Lê sempre uma cópia fresca do ficheiro em disco
+// para não pisar alterações concorrentes de outro pedido.
+function persistStripeUrlUpdates(results) {
+    const successesWithUrl = results.filter(r => r.success && r.newUrl);
+    if (!successesWithUrl.length) return;
+
+    try {
+        const raw = fs.readFileSync(ARTWORKS_PATH, 'utf8');
+        const artworksOnDisk = JSON.parse(raw);
+        let changed = false;
+
+        successesWithUrl.forEach(r => {
+            const field = FIELD_BY_VARIATION[r.variation];
+            const art = artworksOnDisk[r.slug];
+            if (field && art && art[field]) {
+                art[field][r.env] = r.newUrl;
+                changed = true;
+            }
+        });
+
+        if (changed) {
+            makeBackup(ARTWORKS_PATH, 'artworks');
+            const tmpPath = ARTWORKS_PATH + '.tmp';
+            fs.writeFileSync(tmpPath, JSON.stringify(artworksOnDisk, null, 2), 'utf8');
+            fs.renameSync(tmpPath, ARTWORKS_PATH);
+            console.log(`[${new Date().toISOString()}] artworks.json atualizado automaticamente após update-stripe-price — ${successesWithUrl.length} URL(s)`);
+        }
+    } catch (err) {
+        // Os swaps no Stripe já aconteceram — não falhamos o pedido por causa
+        // disto. O frontend recebe os newUrl nos results e tenta gravá-los
+        // por si (POST /save-artworks), como já fazia antes.
+        console.error(`[${new Date().toISOString()}] AVISO: falha ao persistir novos URLs no artworks.json após swap Stripe bem-sucedido:`, err.message);
+    }
+}
+
 // Lista TODOS os Payment Links de um cliente Stripe (live ou test), com paginação.
 async function listAllPaymentLinks(stripeClient) {
     let all = [];
@@ -610,6 +668,7 @@ const server = http.createServer((req, res) => {
         if (!checkAuth(req, res)) return;
 
         readJsonBody(req, res, MAX_JSON_SIZE, async (parsed) => {
+            const lockedSlugs = [];
             try {
                 const updates = Array.isArray(parsed.updates) ? parsed.updates : null;
                 if (!updates || !updates.length) {
@@ -617,10 +676,28 @@ const server = http.createServer((req, res) => {
                     return;
                 }
 
+                // Bloqueia obras já em atualização noutro pedido concorrente
+                // (ver comentário junto a `busySlugs` mais acima).
+                const requestedSlugs = [...new Set(updates.map(u => u.slug))];
+                const blockedSlugs   = new Set(requestedSlugs.filter(s => busySlugs.has(s)));
+                requestedSlugs.forEach(s => {
+                    if (!blockedSlugs.has(s)) {
+                        busySlugs.add(s);
+                        lockedSlugs.push(s);
+                    }
+                });
+
                 const results = [];
 
                 for (const upd of updates) {
                     const { slug, variation, amount, liveUrl, testUrl } = upd;
+
+                    if (blockedSlugs.has(slug)) {
+                        const busyMsg = 'Já existe uma atualização em curso para esta obra — aguarde a anterior terminar e tente de novo.';
+                        if (liveUrl) results.push({ slug, variation, env: 'live', success: false, error: busyMsg });
+                        if (testUrl) results.push({ slug, variation, env: 'test', success: false, error: busyMsg });
+                        continue;
+                    }
 
                     if (typeof amount !== 'number' || amount <= 0) {
                         results.push({ slug, variation, env: 'live', success: false, error: 'amount inválido' });
@@ -654,12 +731,18 @@ const server = http.createServer((req, res) => {
                     }
                 }
 
+                // Grava já os novos URLs em artworks.json — não depende do
+                // Manager fazer um 2º pedido depois deste responder.
+                persistStripeUrlUpdates(results);
+
                 const failed = results.filter(r => !r.success).length;
                 console.log(`[${new Date().toISOString()}] update-stripe-price — ${results.length - failed} ok, ${failed} falhas`);
                 respond(req, res, 200, { success: failed === 0, results });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Erro update-stripe-price:`, err.message);
                 respond(req, res, 500, { error: err.message });
+            } finally {
+                lockedSlugs.forEach(s => busySlugs.delete(s));
             }
         });
         return;

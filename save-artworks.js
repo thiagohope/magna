@@ -825,7 +825,13 @@ const server = http.createServer((req, res) => {
                         if (candidates.length > 1 && typeof expectedEuros === 'number') {
                             const expectedCents = Math.round(expectedEuros * 100);
                             const byPrice = candidates.filter(c => c.unitAmount === expectedCents);
-                            if (byPrice.length === 1) {
+                            // >= 1 (não só === 1): mesmo quando batem VÁRIAS candidatas
+                            // com o preço esperado — o que é comum aqui, há Prices
+                            // duplicadas com o valor certo por trás — já vale a pena
+                            // descartar as que têm um valor claramente errado, e deixar
+                            // o desempate por "mesmo valor → mais recente" a seguir
+                            // resolver entre as que sobraram (todas com o preço certo).
+                            if (byPrice.length >= 1) {
                                 candidates = byPrice;
                                 priceMatchedTiebreak = true;
                             }

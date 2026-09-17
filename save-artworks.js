@@ -182,7 +182,7 @@ async function getLinkPriceInfo(stripeClient, link) {
         const price = item.price;
         const product = price.product;
         const productId = typeof product === 'string' ? product : product.id;
-        return { productId, priceId: price.id, nickname: price.nickname || '', url: link.url, active: link.active };
+        return { productId, priceId: price.id, nickname: price.nickname || '', url: link.url, active: link.active, unitAmount: price.unit_amount };
     } catch (err) {
         return null;
     }
@@ -808,8 +808,29 @@ const server = http.createServer((req, res) => {
                             return;
                         }
 
-                        const candidates = (activeByProduct.get(oldInfo.productId) || [])
+                        let candidates = (activeByProduct.get(oldInfo.productId) || [])
                             .filter(c => NICKNAME_HINT[entry.variation].test(c.nickname));
+
+                        // Desempate por preço: se houver mais do que uma Price ativa
+                        // com o nickname certo (comum aqui — arquivamentos que
+                        // falharam silenciosamente ao longo de meses deixaram várias
+                        // "ativas" em simultâneo), usa o valor que o próprio
+                        // artworks.json diz que É o preço atual desta variação
+                        // (priceDisplay, em euros) para escolher a Price certa por
+                        // valor em cêntimos — nunca por ordem/data, que não é fiável.
+                        let priceMatchedTiebreak = false;
+                        if (candidates.length > 1) {
+                            const art = artworks[entry.slug];
+                            const expectedEuros = art?.priceDisplay?.[entry.variation];
+                            if (typeof expectedEuros === 'number') {
+                                const expectedCents = Math.round(expectedEuros * 100);
+                                const byPrice = candidates.filter(c => c.unitAmount === expectedCents);
+                                if (byPrice.length === 1) {
+                                    candidates = byPrice;
+                                    priceMatchedTiebreak = true;
+                                }
+                            }
+                        }
 
                         if (candidates.length === 1) {
                             suggestions.push({
@@ -818,15 +839,17 @@ const server = http.createServer((req, res) => {
                                 env,
                                 oldUrl: entry.oldUrl,
                                 suggestedUrl: candidates[0].url,
-                                suggestedNickname: candidates[0].nickname
+                                suggestedNickname: candidates[0].nickname,
+                                confirmadoPeloPreco: priceMatchedTiebreak
                             });
                         } else if (candidates.length === 0) {
                             unresolved.push({ ...entry, env, reason: `Nenhuma Price ativa encontrada no Product ${oldInfo.productId} com nickname compatível com "${entry.variation}"` });
                         } else {
                             unresolved.push({
                                 ...entry, env,
-                                reason: `AMBÍGUO — ${candidates.length} Prices ativas no Product ${oldInfo.productId} parecem corresponder a "${entry.variation}"`,
-                                candidates: candidates.map(c => ({ url: c.url, nickname: c.nickname, priceId: c.priceId }))
+                                reason: `AMBÍGUO — ${candidates.length} Prices ativas no Product ${oldInfo.productId} parecem corresponder a "${entry.variation}" e o preço guardado (priceDisplay) não bateu certo com nenhuma ou com mais do que uma`,
+                                expectedEuros: artworks[entry.slug]?.priceDisplay?.[entry.variation] ?? null,
+                                candidates: candidates.map(c => ({ url: c.url, nickname: c.nickname, priceId: c.priceId, unitAmountCents: c.unitAmount }))
                             });
                         }
                     });

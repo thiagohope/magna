@@ -103,6 +103,10 @@
                 <button onclick="openTierModal()" class="flex items-center gap-2 px-4 py-2.5 bg-amber-500 text-white rounded-lg font-medium text-sm hover:bg-amber-600 transition">
                     🏷 Aplicar Tier de Preço
                 </button>
+                <!-- Adjust prices of several artworks at once by a +/- percentage -->
+                <button onclick="openBulkPercentModal()" class="flex items-center gap-2 px-4 py-2.5 bg-cyan-600 text-white rounded-lg font-medium text-sm hover:bg-cyan-700 transition">
+                    📊 Ajustar % em Massa
+                </button>
                 <!-- Manual recovery: recompute + re-persist collections.json from the artworks currently loaded -->
                 <button onclick="syncCollectionsNow()" class="flex items-center gap-2 px-4 py-2.5 bg-teal-600 text-white rounded-lg font-medium text-sm hover:bg-teal-700 transition">
                     🔄 Sincronizar Coleções
@@ -212,10 +216,15 @@
 
                     <!-- Prices display -->
                     <div class="section-header"><span>Preços Públicos (visíveis no site)</span></div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 bg-emerald-50 p-4 rounded-xl border border-emerald-200">
+                    <div class="flex items-center gap-2 mb-3 bg-white p-3 rounded-xl border border-emerald-200">
+                        <label class="!mb-0 text-emerald-800 whitespace-nowrap">Ajustar Original em (%)</label>
+                        <input type="number" id="price_pct_adjust" step="1" placeholder="ex: 10 ou -15" class="text-center">
+                        <button type="button" onclick="applyPercentAdjust()" class="px-4 py-2 bg-emerald-700 text-white rounded-lg text-xs font-bold hover:bg-emerald-800 transition whitespace-nowrap">Aplicar %</button>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-1 bg-emerald-50 p-4 rounded-xl border border-emerald-200">
                         <div>
                             <label class="text-emerald-800">Original (€)</label>
-                            <input type="number" id="price_original" min="0" step="50" placeholder="1200" class="border-emerald-200 font-bold text-lg text-center">
+                            <input type="number" id="price_original" min="0" step="50" placeholder="1200" oninput="onOriginalPriceInput()" class="border-emerald-200 font-bold text-lg text-center">
                         </div>
                         <div>
                             <label class="text-emerald-800">Gallery Print (€)</label>
@@ -230,6 +239,7 @@
                             <input type="number" id="price_digital" min="0" step="5" placeholder="30" class="border-emerald-200 font-bold text-lg text-center">
                         </div>
                     </div>
+                    <p class="text-[10px] text-emerald-700 mb-6 px-1">Editar "Original" à mão, ou usar "Ajustar % ", recalcula automaticamente Gallery/Collector/Digital (30% / 10% / 1% do Original) — a mesma proporção usada pelos price tiers. Pode ajustar os valores calculados manualmente antes de guardar, se algum caso precisar de fugir à regra.</p>
 
                     <!-- Editions sold -->
                     <div class="section-header"><span>Controle de Edições Vendidas</span></div>
@@ -456,6 +466,48 @@
                 printCollector: Math.round(original * 0.10),
                 digital:        Math.round(original * 0.01)
             };
+        }
+
+        // Ao editar manualmente o preço "Original" de uma obra (fora do fluxo
+        // de tiers), recalcula automaticamente Gallery/Collector/Digital com
+        // a MESMA proporção usada pelos price tiers (30% / 10% / 1%) — assim
+        // o preço manual segue exatamente o mesmo processo, em vez de deixar
+        // as outras modalidades desatualizadas em relação ao novo "Original".
+        // O utilizador pode sempre corrigir os campos calculados à mão antes
+        // de guardar, se algum caso específico precisar de fugir à regra.
+        function onOriginalPriceInput() {
+            const original = parseInt(document.getElementById('price_original').value) || 0;
+            if (original <= 0) return;
+            const prices = computeTierPrices(original);
+            document.getElementById('price_gallery').value   = prices.printGallery;
+            document.getElementById('price_collector').value = prices.printCollector;
+            document.getElementById('price_digital').value   = prices.digital;
+        }
+
+        // Ajusta o preço "Original" da obra atualmente aberta por uma
+        // percentagem (positiva para subir, negativa para descer) em vez de
+        // escrever um valor absoluto novo — útil para reajustes gerais
+        // (ex.: inflação, promoção pontual) sem ter de calcular o valor em
+        // euros à mão. Reaproveita onOriginalPriceInput() para recalcular
+        // Gallery/Collector/Digital na mesma proporção de sempre.
+        function applyPercentAdjust() {
+            const pctInput = document.getElementById('price_pct_adjust');
+            const pct = parseFloat(pctInput.value);
+            if (isNaN(pct) || pct === 0) {
+                showStatus('⚠️ Introduza uma percentagem diferente de zero (ex.: 10 ou -15).', 'error');
+                return;
+            }
+            const currentOriginal = parseInt(document.getElementById('price_original').value) || 0;
+            if (currentOriginal <= 0) {
+                showStatus('⚠️ Defina primeiro um preço "Original" válido antes de ajustar por percentagem.', 'error');
+                return;
+            }
+            const newOriginal = Math.round(currentOriginal * (1 + pct / 100));
+            document.getElementById('price_original').value = newOriginal;
+            onOriginalPriceInput();
+            pctInput.value = '';
+            const sign = pct > 0 ? '+' : '';
+            showStatus(`✅ Original ajustado em ${sign}${pct}% (€${currentOriginal} → €${newOriginal}). Gallery/Collector/Digital recalculados. Carregue em "Guardar no Servidor" para persistir.`, 'success');
         }
 
         // ============================================================
@@ -907,6 +959,101 @@
             };
         }
 
+        // ============================================================
+        // AJUSTAR % EM MASSA — sobe/desce o Original de várias obras de
+        // uma vez por uma percentagem, em vez de escolher um tier fixo.
+        // Gallery/Collector/Digital recalculam-se sempre na mesma proporção
+        // (30%/10%/1%) a partir do novo Original de cada obra — cada obra
+        // parte do SEU PRÓPRIO preço atual, não de um valor comum.
+        // ============================================================
+        function openBulkPercentModal() { renderBulkPercentModal(); }
+
+        function closeBulkPercentModal() {
+            const overlay = document.getElementById('bulkPercentOverlay');
+            if (overlay) overlay.remove();
+        }
+
+        function renderBulkPercentModal() {
+            let overlay = document.getElementById('bulkPercentOverlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'bulkPercentOverlay';
+                overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem;';
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', e => { if (e.target === overlay) closeBulkPercentModal(); });
+            }
+
+            const slugs = Object.keys(globalArtworks).sort();
+            const rows = slugs.map(slug => {
+                const art = globalArtworks[slug];
+                const pd = art.priceDisplay || {};
+                return `
+                  <label style="display:grid;grid-template-columns:20px 1fr 90px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid #f1f5f9;cursor:pointer;">
+                    <input type="checkbox" class="bulkpct-check" data-slug="${slug}">
+                    <span style="font-size:13px;">${art.title || slug} <span style="color:#94a3b8;font-size:11px;">(${slug})</span></span>
+                    <span style="font-size:11px;color:#64748b;text-align:right;">€${pd.original || 0}</span>
+                  </label>`;
+            }).join('');
+
+            overlay.innerHTML = `
+              <div style="background:white;border-radius:12px;padding:1.5rem;max-width:520px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+                  <h3 style="font-size:1rem;font-weight:700;">Ajustar Preços em Massa (%)</h3>
+                  <button type="button" id="closeBulkPercentBtn" style="font-size:12px;color:#64748b;background:none;border:none;cursor:pointer;">✕ Fechar</button>
+                </div>
+                <p style="font-size:11px;color:#94a3b8;margin-bottom:1rem;">
+                  Marca as obras e indica a percentagem (positiva para subir, negativa para descer — ex.: 10 ou -15).
+                  Cada obra parte do SEU próprio "Original" atual. Gallery/Collector/Digital recalculam-se automaticamente (30%/10%/1%).
+                  Isto só altera o priceDisplay em memória — carrega em "Guardar no Servidor" depois para persistir.
+                </p>
+                <div style="display:flex;gap:8px;align-items:center;margin-bottom:1rem;">
+                  <input type="number" id="bulkPercentValue" step="1" placeholder="ex: 10 ou -15" style="width:140px;padding:8px;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;">
+                  <span style="font-size:12px;color:#64748b;">%</span>
+                </div>
+                <div id="bulkPercentArtworkList">${rows}</div>
+                <div style="display:flex;gap:8px;margin-top:1rem;">
+                  <button type="button" id="bulkPercentSelectAllBtn" style="font-size:12px;padding:8px 12px;background:#f1f5f9;border:none;border-radius:8px;cursor:pointer;">Selecionar todas</button>
+                  <button type="button" id="bulkPercentApplyBtn" style="flex:1;font-size:13px;font-weight:700;padding:8px 12px;background:#0f172a;color:white;border:none;border-radius:8px;cursor:pointer;">Aplicar às selecionadas</button>
+                </div>
+              </div>`;
+
+            document.getElementById('closeBulkPercentBtn').onclick = closeBulkPercentModal;
+            document.getElementById('bulkPercentSelectAllBtn').onclick = () => overlay.querySelectorAll('.bulkpct-check').forEach(cb => cb.checked = true);
+
+            document.getElementById('bulkPercentApplyBtn').onclick = () => {
+                const pct = parseFloat(document.getElementById('bulkPercentValue').value);
+                if (isNaN(pct) || pct === 0) { showStatus('⚠️ Introduza uma percentagem diferente de zero (ex.: 10 ou -15).', 'error'); return; }
+
+                const checked = [...overlay.querySelectorAll('.bulkpct-check:checked')].map(cb => cb.dataset.slug);
+                if (!checked.length) { showStatus('⚠️ Marca pelo menos uma obra.', 'error'); return; }
+
+                let applied = 0;
+                let skipped = 0;
+                checked.forEach(slug => {
+                    const art = globalArtworks[slug];
+                    const currentOriginal = art.priceDisplay?.original || 0;
+                    if (currentOriginal <= 0) { skipped++; return; }
+                    const newOriginal = Math.round(currentOriginal * (1 + pct / 100));
+                    const prices = computeTierPrices(newOriginal);
+                    if (!art.priceDisplay) art.priceDisplay = {};
+                    Object.assign(art.priceDisplay, prices);
+                    applied++;
+                });
+
+                const openSlug = document.getElementById('slug').value.trim();
+                if (checked.includes(openSlug)) loadArtwork(openSlug);
+
+                checked.forEach(slug => { if ((globalArtworks[slug].priceDisplay?.original || 0) > 0) pendingTierSlugs.add(slug); });
+                updateStripeConfirmButton();
+
+                const sign = pct > 0 ? '+' : '';
+                let msg = `✅ ${applied} obra(s) ajustada(s) em ${sign}${pct}% em memória. Carrega em "Guardar no Servidor" para persistir.`;
+                if (skipped) msg += ` (${skipped} ignorada(s) por não terem "Original" definido.)`;
+                showStatus(msg, 'success');
+                closeBulkPercentModal();
+            };
+        }
+
         function updateStripeConfirmButton() {
             const btn = document.getElementById('confirmStripeBtn');
             btn.innerHTML = `🔒 Confirmar no Stripe (${pendingTierSlugs.size})`;
@@ -1003,7 +1150,7 @@
                 updateStripeConfirmButton();
             }
         }
-                
+
         // ============================================================
         // DROPDOWN
         // ============================================================

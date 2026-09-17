@@ -12,6 +12,7 @@
  *   POST /save-price-tiers         [ ...price tiers array... ]          -> price-tiers.json
  *   POST /update-stripe-price      { updates: [...] }                   -> Stripe (live + test)
  *   GET  /check-payment-links      (header only, sem body)              -> diagnóstico: links mortos/inativos
+ *   GET  /suggest-payment-link-fixes (header only, sem body)            -> sugere correções, NÃO escreve nada
  *   POST /upload-painting-image    { filename, type, imageData }        -> assets/paintings/<full|thumbnails>/<filename>
  *   POST /upload-exhibition-flyer  { filename, imageData }              -> assets/exhibition/flyers/<filename>
  *   POST /upload-exhibition-gallery{ slug, filename, imageData }        -> assets/exhibition/img/<slug>/<filename>
@@ -163,6 +164,44 @@ async function listAllPaymentLinks(stripeClient) {
         startingAfter = page.data[page.data.length - 1].id;
     }
     return all;
+}
+
+// Lê o line item (price + product, com nickname) de UM Payment Link já
+// conhecido (objeto devolvido por listAllPaymentLinks). Usado pela sugestão
+// de correção de links mortos — devolve null se o link não tiver line items
+// (não deveria acontecer, mas não pode rebentar o diagnóstico todo por causa
+// de um caso estranho).
+async function getLinkPriceInfo(stripeClient, link) {
+    try {
+        const lineItems = await stripeClient.paymentLinks.listLineItems(link.id, {
+            limit: 1,
+            expand: ['data.price.product']
+        });
+        const item = lineItems.data[0];
+        if (!item) return null;
+        const price = item.price;
+        const product = price.product;
+        const productId = typeof product === 'string' ? product : product.id;
+        return { productId, priceId: price.id, nickname: price.nickname || '', url: link.url, active: link.active };
+    } catch (err) {
+        return null;
+    }
+}
+
+// Corre um array de tarefas assíncronas com um limite de concorrência — evita
+// disparar centenas de pedidos ao Stripe todos de uma vez (rate limit) mas
+// sem ficar tudo em série, um a um.
+async function runWithConcurrency(items, limit, worker) {
+    const results = new Array(items.length);
+    let next = 0;
+    async function runNext() {
+        while (next < items.length) {
+            const i = next++;
+            results[i] = await worker(items[i], i);
+        }
+    }
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, runNext));
+    return results;
 }
 
 // Encontra o Payment Link pelo URL exato e devolve o seu line item (price + product).
@@ -698,6 +737,115 @@ const server = http.createServer((req, res) => {
                 });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Erro check-payment-links:`, err.message);
+                respond(req, res, 500, { error: err.message });
+            }
+        })();
+        return;
+    }
+
+    // ── SUGGEST PAYMENT LINK FIXES (diagnóstico, só leitura, NÃO escreve nada) ─
+    // Para cada link marcado como problema por /check-payment-links, tenta
+    // encontrar o Payment Link ATIVO correto — do MESMO Product e da MESMA
+    // variação (por nickname: "Original", "...Gallery...", "...Collector...",
+    // "Digital Download") — e devolve isso como SUGESTÃO. Nunca escreve no
+    // artworks.json. Dado o volume de duplicados acumulados nesta conta, se
+    // houver mais do que uma Price ativa plausível para a mesma variação,
+    // marca como "ambíguo" em vez de adivinhar — corrigir automaticamente o
+    // link errado pode fazer um cliente pagar o valor errado ou comprar a
+    // obra errada, o que nunca vale a pena arriscar.
+    if (req.method === 'GET' && req.url === '/suggest-payment-link-fixes') {
+        if (!checkAuth(req, res)) return;
+        (async () => {
+            try {
+                const raw = fs.readFileSync(ARTWORKS_PATH, 'utf8');
+                const artworks = JSON.parse(raw);
+
+                const NICKNAME_HINT = {
+                    original:       /original/i,
+                    printGallery:   /gallery/i,
+                    printCollector: /collector/i,
+                    digital:        /digital/i
+                };
+
+                async function processEnv(stripeClient, env) {
+                    if (!stripeClient) return { suggestions: [], unresolved: [] };
+
+                    const allLinks = await listAllPaymentLinks(stripeClient);
+                    const activeLinks = allLinks.filter(l => l.active);
+
+                    // Recolhe info (productId, nickname) de todos os links ativos —
+                    // é este universo que serve de "candidatos a correção".
+                    const activeInfos = (await runWithConcurrency(activeLinks, 8, l => getLinkPriceInfo(stripeClient, l)))
+                        .filter(Boolean);
+                    const activeByProduct = new Map();
+                    activeInfos.forEach(info => {
+                        if (!activeByProduct.has(info.productId)) activeByProduct.set(info.productId, []);
+                        activeByProduct.get(info.productId).push(info);
+                    });
+
+                    // Para cada entrada problemática desta env, resolve o link
+                    // antigo (mesmo inativo) só para saber a que Product pertencia.
+                    const brokenEntries = [];
+                    Object.entries(artworks).forEach(([slug, art]) => {
+                        Object.entries(FIELD_BY_VARIATION).forEach(([variation, field]) => {
+                            const links = art[field];
+                            if (!links || !links[env]) return;
+                            brokenEntries.push({ slug, variation, oldUrl: links[env] });
+                        });
+                    });
+
+                    const oldLinkByUrl = new Map(allLinks.map(l => [l.url, l]));
+                    const suggestions = [];
+                    const unresolved = [];
+
+                    await runWithConcurrency(brokenEntries, 8, async (entry) => {
+                        const oldLink = oldLinkByUrl.get(entry.oldUrl);
+                        if (!oldLink || oldLink.active) return; // não é um problema — já está ativo
+
+                        const oldInfo = await getLinkPriceInfo(stripeClient, oldLink);
+                        if (!oldInfo) {
+                            unresolved.push({ ...entry, env, reason: 'Não foi possível ler o Payment Link antigo (produto desconhecido)' });
+                            return;
+                        }
+
+                        const candidates = (activeByProduct.get(oldInfo.productId) || [])
+                            .filter(c => NICKNAME_HINT[entry.variation].test(c.nickname));
+
+                        if (candidates.length === 1) {
+                            suggestions.push({
+                                slug: entry.slug,
+                                variation: entry.variation,
+                                env,
+                                oldUrl: entry.oldUrl,
+                                suggestedUrl: candidates[0].url,
+                                suggestedNickname: candidates[0].nickname
+                            });
+                        } else if (candidates.length === 0) {
+                            unresolved.push({ ...entry, env, reason: `Nenhuma Price ativa encontrada no Product ${oldInfo.productId} com nickname compatível com "${entry.variation}"` });
+                        } else {
+                            unresolved.push({
+                                ...entry, env,
+                                reason: `AMBÍGUO — ${candidates.length} Prices ativas no Product ${oldInfo.productId} parecem corresponder a "${entry.variation}"`,
+                                candidates: candidates.map(c => ({ url: c.url, nickname: c.nickname, priceId: c.priceId }))
+                            });
+                        }
+                    });
+
+                    return { suggestions, unresolved };
+                }
+
+                const [liveResult, testResult] = await Promise.all([
+                    processEnv(stripeLive, 'live'),
+                    processEnv(stripeTest, 'test')
+                ]);
+
+                respond(req, res, 200, {
+                    suggestions: [...liveResult.suggestions, ...testResult.suggestions],
+                    unresolved: [...liveResult.unresolved, ...testResult.unresolved],
+                    note: 'Isto é só uma SUGESTÃO — nada foi escrito no artworks.json. Reveja antes de aplicar.'
+                });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro suggest-payment-link-fixes:`, err.message);
                 respond(req, res, 500, { error: err.message });
             }
         })();

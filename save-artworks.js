@@ -11,6 +11,7 @@
  *   POST /save-collections         { ...collections object... }         -> collections.json
  *   POST /save-price-tiers         [ ...price tiers array... ]          -> price-tiers.json
  *   POST /update-stripe-price      { updates: [...] }                   -> Stripe (live + test)
+ *   GET  /check-payment-links      (header only, sem body)              -> diagnóstico: links mortos/inativos
  *   POST /upload-painting-image    { filename, type, imageData }        -> assets/paintings/<full|thumbnails>/<filename>
  *   POST /upload-exhibition-flyer  { filename, imageData }              -> assets/exhibition/flyers/<filename>
  *   POST /upload-exhibition-gallery{ slug, filename, imageData }        -> assets/exhibition/img/<slug>/<filename>
@@ -641,6 +642,65 @@ const server = http.createServer((req, res) => {
                 respond(req, res, 400, { error: err.message });
             }
         });
+        return;
+    }
+
+    // ── CHECK PAYMENT LINKS (diagnóstico, só leitura) ────────────────────────
+    // Varre o artworks.json inteiro e confirma, obra a obra e variação a
+    // variação, se o URL do Payment Link guardado (live e test) ainda existe
+    // e está ativo no Stripe. Não altera nada — só reporta. Serve para saber
+    // em segundos quais obras ficaram com um link morto depois de qualquer
+    // confusão nos swaps de preço, em vez de vasculhar o Dashboard obra a
+    // obra. Preços/Payment Links "a mais" (duplicados, já inativos) NÃO
+    // aparecem aqui como problema — só o que está realmente referenciado no
+    // artworks.json é que importa para o checkout funcionar.
+    if (req.method === 'GET' && req.url === '/check-payment-links') {
+        if (!checkAuth(req, res)) return;
+        (async () => {
+            try {
+                const raw = fs.readFileSync(ARTWORKS_PATH, 'utf8');
+                const artworks = JSON.parse(raw);
+
+                const [liveLinks, testLinks] = await Promise.all([
+                    stripeLive ? listAllPaymentLinks(stripeLive) : Promise.resolve([]),
+                    stripeTest ? listAllPaymentLinks(stripeTest) : Promise.resolve([])
+                ]);
+                const liveByUrl = new Map(liveLinks.map(l => [l.url, l]));
+                const testByUrl = new Map(testLinks.map(l => [l.url, l]));
+
+                const problems = [];
+                let checkedLinks = 0;
+
+                Object.entries(artworks).forEach(([slug, art]) => {
+                    Object.entries(FIELD_BY_VARIATION).forEach(([variation, field]) => {
+                        const links = art[field];
+                        if (!links) return;
+                        ['live', 'test'].forEach(env => {
+                            const url = links[env];
+                            if (!url) return;
+                            checkedLinks++;
+                            const map = env === 'live' ? liveByUrl : testByUrl;
+                            const link = map.get(url);
+                            if (!link) {
+                                problems.push({ slug, variation, env, url, issue: 'URL não encontrado no Stripe (link nunca existiu ou foi apagado)' });
+                            } else if (!link.active) {
+                                problems.push({ slug, variation, env, url, issue: 'Payment Link INATIVO — checkout desta variação está morto' });
+                            }
+                        });
+                    });
+                });
+
+                respond(req, res, 200, {
+                    artworksChecked: Object.keys(artworks).length,
+                    linksChecked: checkedLinks,
+                    problemsFound: problems.length,
+                    problems
+                });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro check-payment-links:`, err.message);
+                respond(req, res, 500, { error: err.message });
+            }
+        })();
         return;
     }
 

@@ -13,6 +13,7 @@
  *   POST /update-stripe-price      { updates: [...] }                   -> Stripe (live + test)
  *   GET  /check-payment-links      (header only, sem body)              -> diagnóstico: links mortos/inativos
  *   GET  /suggest-payment-link-fixes (header only, sem body)            -> sugere correções, NÃO escreve nada
+ *   POST /apply-payment-link-fixes { fixes: [...] }                     -> aplica correções revistas, com verificação e backup
  *   POST /upload-painting-image    { filename, type, imageData }        -> assets/paintings/<full|thumbnails>/<filename>
  *   POST /upload-exhibition-flyer  { filename, imageData }              -> assets/exhibition/flyers/<filename>
  *   POST /upload-exhibition-gallery{ slug, filename, imageData }        -> assets/exhibition/img/<slug>/<filename>
@@ -899,6 +900,79 @@ const server = http.createServer((req, res) => {
                 respond(req, res, 500, { error: err.message });
             }
         })();
+        return;
+    }
+
+    // ── APPLY PAYMENT LINK FIXES (escreve — mas só depois de revisão humana) ──
+    // Recebe um array `fixes` no mesmo formato dos itens de `suggestions`
+    // devolvidos por /suggest-payment-link-fixes: { slug, variation, env,
+    // oldUrl, suggestedUrl }. NÃO confia cegamente no `oldUrl` recebido: antes
+    // de escrever, relê o artworks.json do disco e confirma que o valor
+    // atualmente guardado em [slug][field][env] é EXATAMENTE igual ao oldUrl
+    // da sugestão. Isto evita:
+    //   1) aplicar uma sugestão "stale" se algo mudou entre o diagnóstico e a
+    //      aplicação (ex.: outra troca de preço no meio, ou já ter sido
+    //      corrigido manualmente);
+    //   2) aplicar a mesma sugestão duas vezes sem dar por isso.
+    // Se o valor em disco não bater certo, a entrada fica em `skipped` com o
+    // motivo — nunca sobrescreve às cegas. Um só backup é feito antes da
+    // escrita (se houver pelo menos uma alteração real a aplicar).
+    if (req.method === 'POST' && req.url === '/apply-payment-link-fixes') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                const fixes = Array.isArray(parsed.fixes) ? parsed.fixes : null;
+                if (!fixes || !fixes.length) {
+                    respond(req, res, 400, { error: 'Corpo deve conter { fixes: [...] }' });
+                    return;
+                }
+
+                const raw = fs.readFileSync(ARTWORKS_PATH, 'utf8');
+                const artworksOnDisk = JSON.parse(raw);
+
+                const applied = [];
+                const skipped = [];
+
+                fixes.forEach(fix => {
+                    const { slug, variation, env, oldUrl, suggestedUrl } = fix || {};
+                    const field = FIELD_BY_VARIATION[variation];
+
+                    if (!slug || !field || (env !== 'live' && env !== 'test') || !oldUrl || !suggestedUrl) {
+                        skipped.push({ ...fix, reason: 'Entrada incompleta ou inválida (slug/variation/env/oldUrl/suggestedUrl em falta).' });
+                        return;
+                    }
+
+                    const art = artworksOnDisk[slug];
+                    if (!art || !art[field]) {
+                        skipped.push({ ...fix, reason: `Obra ou campo "${field}" não encontrado em artworks.json.` });
+                        return;
+                    }
+
+                    const currentUrl = art[field][env];
+                    if (currentUrl !== oldUrl) {
+                        skipped.push({ ...fix, reason: `URL atual em disco não corresponde ao oldUrl esperado (já foi alterado entretanto). Atual: ${currentUrl || '(vazio)'}` });
+                        return;
+                    }
+
+                    art[field][env] = suggestedUrl;
+                    applied.push({ slug, variation, env, oldUrl, newUrl: suggestedUrl });
+                });
+
+                if (applied.length) {
+                    makeBackup(ARTWORKS_PATH, 'artworks');
+                    const tmpPath = ARTWORKS_PATH + '.tmp';
+                    fs.writeFileSync(tmpPath, JSON.stringify(artworksOnDisk, null, 2), 'utf8');
+                    fs.renameSync(tmpPath, ARTWORKS_PATH);
+                }
+
+                console.log(`[${new Date().toISOString()}] apply-payment-link-fixes — ${applied.length} aplicadas, ${skipped.length} ignoradas`);
+                respond(req, res, 200, { success: true, appliedCount: applied.length, skippedCount: skipped.length, applied, skipped });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro apply-payment-link-fixes:`, err.message);
+                respond(req, res, 500, { error: err.message });
+            }
+        });
         return;
     }
 

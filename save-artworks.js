@@ -14,7 +14,12 @@
  *   GET  /check-payment-links      (header only, sem body)              -> diagnóstico: links mortos/inativos
  *   GET  /suggest-payment-link-fixes (header only, sem body)            -> sugere correções, NÃO escreve nada
  *   POST /apply-payment-link-fixes { fixes: [...] }                     -> aplica correções revistas, com verificação e backup
+ *   GET  /check-download-redirects (header only)                        -> diagnóstico: redirects pós-pagamento do tier digital
+ *   POST /apply-download-redirects { fixes: [...] }                     -> configura o after_completion.redirect dos Payment Links digitais
  *   POST /upload-painting-image    { filename, type, imageData }        -> assets/paintings/<full|thumbnails>/<filename>
+ *        (a full-res upload also produces a resized + watermarked assets/downloads/<slug>-print.jpg)
+ *   GET  /verify-download        ?art=&session_id=                    -> confirma compra paga na Stripe, devolve token assinado (público)
+ *   GET  /download-file          ?token=                               -> entrega o ficheiro assets/downloads/<slug>-print.jpg (público, token obrigatório)
  *   POST /upload-exhibition-flyer  { filename, imageData }              -> assets/exhibition/flyers/<filename>
  *   POST /upload-exhibition-gallery{ slug, filename, imageData }        -> assets/exhibition/img/<slug>/<filename>
  *
@@ -33,6 +38,7 @@ const http   = require('http');
 const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
+const { processDownloadImage } = require('./watermark-lib');
 
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const PORT         = 3100;
@@ -68,6 +74,38 @@ const API_SECRET_BUF = Buffer.from(API_SECRET, 'utf8');
 // Set secret via ecosystem.config.js (not committed to git):
 //   env: { MAGNA_API_SECRET: 'your_strong_secret' }
 // Then restart: pm2 restart magna-api
+
+// ── DOWNLOAD TOKEN — assina/valida os links de /download-file ──────────────
+// Usa um secret dedicado se existir (DOWNLOAD_TOKEN_SECRET em ecosystem.config.js);
+// cai para o MAGNA_API_SECRET como fallback para não bloquear o deploy inicial.
+// Recomendado definir DOWNLOAD_TOKEN_SECRET próprio mais tarde.
+const DOWNLOAD_TOKEN_SECRET = process.env.DOWNLOAD_TOKEN_SECRET || API_SECRET;
+const DOWNLOAD_TOKEN_TTL_MS = 48 * 60 * 60 * 1000; // 48h para baixar após a compra
+
+function signDownloadToken(payload) {
+    const json = JSON.stringify(payload);
+    const b64 = Buffer.from(json, 'utf8').toString('base64url');
+    const sig = crypto.createHmac('sha256', DOWNLOAD_TOKEN_SECRET).update(b64).digest('base64url');
+    return `${b64}.${sig}`;
+}
+
+function verifyDownloadToken(token) {
+    if (typeof token !== 'string' || !token.includes('.')) return null;
+    const [b64, sig] = token.split('.');
+    if (!b64 || !sig) return null;
+    const expectedSig = crypto.createHmac('sha256', DOWNLOAD_TOKEN_SECRET).update(b64).digest('base64url');
+    const sigBuf = Buffer.from(sig);
+    const expBuf = Buffer.from(expectedSig);
+    if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) return null;
+    let payload;
+    try {
+        payload = JSON.parse(Buffer.from(b64, 'base64url').toString('utf8'));
+    } catch (e) {
+        return null;
+    }
+    if (!payload || typeof payload.exp !== 'number' || Date.now() > payload.exp) return null;
+    return payload;
+}
 const Stripe = require('stripe');
 const stripeLive = process.env.STRIPE_SECRET_KEY_LIVE ? Stripe(process.env.STRIPE_SECRET_KEY_LIVE) : null;
 const stripeTest = process.env.STRIPE_SECRET_KEY_TEST ? Stripe(process.env.STRIPE_SECRET_KEY_TEST) : null;
@@ -513,6 +551,106 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // ── VERIFY DOWNLOAD (público, chamado pelo browser do comprador — sem X-Magna-Secret) ──
+    // Confirma junto da Stripe que a session_id devolvida no redirect após
+    // pagamento corresponde a uma compra PAGA do tier "digital" desta obra
+    // (client_reference_id = "<slug>__digital", ver artwork.html). Só então
+    // devolve um token assinado e de curta validade para /download-file.
+    if (req.method === 'GET' && req.url.startsWith('/verify-download')) {
+        (async () => {
+            try {
+                const parsedUrl = new URL(req.url, `http://${req.headers.host || HOST}`);
+                const slug = parsedUrl.searchParams.get('art');
+                const sessionId = parsedUrl.searchParams.get('session_id');
+
+                if (!slug || !isValidSlug(slug) || !sessionId) {
+                    respond(req, res, 400, { error: 'Parâmetros em falta ou inválidos.' });
+                    return;
+                }
+
+                const isTestSession = sessionId.startsWith('cs_test_');
+                const stripeClient = isTestSession ? stripeTest : stripeLive;
+                if (!stripeClient) {
+                    respond(req, res, 500, { error: 'Stripe não configurada para este ambiente.' });
+                    return;
+                }
+
+                let session;
+                try {
+                    session = await stripeClient.checkout.sessions.retrieve(sessionId);
+                } catch (stripeErr) {
+                    console.warn(`[${new Date().toISOString()}] verify-download — session inválida: ${stripeErr.message}`);
+                    respond(req, res, 403, { error: 'Sessão de pagamento não encontrada.' });
+                    return;
+                }
+
+                if (session.payment_status !== 'paid') {
+                    respond(req, res, 403, { error: 'Pagamento não confirmado.' });
+                    return;
+                }
+
+                const expectedRef = `${slug}__digital`;
+                if (session.client_reference_id !== expectedRef) {
+                    console.warn(`[${new Date().toISOString()}] verify-download — client_reference_id não corresponde (esperado ${expectedRef}, recebido ${session.client_reference_id})`);
+                    respond(req, res, 403, { error: 'Esta compra não corresponde a esta obra.' });
+                    return;
+                }
+
+                const downloadFilename = `${slug}-print.jpg`;
+                const downloadPath = path.join(DOWNLOADS_DIR, downloadFilename);
+                if (!fs.existsSync(downloadPath)) {
+                    respond(req, res, 404, { error: 'Ficheiro de download ainda não disponível para esta obra. Contacte o suporte.' });
+                    return;
+                }
+
+                const exp = Date.now() + DOWNLOAD_TOKEN_TTL_MS;
+                const token = signDownloadToken({ slug, exp });
+
+                console.log(`[${new Date().toISOString()}] Download verificado e liberado — slug=${slug} session=${sessionId}`);
+                respond(req, res, 200, { success: true, token, filename: downloadFilename, expiresAt: exp });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro verify-download:`, err.message);
+                respond(req, res, 400, { error: 'Não foi possível verificar esta compra.' });
+            }
+        })();
+        return;
+    }
+
+    // ── DOWNLOAD FILE (público, exige token assinado válido de /verify-download) ──
+    // assets/downloads/ deixa de ser servido estaticamente pelo Nginx — este é
+    // o único caminho para obter o ficheiro (ver secção 8 do manual / Nginx).
+    if (req.method === 'GET' && req.url.startsWith('/download-file')) {
+        try {
+            const parsedUrl = new URL(req.url, `http://${req.headers.host || HOST}`);
+            const token = parsedUrl.searchParams.get('token');
+            const payload = token ? verifyDownloadToken(token) : null;
+
+            if (!payload || !isValidSlug(payload.slug)) {
+                respond(req, res, 403, { error: 'Link de download inválido ou expirado. Volte à página da obra e conclua a compra novamente se necessário.' });
+                return;
+            }
+
+            const downloadFilename = `${payload.slug}-print.jpg`;
+            const downloadPath = path.join(DOWNLOADS_DIR, downloadFilename);
+            if (!fs.existsSync(downloadPath)) {
+                respond(req, res, 404, { error: 'Ficheiro não encontrado.' });
+                return;
+            }
+
+            console.log(`[${new Date().toISOString()}] Download entregue — ${downloadFilename}`);
+            res.writeHead(200, {
+                'Content-Type': 'image/jpeg',
+                'Content-Disposition': `attachment; filename="${downloadFilename}"`,
+                'Cache-Control': 'no-store',
+            });
+            fs.createReadStream(downloadPath).pipe(res);
+        } catch (err) {
+            console.error(`[${new Date().toISOString()}] Erro download-file:`, err.message);
+            respond(req, res, 400, { error: 'Erro ao entregar o ficheiro.' });
+        }
+        return;
+    }
+
     // ── SAVE ARTWORKS ────────────────────────────────────────────────────────
     if (req.method === 'POST' && req.url === '/save-artworks') {
         if (!checkAuth(req, res)) return;
@@ -621,7 +759,7 @@ const server = http.createServer((req, res) => {
     if (req.method === 'POST' && req.url === '/upload-painting-image') {
         if (!checkAuth(req, res)) return;
 
-        readJsonBody(req, res, MAX_IMAGE_SIZE * 2, (parsed) => {
+        readJsonBody(req, res, MAX_IMAGE_SIZE * 2, async (parsed) => {
             try {
                 const { filename, type, imageData, slug } = parsed;
 
@@ -643,24 +781,35 @@ const server = http.createServer((req, res) => {
                 const relPath = `assets/paintings/${type === 'full' ? 'full' : 'thumbnails'}/${filename}`;
                 console.log(`[${new Date().toISOString()}] Painting image saved — ${relPath} (${(bytes/1024).toFixed(0)}KB)`);
 
-                // Auto-copy full-res to downloads/ as <slug>-print.<ext>
+                // Auto-copy full-res to downloads/ as <slug>-print.jpg — resized to
+                // MAX_DIMENSION and watermarked (proteção contra impressão em alta
+                // qualidade), nunca uma cópia 1:1 do original. Ver watermark-lib.js.
                 let downloadPath = null;
                 if (type === 'full' && slug && isValidSlug(slug)) {
                     if (!fs.existsSync(DOWNLOADS_DIR)) {
                         fs.mkdirSync(DOWNLOADS_DIR, { recursive: true });
                     }
-                    const ext = filename.split('.').pop().toLowerCase();
-                    const downloadFilename = `${slug}-print.${ext}`;
+                    const downloadFilename = `${slug}-print.jpg`;
                     downloadPath = path.join(DOWNLOADS_DIR, downloadFilename);
-                    fs.copyFileSync(destPath, downloadPath);
-                    console.log(`[${new Date().toISOString()}] Download copy saved — assets/downloads/${downloadFilename}`);
+                    await processDownloadImage(destPath, downloadPath);
+                    console.log(`[${new Date().toISOString()}] Download copy saved (resized + watermarked) — assets/downloads/${downloadFilename}`);
+
+                    // Limpa cópias antigas com outra extensão do mesmo slug, para não
+                    // deixar um ficheiro sem watermark/sem resize órfão no servidor.
+                    for (const staleExt of ['jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG', 'WEBP']) {
+                        const stalePath = path.join(DOWNLOADS_DIR, `${slug}-print.${staleExt}`);
+                        if (stalePath !== downloadPath && fs.existsSync(stalePath)) {
+                            fs.unlinkSync(stalePath);
+                            console.log(`[${new Date().toISOString()}] Cópia antiga removida — assets/downloads/${slug}-print.${staleExt}`);
+                        }
+                    }
                 }
 
                 respond(req, res, 200, {
                     success: true,
                     path: relPath,
                     bytes,
-                    downloadPath: downloadPath ? `assets/downloads/${slug}-print.${filename.split('.').pop().toLowerCase()}` : null
+                    downloadPath: downloadPath ? `assets/downloads/${slug}-print.jpg` : null
                 });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Upload error (painting):`, err.message);
@@ -1040,6 +1189,95 @@ const server = http.createServer((req, res) => {
                 respond(req, res, 200, { success: true, appliedCount: applied.length, skippedCount: skipped.length, applied, skipped });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Erro apply-payment-link-fixes:`, err.message);
+                respond(req, res, 500, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── CHECK DOWNLOAD REDIRECTS (diagnóstico, não escreve nada) ────────────
+    // Confirma se os Payment Links do tier "digital" de cada obra já
+    // redirecionam, após o pagamento, para download-page.html com o slug
+    // certo + {CHECKOUT_SESSION_ID} — pré-requisito do sistema de download
+    // verificado (ver /verify-download e /download-file). Sem isso, o
+    // redirect padrão da Stripe não leva o comprador a lugar nenhum útil.
+    if (req.method === 'GET' && req.url === '/check-download-redirects') {
+        if (!checkAuth(req, res)) return;
+        (async () => {
+            try {
+                const raw = fs.readFileSync(ARTWORKS_PATH, 'utf8');
+                const artworks = JSON.parse(raw);
+
+                const results = [];
+                for (const env of ['live', 'test']) {
+                    const stripeClient = env === 'live' ? stripeLive : stripeTest;
+                    if (!stripeClient) continue;
+                    const allLinks = await listAllPaymentLinks(stripeClient);
+                    const linksByUrl = new Map(allLinks.map(l => [l.url, l]));
+
+                    for (const [slug, art] of Object.entries(artworks)) {
+                        const digitalUrl = art.priceDigital && art.priceDigital[env];
+                        if (!digitalUrl) continue;
+                        const link = linksByUrl.get(digitalUrl);
+                        if (!link) {
+                            results.push({ slug, env, ok: false, reason: 'Payment Link não encontrado na Stripe (URL desatualizada em artworks.json?)' });
+                            continue;
+                        }
+                        const expectedUrl = `https://magnaleite.com/download-page.html?art=${slug}&session_id={CHECKOUT_SESSION_ID}`;
+                        const current = link.after_completion || {};
+                        const currentUrl = current.type === 'redirect' ? (current.redirect && current.redirect.url) : null;
+                        const ok = currentUrl === expectedUrl;
+                        results.push({ slug, env, ok, linkId: link.id, currentUrl: currentUrl || `(sem redirect — usa a confirmação padrão da Stripe)`, expectedUrl });
+                    }
+                }
+
+                const problems = results.filter(r => !r.ok);
+                respond(req, res, 200, { checked: results.length, problemsFound: problems.length, results });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro check-download-redirects:`, err.message);
+                respond(req, res, 500, { error: err.message });
+            }
+        })();
+        return;
+    }
+
+    // ── APPLY DOWNLOAD REDIRECTS (escreve na Stripe — after_completion.redirect) ──
+    // Corpo: { fixes: [...] } — usa diretamente a saída de results de
+    // /check-download-redirects (cada entrada já traz slug/env/linkId/expectedUrl).
+    if (req.method === 'POST' && req.url === '/apply-download-redirects') {
+        if (!checkAuth(req, res)) return;
+        readJsonBody(req, res, MAX_JSON_SIZE, async (parsed) => {
+            try {
+                const fixes = Array.isArray(parsed.fixes) ? parsed.fixes : null;
+                if (!fixes || !fixes.length) {
+                    respond(req, res, 400, { error: 'Corpo deve conter { fixes: [...] } — usa a saída de /check-download-redirects.' });
+                    return;
+                }
+
+                const applied = [];
+                const skipped = [];
+
+                for (const fix of fixes) {
+                    const { slug, env, linkId, expectedUrl } = fix || {};
+                    const stripeClient = env === 'live' ? stripeLive : (env === 'test' ? stripeTest : null);
+                    if (!slug || !linkId || !expectedUrl || !stripeClient) {
+                        skipped.push({ ...fix, reason: 'Entrada incompleta ou inválida.' });
+                        continue;
+                    }
+                    try {
+                        await stripeClient.paymentLinks.update(linkId, {
+                            after_completion: { type: 'redirect', redirect: { url: expectedUrl } },
+                        });
+                        applied.push({ slug, env, linkId, expectedUrl });
+                    } catch (err) {
+                        skipped.push({ slug, env, linkId, reason: err.message });
+                    }
+                }
+
+                console.log(`[${new Date().toISOString()}] apply-download-redirects — ${applied.length} aplicados, ${skipped.length} ignorados`);
+                respond(req, res, 200, { success: true, appliedCount: applied.length, skippedCount: skipped.length, applied, skipped });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro apply-download-redirects:`, err.message);
                 respond(req, res, 500, { error: err.message });
             }
         });

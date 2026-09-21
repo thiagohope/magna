@@ -224,7 +224,7 @@
                     <a id="btnDigital" href="#" class="btn-primary bg-indigo-50 text-indigo-900 border border-indigo-100 hover:bg-indigo-100">
                         <div>
                             <span class="font-semibold block" data-i18n="digitalLabel">Digital Download</span>
-                            <span class="text-xs text-indigo-500">High-res · 4K · with digital certificate</span>
+                            <span class="text-xs text-indigo-500">High-res · with digital certificate</span>
                         </div>
                         <span id="priceDigitalTag" class="price-tag text-indigo-900 flex-shrink-0 ml-4"></span>
                     </a>
@@ -322,6 +322,16 @@
             if (!priceObj) return '#';
             if (typeof priceObj === 'string') return priceObj;
             return IS_TEST_MODE ? (priceObj.test || priceObj.live || '#') : (priceObj.live || '#');
+        }
+
+        // O tier "Digital" precisa de um client_reference_id na Checkout Session
+        // para o servidor confirmar, depois do pagamento, a que obra a compra
+        // corresponde (ver /verify-download em save-artworks.js). A Stripe aceita
+        // este parâmetro diretamente na URL do Payment Link.
+        function withDigitalReference(url, slug) {
+            if (!url || url === '#' || !slug) return url;
+            const ref = encodeURIComponent(`${slug}__digital`);
+            return url + (url.includes('?') ? '&' : '?') + `client_reference_id=${ref}`;
         }
 
         function formatPrice(val) {
@@ -472,7 +482,7 @@
                 }
                 document.getElementById('btnPrintGallery').href    = getPaymentLink(art.pricePrintGallery);
                 document.getElementById('btnPrintCollector').href  = getPaymentLink(art.pricePrintCollector);
-                document.getElementById('btnDigital').href         = getPaymentLink(art.priceDigital);
+                document.getElementById('btnDigital').href         = withDigitalReference(getPaymentLink(art.priceDigital), effectiveSlug);
 
                 // QR Code — self-hosted, points to verify page
                 const verifyUrl = `${BASE_URL}/verify.html?id=${slug || Object.keys(artworksDB)[0]}`;

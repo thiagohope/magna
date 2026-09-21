@@ -76,41 +76,43 @@
 
     <script>
         // --- CONFIGURAÇÃO ---
-        const JSON_PATH = 'artworks.json'; 
-        const DOWNLOAD_FOLDER = 'assets/downloads/'; 
-        // Lista de extensões que o sistema vai tentar procurar (na ordem)
-        const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+        const JSON_PATH = 'artworks.json';
+        const IS_DEV    = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        const API_BASE  = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
 
         const translations = {
             en: {
                 pageTitle: "Your Digital Artwork",
                 subtitle: "READY FOR DOWNLOAD",
                 btnText: "Download High-Res File",
-                btnSearching: "Locating File...",
-                btnError: "File Not Found",
+                btnSearching: "Verifying purchase...",
+                btnError: "Unable to verify this purchase",
                 licenseNote: "* Personal use only. Resale or NFT minting prohibited.",
                 helpText: "Need help? Contact support@brainboxmed.com",
-                backBtn: "Return to Gallery"
+                backBtn: "Return to Gallery",
+                noSession: "This link is missing purchase information. Please use the link Stripe sent you right after payment."
             },
             pt: {
                 pageTitle: "Sua Obra Digital",
                 subtitle: "PRONTO PARA DOWNLOAD",
                 btnText: "Baixar Arquivo Alta Res.",
-                btnSearching: "Localizando Arquivo...",
-                btnError: "Arquivo Indisponível",
+                btnSearching: "Verificando compra...",
+                btnError: "Não foi possível verificar esta compra",
                 licenseNote: "* Uso pessoal apenas. Revenda ou mintagem proibida.",
                 helpText: "Problemas com o download? Contate suporte.",
-                backBtn: "Voltar à Galeria"
+                backBtn: "Voltar à Galeria",
+                noSession: "Este link está sem informação da compra. Use o link que a Stripe enviou logo após o pagamento."
             },
             es: {
                 pageTitle: "Su Obra Digital",
                 subtitle: "LISTO PARA DESCARGAR",
                 btnText: "Descargar Archivo Alta Res.",
-                btnSearching: "Buscando Archivo...",
-                btnError: "Archivo No Encontrado",
+                btnSearching: "Verificando compra...",
+                btnError: "No fue posible verificar esta compra",
                 licenseNote: "* Uso personal solamente. Prohibida la reventa.",
                 helpText: "¿Problemas con la descarga? Contacte soporte.",
-                backBtn: "Volver a la Galería"
+                backBtn: "Volver a la Galería",
+                noSession: "Este enlace no trae información de la compra. Use el enlace que Stripe le envió justo después del pago."
             }
         };
 
@@ -124,47 +126,55 @@
         const lang = getLang();
         const t = translations[lang];
 
-        // Função Detetive: Testa qual arquivo existe
-        async function findFile(baseName) {
+        function setError(message) {
+            const btn = document.getElementById('downloadBtn');
+            const btnLabel = document.getElementById('btnText');
+            btnLabel.textContent = message || t.btnError;
+            btn.classList.remove('loading');
+            btn.removeAttribute('href');
+            btn.style.background = "#9ca3af";
+            btn.style.cursor = "not-allowed";
+            btn.style.pointerEvents = "none";
+        }
+
+        // Confirma junto ao servidor (que confirma junto à Stripe) que esta é
+        // uma compra paga e legítima da obra em questão, antes de liberar
+        // qualquer link de download. Substitui a antiga busca "às cegas" por
+        // extensão de ficheiro, que não verificava pagamento nenhum.
+        async function verifyAndUnlock(artId, sessionId) {
             const btn = document.getElementById('downloadBtn');
             const btnLabel = document.getElementById('btnText');
             const typeLabel = document.getElementById('fileTypeLabel');
 
-            // Feedback visual de busca
             btnLabel.textContent = t.btnSearching;
 
-            for (const ext of ALLOWED_EXTENSIONS) {
-                const fileName = `${baseName}.${ext}`;
-                const path = `${DOWNLOAD_FOLDER}${fileName}`;
-
-                try {
-                    // Tenta acessar apenas o cabeçalho do arquivo (leve e rápido)
-                    const response = await fetch(path, { method: 'HEAD' });
-                    
-                    if (response.ok) {
-                        // ACHOU! Configura o botão e para de procurar
-                        console.log(`Arquivo encontrado: ${fileName}`);
-                        
-                        btn.href = path;
-                        btn.setAttribute('download', fileName);
-                        
-                        // Atualiza visual
-                        btn.classList.remove('loading');
-                        btnLabel.textContent = t.btnText;
-                        typeLabel.textContent = `.${ext.toUpperCase()}`;
-                        
-                        return; // Sai da função
-                    }
-                } catch (e) {
-                    // Ignora erro e tenta o próximo
-                }
+            if (!sessionId) {
+                setError(t.noSession);
+                return;
             }
 
-            // Se o loop acabar e não achar nada:
-            console.error(`Nenhum arquivo encontrado para ${baseName} com as extensões: ${ALLOWED_EXTENSIONS.join(', ')}`);
-            btnLabel.textContent = t.btnError;
-            btn.style.background = "#9ca3af"; // Cinza
-            btn.style.cursor = "not-allowed";
+            try {
+                const url = `${API_BASE}/verify-download?art=${encodeURIComponent(artId)}&session_id=${encodeURIComponent(sessionId)}`;
+                const response = await fetch(url);
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok || !data.success) {
+                    console.error('verify-download falhou:', data.error || response.status);
+                    setError(data.error || t.btnError);
+                    return;
+                }
+
+                btn.href = `${API_BASE}/download-file?token=${encodeURIComponent(data.token)}`;
+                btn.classList.remove('loading');
+                btnLabel.textContent = t.btnText;
+                if (data.filename) {
+                    const ext = data.filename.split('.').pop();
+                    typeLabel.textContent = `.${ext.toUpperCase()}`;
+                }
+            } catch (e) {
+                console.error('Erro ao verificar download:', e);
+                setError(t.btnError);
+            }
         }
 
         async function init() {
@@ -174,17 +184,19 @@
                 if (t[key]) el.textContent = t[key];
             });
 
-            // 2. ID da URL
+            // 2. Parâmetros da URL — precisamos tanto da obra quanto da
+            // session_id que a Stripe acrescenta no redirect pós-pagamento.
             const params = new URLSearchParams(window.location.search);
             const artId = params.get('art');
+            const sessionId = params.get('session_id');
 
             if (!artId) return;
 
             try {
-                // 3. Carrega Dados para Preview
+                // 3. Carrega dados só para a pré-visualização (título/imagem)
                 const response = await fetch(JSON_PATH);
                 const data = await response.json();
-                
+
                 let art;
                 if (Array.isArray(data)) {
                     art = data.find(item => item.id === artId);
@@ -196,16 +208,13 @@
                     const titleText = (typeof art.title === 'object') ? (art.title[lang] || art.title.en) : art.title;
                     document.getElementById('artTitle').textContent = titleText;
                     document.getElementById('artImage').src = art.image || "assets/img/placeholder.jpg";
-                    
-                    // 4. Inicia a busca do arquivo real
-                    // Ele vai procurar por: anfora-print.jpg, anfora-print.jpeg, anfora-print.png...
-                    const baseFileName = `${artId}-print`;
-                    findFile(baseFileName);
                 }
-
             } catch (error) {
-                console.error("Error:", error);
+                console.error("Error loading artwork preview:", error);
             }
+
+            // 4. Verificação real da compra — só libera o botão se a Stripe confirmar
+            verifyAndUnlock(artId, sessionId);
         }
 
         init();

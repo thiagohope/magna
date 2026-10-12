@@ -199,14 +199,16 @@
                 document.getElementById('printYear').textContent = new Date().getFullYear();
                 
                 const locLang = (art.location && art.location.en) ? art.location.en : (art.location.pt || art.location);
-                document.getElementById('originalLocation').textContent = locLang;
-                
-                const statusMap = {
-                    'available': 'Available / Disponível',
-                    'sold_private': 'Sold (Private Collection)',
-                    'sold_public': 'Museum / Public'
-                };
-                document.getElementById('originalStatus').textContent = statusMap[art.status] || art.status;
+                document.getElementById('originalLocation').textContent = art.publicCollection
+                    ? `${art.publicCollection} · ${locLang}`
+                    : locLang;
+
+                // Estado público: só Disponível / Indisponível (valores antigos
+                // sold_private/sold_public contam como indisponível)
+                const isAvailable = !art.status || art.status === 'available';
+                document.getElementById('originalStatus').textContent = isAvailable
+                    ? 'Available / Disponível'
+                    : 'Unavailable / Indisponível';
                 
                 document.getElementById('artHash').textContent = art.originalHash || "Pending Registration";
 

@@ -125,6 +125,7 @@
                         <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Creation Year</span><span id="artYear" class="font-serif text-lg">...</span></div>
                         <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Dimensions</span><span id="artDimensions" class="font-serif text-lg">...</span></div>
                         <div class="col-span-2"><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Technique</span><span id="artTechnique" class="font-medium">...</span></div>
+                        <div id="collectionBlock" class="col-span-2 hidden"><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Public Collection</span><span id="artCollection" class="font-medium"></span></div>
                     </div>
 
                     <div class="mt-4 bg-yellow-50 p-3 rounded border border-yellow-100 print:bg-transparent print:border-gray-200">
@@ -224,6 +225,8 @@
                 const tech = (art.technique && art.technique.en) ? art.technique.en :
                              (art.technique && art.technique.pt) ? art.technique.pt : "Mixed Media";
                 document.getElementById('artTechnique').textContent = tech;
+                document.getElementById('artCollection').textContent = art.publicCollection || '';
+                document.getElementById('collectionBlock').classList.toggle('hidden', !art.publicCollection);
 
                 // 3. Hash e Data
                 document.getElementById('artHash').textContent = art.originalHash || "Pending Registration";
@@ -244,8 +247,10 @@
 
                 // 6. Timeline
                 const historyList = document.getElementById('historyList');
-                const history = (art.history && art.history.length > 0)
-                    ? art.history
+                // Transferências nunca são públicas (vivem no registo privado)
+                const publicHistory = (art.history || []).filter(h => h && h.event !== 'Transfer');
+                const history = publicHistory.length > 0
+                    ? publicHistory
                     : [{ date: art.year || "", event: "Creation", location: "Magna Studio", details: "Artwork completed." }];
 
                 const eventColors = {

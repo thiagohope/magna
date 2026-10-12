@@ -10,6 +10,13 @@
  *   POST /save-exhibitions         { ...exhibitions object... }         -> exhibitions.json
  *   POST /save-collections         { ...collections object... }         -> collections.json
  *   POST /save-price-tiers         [ ...price tiers array... ]          -> price-tiers.json
+ *   GET  /private-registry         (header only)                        -> registo privado (motivo/detentor/arquivo)
+ *   POST /save-private-registry    { <slug>: {reason, holderType, ...} } -> ../magna-private/registry.json
+ *
+ *   NOTA — estado "unavailable": ao gravar /save-artworks o servidor retira do
+ *   ficheiro público o preço e os links do Original das obras indisponíveis e
+ *   todos os eventos "Transfer" da proveniência, e guarda-os no registo
+ *   privado (fora da pasta servida). Ver splitPublicAndPrivate().
  *   POST /update-stripe-price      { updates: [...] }                   -> Stripe (live + test)
  *   GET  /check-payment-links      (header only, sem body)              -> diagnóstico: links mortos/inativos
  *   GET  /suggest-payment-link-fixes (header only, sem body)            -> sugere correções, NÃO escreve nada
@@ -57,6 +64,27 @@ const EXHIBITION_GALLERY_DIR  = path.join(ASSETS_DIR, 'exhibition', 'img');
 const ABOUT_DIR               = path.join(ASSETS_DIR, 'img', 'about');
 const MAX_JSON_SIZE  = 2 * 1024 * 1024;   // 2MB — for artworks.json / exhibitions.json bodies
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024;  // 10MB — for base64 image uploads
+
+// ── REGISTO PRIVADO ─────────────────────────────────────────────────────────
+// Motivo da indisponibilidade (venda, doação, empréstimo, coleção da artista),
+// detentor, notas, e o preço/links do Original + eventos de transferência
+// retirados do artworks.json. O artworks.json é PÚBLICO (o browser lê-o
+// diretamente), por isso este ficheiro vive FORA da pasta servida pelo Nginx.
+const PRIVATE_DIR           = process.env.MAGNA_PRIVATE_DIR || path.join(__dirname, '..', 'magna-private');
+const PRIVATE_REGISTRY_PATH = path.join(PRIVATE_DIR, 'registry.json');
+const PRIVATE_BACKUP_DIR    = path.join(PRIVATE_DIR, 'backups');
+{
+    const rel = path.relative(path.resolve(__dirname), path.resolve(PRIVATE_DIR));
+    if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
+        console.error(`FATAL: MAGNA_PRIVATE_DIR (${PRIVATE_DIR}) está dentro da pasta do site — seria servido publicamente.`);
+        process.exit(1);
+    }
+}
+const PRIVATE_REASONS      = ['sold', 'donated', 'on_loan', 'artist_collection'];
+const PRIVATE_HOLDER_TYPES = ['private', 'institution'];
+const PRIVATE_EVENTS       = ['Transfer'];           // eventos de proveniência que nunca ficam públicos
+const PRIVATE_ART_KEYS     = ['private', 'internal', 'reason', 'holderType', 'holderName', 'holder'];
+const REGISTRY_KEY_PATTERN = /^[A-Za-z0-9_-]{1,100}$/;  // slugs existentes incluem "Time", "nova_anfora"
 
 // ── SECRET — obrigatório, sem fallback inseguro ─────────────────────────────
 // Antes, um MAGNA_API_SECRET em falta caía silenciosamente para o valor
@@ -115,19 +143,121 @@ function ensureBackupDir() {
     if (!fs.existsSync(BACKUP_DIR)) fs.mkdirSync(BACKUP_DIR, { recursive: true });
 }
 
-function makeBackup(filePath, prefix) {
-    ensureBackupDir();
+function makeBackup(filePath, prefix, dir = BACKUP_DIR) {
+    if (dir === BACKUP_DIR) ensureBackupDir();
+    else if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
     if (!fs.existsSync(filePath)) return;
     const ts   = new Date().toISOString().replace(/[:.]/g, '-');
-    const dest = path.join(BACKUP_DIR, `${prefix}-${ts}.json`);
+    const dest = path.join(dir, `${prefix}-${ts}.json`);
     fs.copyFileSync(filePath, dest);
 
     // Keep only 20 most recent backups per prefix
-    const files = fs.readdirSync(BACKUP_DIR)
+    const files = fs.readdirSync(dir)
         .filter(f => f.startsWith(`${prefix}-`) && f.endsWith('.json'))
-        .map(f => ({ name: f, time: fs.statSync(path.join(BACKUP_DIR, f)).mtimeMs }))
+        .map(f => ({ name: f, time: fs.statSync(path.join(dir, f)).mtimeMs }))
         .sort((a, b) => b.time - a.time);
-    files.slice(20).forEach(f => fs.unlinkSync(path.join(BACKUP_DIR, f.name)));
+    files.slice(20).forEach(f => fs.unlinkSync(path.join(dir, f.name)));
+}
+
+// ── REGISTO PRIVADO — leitura/escrita ───────────────────────────────────────
+function readPrivateRegistry() {
+    if (!fs.existsSync(PRIVATE_REGISTRY_PATH)) return {};
+    const parsed = JSON.parse(fs.readFileSync(PRIVATE_REGISTRY_PATH, 'utf8'));
+    return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : {};
+}
+
+function writePrivateRegistry(registry) {
+    if (!fs.existsSync(PRIVATE_DIR)) fs.mkdirSync(PRIVATE_DIR, { recursive: true, mode: 0o700 });
+    makeBackup(PRIVATE_REGISTRY_PATH, 'registry', PRIVATE_BACKUP_DIR);
+    const tmpPath = PRIVATE_REGISTRY_PATH + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(registry, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(tmpPath, PRIVATE_REGISTRY_PATH);
+}
+
+// Estado público: só "available" ou "unavailable". Os antigos sold_private /
+// sold_public / reserved passam a "unavailable"; sem estado = "available"
+// (era assim que o Manager já o tratava).
+function normalizePublicStatus(status) {
+    return (!status || status === 'available') ? 'available' : 'unavailable';
+}
+
+// Separa, do objeto de obras vindo do Manager, tudo o que não pode ficar
+// público. Devolve { publicArtworks, archive }: archive[slug] tem o que foi
+// retirado (preço/links do Original de obras indisponíveis, eventos de
+// transferência), para ser guardado no registo privado ANTES de gravar o
+// ficheiro público — assim nada se perde.
+function splitPublicAndPrivate(artworks) {
+    const publicArtworks = {};
+    const archive = {};
+    Object.entries(artworks).forEach(([slug, src]) => {
+        if (!src || typeof src !== 'object' || Array.isArray(src)) { publicArtworks[slug] = src; return; }
+        const art = JSON.parse(JSON.stringify(src));
+        const moved = {};
+        art.status = normalizePublicStatus(art.status);
+
+        if (art.status === 'unavailable') {
+            if (art.priceOriginal && (art.priceOriginal.live || art.priceOriginal.test)) {
+                moved.priceOriginal = art.priceOriginal;
+            }
+            delete art.priceOriginal;
+            if (art.priceDisplay && typeof art.priceDisplay === 'object' && 'original' in art.priceDisplay) {
+                if (art.priceDisplay.original) moved.priceOriginalDisplay = art.priceDisplay.original;
+                delete art.priceDisplay.original;
+            }
+        }
+
+        if (Array.isArray(art.history)) {
+            const transfers = art.history.filter(h => h && PRIVATE_EVENTS.includes(h.event));
+            if (transfers.length) moved.transfers = transfers;
+            art.history = art.history.filter(h => !(h && PRIVATE_EVENTS.includes(h.event)));
+        }
+
+        if (typeof art.publicCollection === 'string' && art.publicCollection.trim()) {
+            art.publicCollection = art.publicCollection.trim().slice(0, 160);
+        } else {
+            delete art.publicCollection;
+        }
+
+        PRIVATE_ART_KEYS.forEach(k => delete art[k]);
+
+        publicArtworks[slug] = art;
+        if (Object.keys(moved).length) archive[slug] = moved;
+    });
+    return { publicArtworks, archive };
+}
+
+// Junta o que foi retirado do ficheiro público ao registo privado (campo
+// "archived" de cada obra — só o servidor escreve neste campo).
+function mergeArchiveIntoRegistry(registry, archive) {
+    const now = new Date().toISOString();
+    Object.entries(archive).forEach(([slug, moved]) => {
+        const entry = registry[slug] || (registry[slug] = {});
+        const arch  = entry.archived || (entry.archived = {});
+        if (moved.priceOriginal)        arch.priceOriginal        = moved.priceOriginal;
+        if (moved.priceOriginalDisplay) arch.priceOriginalDisplay = moved.priceOriginalDisplay;
+        if (moved.transfers) {
+            const list = Array.isArray(arch.transfers) ? arch.transfers : [];
+            const key  = t => JSON.stringify([t.date || '', t.event || '', t.location || '', t.details || '']);
+            const seen = new Set(list.map(key));
+            moved.transfers.forEach(t => { if (!seen.has(key(t))) { list.push(t); seen.add(key(t)); } });
+            arch.transfers = list;
+        }
+        arch.archivedAt = now;
+        entry.updatedAt = now;
+    });
+    return registry;
+}
+
+// Só estes campos são editáveis a partir do Manager. "archived" é do servidor.
+function sanitizeRegistryEntry(e) {
+    const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+    return {
+        reason:     PRIVATE_REASONS.includes(e && e.reason) ? e.reason : '',
+        holderType: PRIVATE_HOLDER_TYPES.includes(e && e.holderType) ? e.holderType : '',
+        holderName: str(e && e.holderName, 200),
+        date:       /^\d{4}-\d{2}-\d{2}$/.test((e && e.date) || '') ? e.date : '',
+        notes:      str(e && e.notes, 4000)
+    };
 }
 
 // Allowed image extensions and a strict filename pattern (no paths, no traversal)
@@ -657,18 +787,28 @@ const server = http.createServer((req, res) => {
 
         readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
             try {
-                if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
                     throw new Error('Root must be a JSON object');
+                }
+
+                // Retira do ficheiro público tudo o que é privado. O registo
+                // privado é gravado PRIMEIRO: se falhar, o público não é
+                // tocado e nada do que foi retirado se perde.
+                const { publicArtworks, archive } = splitPublicAndPrivate(parsed);
+                const movedSlugs = Object.keys(archive);
+                if (movedSlugs.length) {
+                    writePrivateRegistry(mergeArchiveIntoRegistry(readPrivateRegistry(), archive));
+                    console.log(`[${new Date().toISOString()}] registo privado: dados retirados do ficheiro público — ${movedSlugs.join(', ')}`);
                 }
 
                 makeBackup(ARTWORKS_PATH, 'artworks');
 
                 const tmpPath = ARTWORKS_PATH + '.tmp';
-                fs.writeFileSync(tmpPath, JSON.stringify(parsed, null, 2), 'utf8');
+                fs.writeFileSync(tmpPath, JSON.stringify(publicArtworks, null, 2), 'utf8');
                 fs.renameSync(tmpPath, ARTWORKS_PATH);
 
-                console.log(`[${new Date().toISOString()}] artworks.json saved — ${Object.keys(parsed).length} artworks`);
-                respond(req, res, 200, { success: true, artworks: Object.keys(parsed).length });
+                console.log(`[${new Date().toISOString()}] artworks.json saved — ${Object.keys(publicArtworks).length} artworks`);
+                respond(req, res, 200, { success: true, artworks: Object.keys(publicArtworks).length, movedToPrivate: movedSlugs });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Save error (artworks):`, err.message);
                 respond(req, res, 400, { error: err.message });
@@ -678,6 +818,58 @@ const server = http.createServer((req, res) => {
     }
 
     // ── SAVE EXHIBITIONS ─────────────────────────────────────────────────────
+    // ── REGISTO PRIVADO ──────────────────────────────────────────────────────
+    if (req.method === 'GET' && req.url === '/private-registry') {
+        if (!checkAuth(req, res)) return;
+        try {
+            respond(req, res, 200, readPrivateRegistry());
+        } catch (err) {
+            console.error(`[${new Date().toISOString()}] Erro private-registry:`, err.message);
+            respond(req, res, 500, { error: err.message });
+        }
+        return;
+    }
+
+    // Recebe { <slug>: { reason, holderType, holderName, date, notes } }.
+    // Obras omitidas no pedido mantêm-se como estão no disco (nunca se apaga
+    // nada por omissão). O campo "archived" vem sempre do disco.
+    if (req.method === 'POST' && req.url === '/save-private-registry') {
+        if (!checkAuth(req, res)) return;
+
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+                    throw new Error('Root must be a JSON object');
+                }
+                const bad = Object.keys(parsed).filter(k => !REGISTRY_KEY_PATTERN.test(k));
+                if (bad.length) throw new Error(`Slug(s) inválido(s): ${bad.join(', ')}`);
+
+                const onDisk = readPrivateRegistry();
+                const now    = new Date().toISOString();
+                const next   = {};
+                new Set([...Object.keys(onDisk), ...Object.keys(parsed)]).forEach(slug => {
+                    const disk     = onDisk[slug] || {};
+                    const diskEdit = sanitizeRegistryEntry(disk);
+                    const edit     = (slug in parsed) ? sanitizeRegistryEntry(parsed[slug]) : diskEdit;
+                    const entry    = { ...edit };
+                    if (disk.archived) entry.archived = disk.archived;
+                    if (!Object.values(edit).some(Boolean) && !entry.archived) return;
+                    const changed  = JSON.stringify(edit) !== JSON.stringify(diskEdit);
+                    entry.updatedAt = changed ? now : (disk.updatedAt || now);
+                    next[slug] = entry;
+                });
+
+                writePrivateRegistry(next);
+                console.log(`[${new Date().toISOString()}] registo privado gravado — ${Object.keys(next).length} obra(s)`);
+                respond(req, res, 200, { success: true, entries: Object.keys(next).length, registry: next });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Save error (private-registry):`, err.message);
+                respond(req, res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
     if (req.method === 'POST' && req.url === '/save-exhibitions') {
         if (!checkAuth(req, res)) return;
 
@@ -1397,6 +1589,7 @@ server.listen(PORT, HOST, () => {
     console.log(`  ARTWORKS_PATH:          ${ARTWORKS_PATH}`);
     console.log(`  EXHIBITIONS_PATH:       ${EXHIBITIONS_PATH}`);
     console.log(`  BACKUP_DIR:             ${BACKUP_DIR}`);
+    console.log(`  PRIVATE_REGISTRY_PATH:  ${PRIVATE_REGISTRY_PATH}`);
     console.log(`  PAINTINGS_FULL_DIR:     ${PAINTINGS_FULL_DIR}`);
     console.log(`  PAINTINGS_THUMBS_DIR:   ${PAINTINGS_THUMBS_DIR}`);
     console.log(`  EXHIBITION_FLYERS_DIR:  ${EXHIBITION_FLYERS_DIR}`);

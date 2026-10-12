@@ -615,7 +615,7 @@
           <button class="lightbox__arrow lightbox__arrow--prev" onclick="navigateLightbox(-1)">&#8592;</button>
           <img id="lbImage" src="" alt="" style="max-height:72vh;">
           <button class="lightbox__arrow lightbox__arrow--next" onclick="navigateLightbox(1)">&#8594;</button>
-          <span id="lbSoldBadge" class="sold-badge hidden">Sold</span>
+          <span id="lbSoldBadge" class="sold-badge hidden">Unavailable</span>
         </div>
         <div class="lightbox__detail">
           <button class="lightbox__close" onclick="closeLightbox()">✕</button>
@@ -638,6 +638,10 @@
             <div class="provenance-block__row">
               <span data-i18n="locLabel">Location</span>
               <span id="lbLocation" class="font-medium text-gray-800"></span>
+            </div>
+            <div id="lbCollectionRow" class="provenance-block__row hidden">
+              <span data-i18n="publicCollectionLabel">Public collection</span>
+              <span id="lbCollection" class="font-medium text-gray-800 text-right"></span>
             </div>
             <div class="provenance-block__hash" id="lbHash"></div>
           </div>
@@ -729,7 +733,7 @@
           priceCollectorLabel:"Collector Print", priceDigitalLabel:"Digital Download",
           acquireBtn:"Acquire Original", buyGalleryBtn:"Buy Gallery Print",
           buyCollectorBtn:"Buy Collector Print", buyDigitalBtn:"Buy Digital",
-          soldLabel:"SOLD", availableLabel:"Available", reservedLabel:"Reserved",
+          soldLabel:"Unavailable", availableLabel:"Available", publicCollectionLabel:"Public collection",
           aboutTitle:"Magna Leite",
           aboutText:"Magna Leite is a contemporary painter based in Portugal. Her acrylic paintings on canvas stand out for their unique strokes and vibrant neon color palette, which give her works a strong visual impact. Her signature technique, Acrylique Pluie, showcases expressive and unusual compositions, in which chromatic exuberance asserts itself as a poetic language and strategy. The artist develops her work in a studio located at Quinta de Alcube, in the Serra da Arrábida, where daily interaction with nature inspires her compositions and reinforces the dialogue between landscape, color, and imagination. Since 2025, she has participated in several group exhibitions in Portugal. In 2026, she expanded her presence in the art circuit with participation in group exhibitions and the realization of her first solo exhibitions.",
           aboutText2:"I use painting to fill everyone's hearts and create impactful experiences, adding extravagance to the places where they are. My art reveals itself in unusual strokes and a palette of neon colors, worked in the 'Acrylique Pluie' technique."
@@ -754,7 +758,7 @@
           priceCollectorLabel:"Print Colecionador", priceDigitalLabel:"Download Digital",
           acquireBtn:"Adquirir Original", buyGalleryBtn:"Comprar Print Galeria",
           buyCollectorBtn:"Comprar Print Colecionador", buyDigitalBtn:"Comprar Digital",
-          soldLabel:"VENDIDA", availableLabel:"Disponível", reservedLabel:"Reservada",
+          soldLabel:"Indisponível", availableLabel:"Disponível", publicCollectionLabel:"Coleção pública",
           aboutTitle:"Magna Leite",
           aboutText:"Magna Leite é uma pintora contemporânea radicada em Portugal. Sua produção em pintura acrílica sobre tela destaca-se por traços únicos e uma paleta de cores neon vibrantes, que conferem forte impacto visual às obras. A técnica autoral Acrylique Pluie evidencia composições expressivas e inusitadas, nas quais a exuberância cromática se afirma como linguagem e estratégia poética. A artista desenvolve seu trabalho em um atelier situado na Quinta de Alcube, na Serra da Arrábida, onde a convivência diária com a natureza inspira suas composições e reforça o diálogo entre paisagem, cor e imaginação. Desde 2025, participa de diversas exposições coletivas em Portugal. Em 2026, ampliou sua presença no circuito artístico com participações em exposições coletivas e a realização de suas primeiras exposições individuais.",
           aboutText2:"Utilizo a pintura para preencher os corações de todos e criar experiências impactantes, adicionando extravagância aos lugares onde estou. Minha arte se revela em pinceladas incomuns e uma paleta de cores neon, trabalhadas na técnica 'Acrylique Pluie'."
@@ -779,7 +783,7 @@
           priceCollectorLabel:"Print Coleccionista", priceDigitalLabel:"Descarga Digital",
           acquireBtn:"Adquirir Original", buyGalleryBtn:"Comprar Print Galería",
           buyCollectorBtn:"Comprar Print Coleccionista", buyDigitalBtn:"Comprar Digital",
-          soldLabel:"VENDIDA", availableLabel:"Disponible", reservedLabel:"Reservada",
+          soldLabel:"No disponible", availableLabel:"Disponible", publicCollectionLabel:"Colección pública",
           aboutTitle:"Magna Leite",
           aboutText:"Magna Leite es una pintora contemporánea afincada en Portugal. Sus pinturas acrílicas sobre lienzo destacan por sus pinceladas únicas y su vibrante paleta de colores neón, que confieren a sus obras un fuerte impacto visual. Su técnica distintiva, Acrylique Pluie, muestra composiciones expresivas e inusuales, en las que la exuberancia cromática se erige como lenguaje y estrategia poética. La artista desarrolla su trabajo en un estudio situado en Quinta de Alcube, en la Serra da Arrábida, donde la interacción diaria con la naturaleza inspira sus composiciones y refuerza el diálogo entre paisaje, color e imaginación. Desde 2025, ha participado en diversas exposiciones colectivas en Portugal. En 2026, amplió su presencia en el circuito artístico con la participación en exposiciones colectivas y la realización de sus primeras exposiciones individuales.",
           aboutText2:"Utilizo la pintura para llenar los corazones de todos y crear experiencias impactantes, añadiendo extravagancia a los lugares donde se encuentran. Mi arte se revela en pinceladas inusuales y una paleta de colores neón, trabajadas con la técnica 'Acrylique Pluie'."
@@ -845,6 +849,11 @@
         }
       }
 
+      // Estado público: só "available" ou "unavailable" (valores antigos
+      // como sold_private/sold_public contam como indisponível).
+      function isAvailable(art) { return !art.status || art.status === 'available'; }
+      function originalPrice(art) { return isAvailable(art) ? (art.priceDisplay?.original || 0) : 0; }
+
       function renderGallery(filter='all', sort='recent') {
         const grid      = document.getElementById('galleryGrid');
         const noResults = document.getElementById('noResults');
@@ -856,8 +865,10 @@
         items.sort((a,b) => {
           if (sort==='recent')    return (b.year||0)-(a.year||0);
           if (sort==='alpha')     return a.title.localeCompare(b.title);
-          if (sort==='priceLow')  return (a.priceDisplay?.original||0)-(b.priceDisplay?.original||0);
-          if (sort==='priceHigh') return (b.priceDisplay?.original||0)-(a.priceDisplay?.original||0);
+          // Obras indisponíveis (sem preço do Original) ficam sempre no fim
+          if ((sort==='priceLow' || sort==='priceHigh') && isAvailable(a) !== isAvailable(b)) return isAvailable(a) ? -1 : 1;
+          if (sort==='priceLow')  return originalPrice(a)-originalPrice(b);
+          if (sort==='priceHigh') return originalPrice(b)-originalPrice(a);
           return 0;
         });
 
@@ -867,18 +878,11 @@
 
         const cards = items.map((art, i) => {
           const tech     = art.technique?.[currentLang] || art.technique?.en || '';
-          const price    = art.priceDisplay?.original;
-          const isSold   = art.status !== 'available';
-          let statusClass, statusText;
-          switch (art.status) {
-            case 'sold_private':
-            case 'sold_public':
-              statusClass = 'sold'; statusText = t('soldLabel'); break;
-            case 'reserved':
-              statusClass = 'reserved'; statusText = t('reservedLabel'); break;
-            default:
-              statusClass = 'available'; statusText = t('availableLabel');
-          }
+          const isSold   = !isAvailable(art);
+          const price    = isSold ? 0 : art.priceDisplay?.original;
+          const printsFrom = art.priceDisplay?.printCollector || 0;
+          const statusClass = isSold ? 'sold' : 'available';
+          const statusText  = isSold ? t('soldLabel') : t('availableLabel');
           const card = document.createElement('div');
           card.className = 'art-card';
           card.style.animationDelay = `${i * 55}ms`;
@@ -894,8 +898,8 @@
               <div class="art-card__meta">${art.dimensions} · ${tech}</div>
               ${price ? `
                 <div class="art-card__price">€${price.toLocaleString('de-DE')}</div>
-                <div class="art-card__prints">Prints from €${(art.priceDisplay?.printCollector||0).toLocaleString('de-DE')}</div>
-              ` : ''}
+                <div class="art-card__prints">Prints from €${printsFrom.toLocaleString('de-DE')}</div>
+              ` : (printsFrom ? `<div class="art-card__prints">Prints from €${printsFrom.toLocaleString('de-DE')}</div>` : '')}
               <span class="art-card__status status-${statusClass}">${statusText}</span>
             </div>`;
           return card;
@@ -1024,7 +1028,7 @@
       function populateLightbox(slug) {
         const art = allArtworks.find(a => a.slug === slug);
         if (!art) return;
-        const isSold = art.status !== 'available';
+        const isSold = !isAvailable(art);
         const lang   = currentLang;
         const tech   = art.technique?.[lang] || art.technique?.en || '';
         const story  = art.story?.[lang] || art.story?.en || '';
@@ -1037,6 +1041,9 @@
         document.getElementById('lbMeta').textContent  = `${art.year} · ${tech} · ${art.dimensions}`;
         document.getElementById('lbStory').textContent = `"${story}"`;
         document.getElementById('lbLocation').textContent = loc || '—';
+        const lbColRow = document.getElementById('lbCollectionRow');
+        document.getElementById('lbCollection').textContent = art.publicCollection || '';
+        lbColRow.classList.toggle('hidden', !art.publicCollection);
         document.getElementById('lbHash').textContent     = art.originalHash || '';
         document.getElementById('lbFullLink').href        = `artwork.html?id=${slug}`;
         document.getElementById('lbFullLink').textContent = t('viewFullPage');
@@ -1052,7 +1059,7 @@
         const pricingEl = document.getElementById('lbPricing');
         pricingEl.innerHTML = '';
         [
-          { label: t('priceOriginalLabel'),  val: pd.original,       note: 'Unique · Signed' },
+          { label: t('priceOriginalLabel'),  val: isSold ? 0 : pd.original, note: 'Unique · Signed' },
           { label: t('priceGalleryLabel'),   val: pd.printGallery,   note: '70 × 100 cm' },
           { label: t('priceCollectorLabel'), val: pd.printCollector, note: '50 × 70 cm' },
           { label: t('priceDigitalLabel'),   val: pd.digital,        note: 'High-res file' },

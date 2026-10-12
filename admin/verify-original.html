@@ -85,6 +85,10 @@
                             <span class="block text-[8px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="labelTech">Technique</span>
                             <span id="artTechnique" class="font-medium">...</span>
                         </div>
+                        <div id="collectionBlock" class="col-span-2 hidden">
+                            <span class="block text-[8px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="labelCollection">Public Collection</span>
+                            <span id="artCollection" class="font-medium"></span>
+                        </div>
                     </div>
 
                     <div class="bg-yellow-50 p-3 rounded border border-yellow-100">
@@ -140,6 +144,7 @@
                 labelYear: "Creation Year",
                 labelDim: "Dimensions",
                 labelTech: "Technique",
+                labelCollection: "Public Collection",
                 labelHash: "Unique Digital Hash (UUID)",
                 labelHistory: "Provenance History",
                 labelSign: "Artist Signature",
@@ -159,6 +164,7 @@
                 labelYear: "Ano de Criação",
                 labelDim: "Dimensões",
                 labelTech: "Técnica",
+                labelCollection: "Coleção Pública",
                 labelHash: "Hash Digital Único (UUID)",
                 labelHistory: "Histórico e Proveniência",
                 labelSign: "Assinatura do Artista",
@@ -178,6 +184,7 @@
                 labelYear: "Año de Creación",
                 labelDim: "Dimensiones",
                 labelTech: "Técnica",
+                labelCollection: "Colección Pública",
                 labelHash: "Hash Digital Único (UUID)",
                 labelHistory: "Historial y Procedencia",
                 labelSign: "Firma del Artista",
@@ -282,6 +289,9 @@
             const tech = art.technique[lang] || art.technique['en'] || "Mixed Media";
             document.getElementById('artTechnique').textContent = tech;
 
+            document.getElementById('artCollection').textContent = art.publicCollection || '';
+            document.getElementById('collectionBlock').classList.toggle('hidden', !art.publicCollection);
+
             const finalSlug = slug || new URLSearchParams(window.location.search).get('id');
             document.getElementById('artworkLink').href = `artwork.html?id=${finalSlug}`;
 
@@ -289,8 +299,10 @@
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = ''; 
             
-            const history = (art.history && art.history.length > 0) 
-                ? art.history 
+            // Transferências nunca são públicas (vivem no registo privado)
+            const publicHistory = (art.history || []).filter(h => h && h.event !== 'Transfer');
+            const history = publicHistory.length > 0
+                ? publicHistory
                 : [{ date: art.year, event: "Creation", location: "Magna Studio" }];
 
             history.forEach((item) => {

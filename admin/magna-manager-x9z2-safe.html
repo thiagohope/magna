@@ -239,6 +239,7 @@
                             <input type="number" id="price_digital" min="0" step="5" placeholder="30" class="border-emerald-200 font-bold text-lg text-center">
                         </div>
                     </div>
+                    <p id="originalUnavailableHint" class="hidden text-[11px] font-bold text-rose-700 mb-1 px-1">Obra indisponível: o preço e os links do Original não são publicados — ao guardar, são retirados do site e arquivados no registo interno. Prints e download continuam à venda.</p>
                     <p class="text-[10px] text-emerald-700 mb-6 px-1">Editar "Original" à mão, ou usar "Ajustar % ", recalcula automaticamente Gallery/Collector/Digital (30% / 10% / 1% do Original) — a mesma proporção usada pelos price tiers. Pode ajustar os valores calculados manualmente antes de guardar, se algum caso precisar de fugir à regra.</p>
 
                     <!-- Editions sold -->
@@ -269,15 +270,53 @@
                             </div>
                         </div>
                         <div>
-                            <label>Status (Original)</label>
-                            <select id="status" class="mb-2">
+                            <label>Estado (Original)</label>
+                            <select id="status" class="mb-2" onchange="onStatusChange()">
                                 <option value="available">Disponível</option>
-                                <option value="sold_private">Vendido (Privado)</option>
-                                <option value="sold_public">Vendido (Público)</option>
+                                <option value="unavailable">Indisponível</option>
                             </select>
+                            <label>Coleção pública <span class="normal-case font-normal text-gray-400">(opcional — aparece no site e no certificado)</span></label>
+                            <input type="text" id="publicCollection" placeholder="Ex: Forte de Albarquel" class="mb-2">
                             <label>Localização (PT)</label>
                             <input type="text" id="loc_pt" placeholder="Ex: Lisboa, Portugal">
                         </div>
+                    </div>
+
+                    <!-- Private registry — never published -->
+                    <div class="section-header"><span>🔒 Registo Interno — nunca publicado</span></div>
+                    <div class="bg-rose-50 p-4 rounded-xl border border-rose-200 mb-6">
+                        <p class="text-[10px] text-rose-800 mb-3">Guardado no servidor fora da pasta do site (magna-private/registry.json). Não aparece no site, no artworks.json nem no certificado.</p>
+                        <div class="grid grid-cols-2 gap-3 mb-3">
+                            <div>
+                                <label class="text-rose-900">Motivo</label>
+                                <select id="priv_reason">
+                                    <option value="">—</option>
+                                    <option value="sold">Vendida</option>
+                                    <option value="donated">Doada</option>
+                                    <option value="on_loan">Emprestada</option>
+                                    <option value="artist_collection">Coleção da artista</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-rose-900">Tipo de detentor</label>
+                                <select id="priv_holderType">
+                                    <option value="">—</option>
+                                    <option value="private">Particular</option>
+                                    <option value="institution">Instituição</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-rose-900">Detentor</label>
+                                <input type="text" id="priv_holderName" placeholder="Nome da pessoa ou instituição">
+                            </div>
+                            <div>
+                                <label class="text-rose-900">Data</label>
+                                <input type="date" id="priv_date">
+                            </div>
+                        </div>
+                        <label class="text-rose-900">Notas</label>
+                        <textarea id="priv_notes" rows="2" placeholder="Contacto, condições, documentos..."></textarea>
+                        <div id="privArchived" class="hidden mt-3 text-[11px] text-rose-900 bg-white border border-rose-200 rounded p-2 break-all"></div>
                     </div>
 
                     <!-- Texts & translations (collapsed) -->
@@ -406,7 +445,7 @@
                     <select class="hist-event w-full text-xs font-bold">
                         <option value="Creation">Criação / Ateliê</option>
                         <option value="Exhibition">Exposição</option>
-                        <option value="Transfer">Venda / Transferência</option>
+                        <option value="Transfer">Transferência (privado → registo interno)</option>
                         <option value="Restoration">Restauro</option>
                         <option value="Certification" selected>Certificação Oficial</option>
                     </select>
@@ -449,6 +488,79 @@
 
         const PRICE_TIERS_ENDPOINT = 'https://brainboxmed.com/magna/api/save-price-tiers';
         let PRICE_TIERS = [];
+
+        // ============================================================
+        // ESTADO PÚBLICO + REGISTO INTERNO
+        // ============================================================
+        // No site só existem "available" e "unavailable". Motivo, detentor,
+        // notas e o que é retirado do site (preço/links do Original,
+        // transferências) vivem no registo privado do servidor, fora da
+        // pasta pública. O servidor faz a separação ao gravar — isto aqui é
+        // só a interface.
+        const PRIVATE_REGISTRY_GET_ENDPOINT  = 'https://brainboxmed.com/magna/api/private-registry';
+        const PRIVATE_REGISTRY_SAVE_ENDPOINT = 'https://brainboxmed.com/magna/api/save-private-registry';
+        const PRIVATE_FIELDS = ['reason', 'holderType', 'holderName', 'date', 'notes'];
+        let globalRegistry = {};
+        let registryLoaded = false; // sem registo carregado nunca se grava o registo (evita apagar dados)
+
+        function normalizeStatus(status) {
+            return (!status || status === 'available') ? 'available' : 'unavailable';
+        }
+
+        function privEsc(str) {
+            return String(str ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+        }
+
+        async function loadPrivateRegistry() {
+            const res = await fetch(PRIVATE_REGISTRY_GET_ENDPOINT, { headers: { 'X-Magna-Secret': ensureApiSecret() } });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            globalRegistry = await res.json();
+            registryLoaded = true;
+        }
+
+        function fillPrivateFields(slug) {
+            const e = (slug && globalRegistry[slug]) || {};
+            PRIVATE_FIELDS.forEach(f => { document.getElementById('priv_' + f).value = e[f] || ''; });
+            const box = document.getElementById('privArchived');
+            const a = e.archived;
+            if (!a) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+            const parts = [];
+            if (a.priceOriginalDisplay) parts.push(`Preço do Original: <b>€${Number(a.priceOriginalDisplay).toLocaleString('de-DE')}</b>`);
+            if (a.priceOriginal?.live) parts.push(`Link Original (live): ${privEsc(a.priceOriginal.live)}`);
+            if (a.priceOriginal?.test) parts.push(`Link Original (test): ${privEsc(a.priceOriginal.test)}`);
+            if (a.transfers?.length) parts.push('Transferências: ' + a.transfers.map(t =>
+                `${privEsc(t.date)} · ${privEsc(t.location)}${t.details ? ' — ' + privEsc(t.details) : ''}`).join('; '));
+            box.innerHTML = '<b>Arquivado (retirado do site):</b><br>' + parts.join('<br>');
+            box.classList.remove('hidden');
+        }
+
+        function readPrivateFields() {
+            const o = {};
+            PRIVATE_FIELDS.forEach(f => { o[f] = document.getElementById('priv_' + f).value.trim(); });
+            return o;
+        }
+
+        function onStatusChange() {
+            const unavailable = document.getElementById('status').value === 'unavailable';
+            ['price_original', 'price_pct_adjust', 'priceOriginal_test', 'priceOriginal_live'].forEach(id => {
+                const el = document.getElementById(id);
+                el.disabled = unavailable;
+                el.classList.toggle('opacity-50', unavailable);
+            });
+            document.getElementById('originalUnavailableHint').classList.toggle('hidden', !unavailable);
+        }
+
+        // Espelha localmente o que o servidor faz ao gravar, para a cópia em
+        // memória não voltar a enviar dados privados.
+        function stripPrivateLocally(art) {
+            if (!art || typeof art !== 'object') return;
+            art.status = normalizeStatus(art.status);
+            if (art.status === 'unavailable') {
+                delete art.priceOriginal;
+                if (art.priceDisplay) delete art.priceDisplay.original;
+            }
+            if (Array.isArray(art.history)) art.history = art.history.filter(h => h && h.event !== 'Transfer');
+        }
 
         async function persistPriceTiers() {
             const secret = ensureApiSecret();
@@ -619,7 +731,13 @@
                 if (tiersRes.ok) PRICE_TIERS = await tiersRes.json();
                 renderDropdownOptions();
                 populateCollections();
-                showStatus(`✅ ${Object.keys(globalArtworks).length} obras carregadas do servidor.`, 'success');
+                try {
+                    await loadPrivateRegistry();
+                    showStatus(`✅ ${Object.keys(globalArtworks).length} obras e registo interno carregados do servidor.`, 'success');
+                } catch (e) {
+                    registryLoaded = false;
+                    showStatus(`⚠️ ${Object.keys(globalArtworks).length} obras carregadas, mas o registo interno FALHOU (${e.message}). Os campos internos não serão guardados até carregar de novo.`, 'error');
+                }
             } catch(err) {
                 showStatus('❌ Erro: ' + err.message, 'error');
             }
@@ -655,6 +773,28 @@
             const snippet = buildArtworkData();
             if (!snippet) return;
             const slug = document.getElementById('slug').value.trim();
+
+            // Registo interno PRIMEIRO — se falhar, a obra não é gravada.
+            // Só grava se o registo foi carregado (senão campos vazios no
+            // formulário apagariam o que está no servidor).
+            let privateSkipped = false;
+            if (registryLoaded) {
+                try {
+                    const privRes = await fetch(PRIVATE_REGISTRY_SAVE_ENDPOINT, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': API_SECRET },
+                        body: JSON.stringify({ [slug]: readPrivateFields() })
+                    });
+                    const privData = await privRes.json().catch(() => ({}));
+                    if (!privRes.ok) throw new Error(privData.error || `HTTP ${privRes.status}`);
+                    if (privData.registry) globalRegistry = privData.registry;
+                } catch (e) {
+                    showStatus(`❌ Registo interno NÃO foi guardado (${e.message}). A obra também não foi guardada — nada mudou no site.`, 'error');
+                    return;
+                }
+            } else {
+                privateSkipped = Object.values(readPrivateFields()).some(Boolean);
+            }
 
             // Se o preço mudou manualmente (fora do fluxo de Tiers), marca esta
             // obra como pendente de confirmação no Stripe — o mesmo mecanismo
@@ -695,6 +835,14 @@
                 btn.textContent = '✅ GUARDADO!';
                 btn.classList.add('success');
 
+                // O servidor retirou do ficheiro público o que é privado —
+                // espelha isso em memória e atualiza o arquivo mostrado.
+                Object.values(globalArtworks).forEach(stripPrivateLocally);
+                if (data.movedToPrivate?.length && registryLoaded) {
+                    try { await loadPrivateRegistry(); } catch (e) { /* mostrado no próximo carregamento */ }
+                }
+                if (document.getElementById('slug').value.trim() === slug) loadArtwork(slug);
+
                 // Guardar collections.json em simultâneo. Antes, um erro aqui só
                 // ia para console.warn — invisível na interface — e a mensagem
                 // de sucesso da obra escondia por cima que as coleções podiam
@@ -724,7 +872,9 @@
                     console.warn('collections.json não guardado:', e);
                 }
 
-                if (collectionsOk) {
+                if (privateSkipped) {
+                    showStatus(`⚠️ Obra guardada, mas os campos do REGISTO INTERNO não foram guardados (registo não carregado). Use "Carregar do Servidor" e grave de novo.`, 'error');
+                } else if (collectionsOk) {
                     showStatus(`✅ Site atualizado! ${data.artworks} obras e coleções guardadas no servidor.`, 'success');
                 } else {
                     showStatus(`⚠️ Obra guardada, mas collections.json FALHOU: ${collectionsError}. Usa "🔄 Sincronizar Coleções" para tentar de novo depois de resolveres a causa.`, 'error');
@@ -1481,6 +1631,8 @@
                 generateUUID();
                 addHistoryRow();
                 populateCollections([]); // reinicia coleções limpas — evita herdar seleção da obra anterior
+                fillPrivateFields(null);
+                onStatusChange();
                 updateInterface();
                 return;
             }
@@ -1499,7 +1651,9 @@
             // Support both legacy "collection" (string) and new "collections" (array)
             const selectedCols = data.collections || (data.collection ? [data.collection] : []);
             populateCollections(selectedCols);
-            document.getElementById('status').value    = data.status || 'available';
+            document.getElementById('status').value    = normalizeStatus(data.status);
+            document.getElementById('publicCollection').value = data.publicCollection || '';
+            fillPrivateFields(slug);
             document.getElementById('loc_pt').value    = (typeof data.location === 'object') ? data.location.pt : (data.location || '');
             document.getElementById('originalHash').value = data.originalHash || '';
             if (!data.originalHash) generateUUID();
@@ -1544,6 +1698,7 @@
             if (data.history?.length > 0) data.history.forEach(evt => addHistoryRow(evt));
             else histContainer.innerHTML = '<p class="text-center text-xs text-gray-400 italic py-2">Nenhum registro.</p>';
 
+            onStatusChange();
             updateInterface();
         }
 
@@ -1584,6 +1739,7 @@
                 },
                 story:      { pt: document.getElementById('story_pt').value, en: document.getElementById('story_en').value, es: document.getElementById('story_es').value },
                 status:     document.getElementById('status').value,
+                publicCollection: document.getElementById('publicCollection').value.trim(),
                 location:   { pt: document.getElementById('loc_pt').value, en: 'Setubal', es: 'Setubal' },
                 originalHash: document.getElementById('originalHash').value,
                 editionsSold: {

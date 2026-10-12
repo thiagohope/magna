@@ -3,7 +3,8 @@
 # backup-offsite.sh — Magna Art: cópia dos dados fora do droplet
 # ============================================================
 # PORQUÊ ESTE SCRIPT EXISTE
-# artworks.json, collections.json, price-tiers.json e exhibitions.json
+# artworks.json, collections.json, price-tiers.json, exhibitions.json (e o
+# registo privado em ../magna-private)
 # nunca vão por Git (de propósito — ver manual técnico, secção 7). O único
 # histórico automático que existe é a pasta backups/, gerada pelo próprio
 # save-artworks.js, mas ela vive DENTRO do mesmo droplet que serve o site.
@@ -42,9 +43,18 @@ REMOTE_DEST=""
 
 mkdir -p "${ARCHIVE_DIR}"
 
+# Registo privado (motivo/detentor/preços arquivados) — vive FORA da pasta do
+# site, em ../magna-private. É o ÚNICO sítio onde esses dados existem.
+PRIVATE_PARENT="$(dirname "${PROJECT_DIR}")"
+PRIVATE_ARGS=()
+if [ -d "${PRIVATE_PARENT}/magna-private" ]; then
+    PRIVATE_ARGS=(-C "${PRIVATE_PARENT}" magna-private)
+fi
+
 tar -czf "${ARCHIVE_PATH}" \
     -C "${PROJECT_DIR}" \
-    artworks.json collections.json price-tiers.json exhibitions.json backups/
+    artworks.json collections.json price-tiers.json exhibitions.json backups/ \
+    "${PRIVATE_ARGS[@]}"
 
 echo "[$(date -u +%FT%TZ)] Arquivo criado: ${ARCHIVE_PATH} ($(du -h "${ARCHIVE_PATH}" | cut -f1))"
 

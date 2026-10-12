@@ -93,7 +93,7 @@ O site é **estático** (HTML/CSS/JS puro, sem framework de build) servido diret
 4. No dropdown "Selecionar Obra", escolhe uma obra existente para editar, ou "Criar Nova Obra".
    - Ao criar nova obra, o campo **Slug** fica editável — este é o identificador único (chave do objeto em `artworks.json`) e também aparece em URLs (`artwork.html?id=<slug>`, `verify.html?id=<slug>`). Usa só minúsculas, números e hífens. **Depois de gravado, não mudes o slug** — quebra qualquer link/QR/certificado já emitido para essa obra.
    - Ao editar uma obra existente, o slug fica bloqueado (read-only) de propósito, precisamente para evitar este erro.
-5. Preenche os campos: título, ano, dimensões, técnica (PT/EN/ES), história/texto (PT/EN/ES), localização, estado (`available` / `sold_private` / `sold_public`).
+5. Preenche os campos: título, ano, dimensões, técnica (PT/EN/ES), história/texto (PT/EN/ES), localização, estado (`available` / `unavailable` — ver **2A**) e, se aplicável, **Coleção pública** (texto livre, ex. "Forte de Albarquel" — aparece no site e no certificado).
 6. **Imagem**: arrasta ou clica na drop-zone para escolher o ficheiro full-res. Depois clica **"⬆ Enviar Imagens (Servidor + Local)"**:
    - Gera automaticamente uma thumbnail de 800px de largura no próprio browser (via `<canvas>`).
    - Pergunta onde guardar: só servidor, só local, ou ambos. "Local" usa a File System Access API do Chrome/Edge para escrever diretamente numa pasta do teu computador (útil para manter uma cópia local das imagens, já que elas nunca vão por Git — ver secção 7).
@@ -102,7 +102,7 @@ O site é **estático** (HTML/CSS/JS puro, sem framework de build) servido diret
 7. **Preços públicos** (`priceDisplay`): os 4 valores (Original, Gallery Print, Collector Print, Digital) que aparecem no site. Podes preenchê-los à mão ou usar um Price Tier (secção 4) para os calcular automaticamente.
 8. **Links de Pagamento (Stripe)**: cola aqui os URLs dos Payment Links (test e live) criados manualmente no dashboard do Stripe para cada variação. Isto é o que liga o botão "Comprar" do `artwork.html` ao checkout real — ver secção 5 para o fluxo completo.
 9. **Coleções**: seleciona as pills das coleções a que a obra pertence (ver secção 3).
-10. **Histórico de Proveniência**: linhas de evento (Criação, Exposição, Venda, Restauro, Certificação) com data/local/detalhes — aparece no certificado da obra.
+10. **Histórico de Proveniência**: linhas de evento (Criação, Exposição, Restauro, Certificação) com data/local/detalhes — aparece no certificado da obra. O evento **Transferência** pode ser registado, mas nunca é publicado: ao gravar, o servidor move-o para o registo interno (ver **2A**).
 11. Clica **"💾 GUARDAR NO SERVIDOR"**. Isto:
     - Junta todos os campos do formulário num objeto e mete-o em `globalArtworks[slug]`.
     - Envia **o objeto `artworks.json` inteiro** (todas as obras, não só a que editaste) via `POST /magna/api/save-artworks`, com o header `X-Magna-Secret`.
@@ -111,6 +111,21 @@ O site é **estático** (HTML/CSS/JS puro, sem framework de build) servido diret
 12. Se preferires não gravar diretamente (ex: queres rever antes, ou o servidor está em baixo), usa **"Gerar JSON"** — produz o snippet para colares manualmente, ou **"⬇ Exportar artworks.json"** para descarregar o ficheiro completo.
 
 **Porquê gravar o objeto inteiro em vez de só a obra editada?** Porque o backend não faz *merge* — o endpoint `/save-artworks` substitui `artworks.json` por inteiro pelo corpo do pedido. Isto simplifica muito o backend (não precisa de lógica de merge/lock), mas significa que **duas pessoas a editar ao mesmo tempo a partir de dados desatualizados podem apagar o trabalho uma da outra**. Não há hoje nenhum mecanismo de lock ou deteção de conflito — é uma responsabilidade manual (carregar sempre do servidor antes de editar, e idealmente ser só uma pessoa a editar de cada vez).
+
+---
+
+## 2A. Obras indisponíveis e registo interno (Outubro 2026)
+
+**Porquê:** "Vendido" no site afirmava uma venda que muitas vezes não existiu (obras doadas ou guardadas pela família) — um registo público enganador, inclusive para efeitos fiscais. Desde Out. 2026:
+
+- **No site só existem dois estados:** `available` (Disponível) e `unavailable` (Indisponível / Unavailable / No disponible). Os antigos `sold_private` / `sold_public` foram migrados para `unavailable`.
+- **Obra indisponível:** o preço e os links do **Original** desaparecem do site **e do `artworks.json`** (não só do ecrã). Prints e download digital continuam à venda.
+- **Coleção pública** (campo `publicCollection`, opcional): mostrado no site, no `verify-original.html` e nos certificados. Para obras em instituições cujo nome queremos mostrar.
+- **Registo interno** (`/home/brainboxmed/magna-private/registry.json`, FORA da pasta servida): por obra, `reason` (`sold` / `donated` / `on_loan` / `artist_collection`), `holderType` (`private` / `institution`), `holderName`, `date`, `notes`, e um bloco `archived` escrito só pelo servidor com o preço e os links do Original retirados do site e os eventos de transferência. Backups próprios em `magna-private/backups/` (20 mais recentes).
+- **Quem garante a separação é o servidor**, não o admin: `POST /save-artworks` passa sempre por `splitPublicAndPrivate()` — normaliza o estado, retira preço/links do Original das obras indisponíveis, retira eventos `Transfer` e campos internos, grava primeiro o registo privado e só depois o `artworks.json`. Se a gravação do registo falhar, o ficheiro público não é tocado.
+- **No admin:** secção "🔒 Registo Interno — nunca publicado". Ao gravar, o admin envia primeiro `POST /save-private-registry` (só a obra aberta) e depois o `artworks.json`. Se o registo não tiver sido carregado ("Carregar do Servidor"), os campos internos não são gravados (para não apagar dados com campos vazios) e aparece um aviso.
+- **Voltar a pôr uma obra à venda:** muda para Disponível, volta a preencher preço e links do Original (os antigos aparecem no quadro "Arquivado" do registo interno; se o Payment Link estiver desativado no Stripe, reativa-o ou cria um novo).
+- **Limitação conhecida:** como os prints custam 30/10/1% do Original, o preço do Original de uma obra indisponível continua dedutível a partir dos prints (ex.: Gallery 429 → Original ≈ 1430).
 
 ---
 
@@ -392,6 +407,7 @@ Usa isto antes de considerares qualquer alteração "pronta para produção", e 
 | `price-tiers.json` | array `[{ label, original }]` | `POST /save-price-tiers` |
 | `exhibitions.json` | objeto `{ slug: {...} }` | `POST /save-exhibitions` |
 | `ecosystem.config.js` | JS (secrets reais) | criado manualmente uma vez, nunca reescrito por código |
+| `../magna-private/registry.json` | objeto `{ slug: { reason, holderType, holderName, date, notes, archived } }` — **fora da pasta servida** | `POST /save-private-registry` (campos editáveis) e `POST /save-artworks` (bloco `archived`) |
 
 ### Endpoints do backend (`save-artworks.js`, porta 3100, só localhost)
 
@@ -409,6 +425,8 @@ Usa isto antes de considerares qualquer alteração "pronta para produção", e 
 | `/upload-exhibition-gallery` | POST | Sim | ✅ Sim | ✅ |
 | `/about-photos` | GET | Não | ✅ Sim | ✅ |
 | `/update-stripe-price` | POST | Sim | ✅ Escrito (Set. 2026) | ❌ Por fazer |
+| `/private-registry` | GET | Sim | — | ❌ Por fazer (Out. 2026) — só no vhost brainboxmed |
+| `/save-private-registry` | POST | Sim | — | ❌ Por fazer (Out. 2026) — só no vhost brainboxmed |
 
 **Handler `/check-image` no código:** corrigido em Setembro 2026 — antes não existia (sempre 404), agora valida `filename`/`type` e responde `{ exists }`.
 

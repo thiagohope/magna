@@ -9,6 +9,7 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
     <link rel="canonical" href="https://magnaleite.com/exhibition.html">
+    <script src="share-lib.js"></script>
 
     <style>
       :root{ --bg:#fff; --fg:#0f172a; --muted:#64748b; --line:rgba(15,23,42,.12); }
@@ -59,6 +60,10 @@
                     <p id="exhibDate" class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2"></p>
                     <h1 id="exhibTitle" class="text-3xl md:text-5xl font-serif text-white mb-2">Loading...</h1>
                     <p id="exhibLocation" class="text-lg font-light text-gray-300"></p>
+                    <button type="button" id="shareBtn" class="mshare-trigger mt-6 inline-flex items-center gap-2 px-4 py-2 border border-gray-500 rounded-full text-xs font-semibold uppercase tracking-widest text-gray-200 hover:border-white hover:text-white transition">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+                        <span data-i18n="shareBtn">Share</span>
+                    </button>
                 </div>
             </div>
             <div id="heroError" class="hidden text-red-400 text-xs mt-4 bg-red-900/50 px-4 py-2 rounded">Erro ao carregar capa</div>
@@ -106,12 +111,21 @@
         const PATH_ARTWORKS = "assets/paintings/thumbnails/";
         
         const translations = {
-            en: { backHome: "Back to Home", viewTitle: "Installation Views", worksTitle: "Featured Artworks" },
-            pt: { backHome: "Voltar ao Início", viewTitle: "Vistas da Instalação", worksTitle: "Obras em Exposição" },
-            es: { backHome: "Volver al Inicio", viewTitle: "Vistas de la Instalación", worksTitle: "Obras Expuestas" }
+            en: { backHome: "Back to Home", viewTitle: "Installation Views", worksTitle: "Featured Artworks", shareBtn: "Share" },
+            pt: { backHome: "Voltar ao Início", viewTitle: "Vistas da Instalação", worksTitle: "Obras em Exposição", shareBtn: "Partilhar" },
+            es: { backHome: "Volver al Inicio", viewTitle: "Vistas de la Instalación", worksTitle: "Obras Expuestas", shareBtn: "Compartir" }
         };
 
-        let currentLang = localStorage.getItem('magna_lang') || 'en';
+        // ?lang=xx vem dos links partilhados (share/exhibition/<slug>.<lang>.html)
+        let currentLang = (function () {
+            const urlLang = new URLSearchParams(window.location.search).get('lang');
+            if (translations[urlLang]) {
+                try { localStorage.setItem('magna_lang', urlLang); } catch (e) {}
+                return urlLang;
+            }
+            const saved = localStorage.getItem('magna_lang');
+            return translations[saved] ? saved : 'en';
+        })();
 
         // === Função que constrói o caminho ===
         // 'slug' é necessário apenas para type === 'gallery' (pasta por exposição)
@@ -157,6 +171,15 @@
             const urlParams = new URLSearchParams(window.location.search);
             const slug = urlParams.get('id');
 
+            // Seletor de idioma: mostra o idioma atual e, ao mudar, recarrega nesse idioma
+            const langSwitcher = document.getElementById('langSwitcher');
+            langSwitcher.value = currentLang;
+            langSwitcher.addEventListener('change', e => {
+                const u = new URL(window.location.href);
+                u.searchParams.set('lang', e.target.value);
+                window.location.href = u.toString();
+            });
+
             if(!slug) {
                 window.location.href = "index.html";
                 return;
@@ -187,6 +210,16 @@
                 document.querySelector('[data-i18n="backHome"]').textContent = t.backHome;
                 document.querySelector('[data-i18n="viewTitle"]').textContent = t.viewTitle;
                 document.querySelector('[data-i18n="worksTitle"]').textContent = t.worksTitle;
+                document.querySelector('[data-i18n="shareBtn"]').textContent = t.shareBtn;
+
+                // Partilhar — usa share/exhibition/<slug>.<lang>.html (pré-visualização com imagem)
+                const shareBtn = document.getElementById('shareBtn');
+                shareBtn.addEventListener('click', () => MagnaShare.share({
+                    url:   MagnaShare.exhibitionUrl(slug, currentLang),
+                    title: `${data.title} — Magna Leite`,
+                    image: resolvePath(data.image, 'flyer'),
+                    lang:  currentLang
+                }, shareBtn));
 
                 // Dados Texto
                 document.getElementById('exhibTitle').textContent = data.title;

@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="situations-lib.js"></script>
+    <script src="share-lib.js"></script>
     <link rel="canonical" href="https://magnaleite.com/artwork.html">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 
@@ -156,6 +157,10 @@
                     <span><strong data-i18n="techLabel">Technique:</strong> <span id="artTech">...</span></span>
                     <span><strong data-i18n="dimLabel">Dimensions:</strong> <span id="artDim">...</span></span>
                 </div>
+                <button type="button" id="shareBtn" class="mshare-trigger hidden mt-4 inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-full text-xs font-semibold uppercase tracking-widest text-gray-600 hover:border-black hover:text-black transition">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+                    <span data-i18n="shareBtn">Share</span>
+                </button>
             </div>
 
             <!-- Artist's Vision -->
@@ -280,7 +285,8 @@
                 printCollectorSize: "Up to 50 × 70 cm · Proportionally scaled · Hahnemühle 308g",
                 certDisclaimer: "All items include a Magna Certificate of Authenticity.",
                 closeHint: "Click to close",
-                statusAvailable: "Available", statusUnavailable: "Unavailable", soldOut: "Sold out", collectionLabel: "Public Collection:"
+                statusAvailable: "Available", statusUnavailable: "Unavailable", soldOut: "Sold out", collectionLabel: "Public Collection:",
+                shareBtn: "Share"
             },
             pt: {
                 backBtn: "Voltar à Galeria", yearLabel: "Ano:", techLabel: "Técnica:", dimLabel: "Dimensões:",
@@ -293,7 +299,8 @@
                 printCollectorSize: "Até 50 × 70 cm · Proporção preservada · Hahnemühle 308g",
                 certDisclaimer: "Todos os itens acompanham Certificado de Autenticidade Magna.",
                 closeHint: "Clique para fechar",
-                statusAvailable: "Disponível", statusUnavailable: "Indisponível", soldOut: "Esgotada", collectionLabel: "Coleção Pública:"
+                statusAvailable: "Disponível", statusUnavailable: "Indisponível", soldOut: "Esgotada", collectionLabel: "Coleção Pública:",
+                shareBtn: "Partilhar"
             },
             es: {
                 backBtn: "Volver a la Galería", yearLabel: "Año:", techLabel: "Técnica:", dimLabel: "Dimensiones:",
@@ -306,11 +313,18 @@
                 printCollectorSize: "Hasta 50 × 70 cm · Proporción preservada · Hahnemühle 308g",
                 certDisclaimer: "Todos los artículos incluyen Certificado de Autenticidad Magna.",
                 closeHint: "Clic para cerrar",
-                statusAvailable: "Disponible", statusUnavailable: "No disponible", soldOut: "Agotada", collectionLabel: "Colección Pública:"
+                statusAvailable: "Disponible", statusUnavailable: "No disponible", soldOut: "Agotada", collectionLabel: "Colección Pública:",
+                shareBtn: "Compartir"
             }
         };
 
         function getInitialLang() {
+            // ?lang=xx vem dos links partilhados (share/art/<slug>.<lang>.html)
+            const urlLang = new URLSearchParams(window.location.search).get('lang');
+            if (translations[urlLang]) {
+                try { localStorage.setItem('magna_lang', urlLang); } catch (e) {}
+                return urlLang;
+            }
             const saved = localStorage.getItem('magna_lang');
             if (saved) return saved;
             const bl = navigator.language.substring(0,2);
@@ -415,6 +429,16 @@
 
                 // Page title
                 document.title = `Magna — ${art.title}`;
+
+                // Partilhar — usa a página share/art/<slug>.<lang>.html (pré-visualização com imagem)
+                const shareBtn = document.getElementById('shareBtn');
+                shareBtn.classList.remove('hidden');
+                shareBtn.addEventListener('click', () => MagnaShare.share({
+                    url:   MagnaShare.artUrl(effectiveSlug, currentLang),
+                    title: `${art.title} — Magna Leite`,
+                    image: Array.isArray(art.image) ? art.image[0] : art.image,
+                    lang:  currentLang
+                }, shareBtn));
 
                 // ── IMAGES (suporte a array e string) ──
                 const imgEl  = document.getElementById('mainImage');

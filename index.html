@@ -8,9 +8,17 @@
     <link rel="canonical" href="https://magnaleite.com/">
 
     <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Magna Leite">
+    <meta property="og:url" content="https://magnaleite.com/">
     <meta property="og:title" content="Magna — Artworks & Exhibitions">
     <meta property="og:description" content="Contemporary acrylic paintings by Magna Leite. Acrylique Pluie technique.">
-    <meta property="og:image" content="assets/img/magna-portrait.jpg">
+    <!-- Gerada no servidor por share-pages.js (a partir de assets/img/magna02.jpeg). Tem de ser URL absoluto. -->
+    <meta property="og:image" content="https://magnaleite.com/share/img/site-home.jpg">
+    <meta property="og:image:alt" content="Magna Leite">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Magna — Artworks & Exhibitions">
+    <meta name="twitter:description" content="Contemporary acrylic paintings by Magna Leite. Acrylique Pluie technique.">
+    <meta name="twitter:image" content="https://magnaleite.com/share/img/site-home.jpg">
     <meta name="theme-color" content="#ffffff">
 
     <link rel="icon" href="assets/icons/favicon.ico" sizes="any">
@@ -19,6 +27,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="situations-lib.js"></script>
+    <script src="share-lib.js"></script>
 
     <style>
       :root {
@@ -467,6 +476,10 @@
           </div>
         </div>
         <div class="flex items-center gap-3">
+          <button type="button" id="shareBtn" class="mshare-trigger inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-black border border-gray-200 hover:border-black rounded px-2 py-1.5 transition">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg>
+            <span class="sr-only sm:not-sr-only" data-i18n="shareBtn">Share</span>
+          </button>
           <select id="langSwitcher" class="text-xs bg-gray-50 border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:border-black transition cursor-pointer">
             <option value="en">EN</option>
             <option value="pt">PT</option>
@@ -724,6 +737,7 @@
       // ── TRANSLATIONS ──
       const T = {
         en: {
+          shareBtn:"Share",
           siteSubtitle:"Artworks & Exhibitions", navAbout:"About", navWorks:"Artworks",
           navExhibitions:"Exhibitions", navContact:"Contact",
           heroTag:"Expressive strokes · Neon palette · Acrylique Pluie",
@@ -749,6 +763,7 @@
           aboutText2:"I use painting to fill everyone's hearts and create impactful experiences, adding extravagance to the places where they are. My art reveals itself in unusual strokes and a palette of neon colors, worked in the 'Acrylique Pluie' technique."
         },
         pt: {
+          shareBtn:"Partilhar",
           siteSubtitle:"Obras & Exposições", navAbout:"Sobre", navWorks:"Obras",
           navExhibitions:"Exposições", navContact:"Contato",
           heroTag:"Traços expressivos · Paleta neon · Acrylique Pluie",
@@ -774,6 +789,7 @@
           aboutText2:"Utilizo a pintura para preencher os corações de todos e criar experiências impactantes, adicionando extravagância aos lugares onde estou. Minha arte se revela em pinceladas incomuns e uma paleta de cores neon, trabalhadas na técnica 'Acrylique Pluie'."
         },
         es: {
+          shareBtn:"Compartir",
           siteSubtitle:"Obras y Exposiciones", navAbout:"Sobre", navWorks:"Obras",
           navExhibitions:"Exposiciones", navContact:"Contacto",
           heroTag:"Trazos expresivos · Paleta neón · Acrylique Pluie",
@@ -811,6 +827,9 @@
       function t(key) { return (T[currentLang]?.[key]) || (T.en[key]) || key; }
 
       function getInitialLang() {
+        // ?lang=xx vem dos links partilhados
+        const u = new URLSearchParams(window.location.search).get('lang');
+        if (T[u]) return u;
         const s = localStorage.getItem('magna_lang');
         if (s) return s;
         const bl = navigator.language.substring(0,2);
@@ -939,6 +958,13 @@
           renderGallery(f, e.target.value);
         });
         document.getElementById('langSwitcher').addEventListener('change', e => setLanguage(e.target.value));
+        // Partilhar a galeria (página inicial)
+        document.getElementById('shareBtn').addEventListener('click', e => MagnaShare.share({
+          url:   MagnaShare.homeUrl(currentLang),
+          title: `Magna Leite — ${t('siteSubtitle')}`,
+          image: 'assets/img/magna02.jpeg',
+          lang:  currentLang
+        }, e.currentTarget));
         document.querySelector('.filter-btn[data-filter="all"]').addEventListener('click', () => activateFilter('all'));
       }
 

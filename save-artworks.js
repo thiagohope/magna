@@ -39,6 +39,11 @@
  *   POST /upload-exhibition-flyer  { filename, imageData }              -> assets/exhibition/flyers/<filename>
  *   POST /upload-exhibition-gallery{ slug, filename, imageData }        -> assets/exhibition/img/<slug>/<filename>
  *
+ *   PARTILHA — não é um endpoint: ao arrancar e sempre que artworks.json ou
+ *   exhibitions.json mudam no disco, share-pages.js (re)gera share/art/*,
+ *   share/exhibition/* e share/img/* (páginas estáticas com Open Graph para
+ *   as pré-visualizações no WhatsApp/Facebook/X/Pinterest).
+ *
  * Nginx proxies /magna/api/* → this server (one location block per endpoint,
  * NOS DOIS vhosts — brainboxmed e magnaleite. Ver secção 8 do manual).
  *
@@ -55,6 +60,7 @@ const fs     = require('fs');
 const path   = require('path');
 const crypto = require('crypto');
 const { processDownloadImage } = require('./watermark-lib');
+const sharePages = require('./share-pages');   // páginas de partilha (Open Graph) — share/
 
 // ── CONFIG ──────────────────────────────────────────────────────────────────
 const PORT         = 3100;
@@ -2097,6 +2103,10 @@ server.listen(PORT, HOST, () => {
     console.log(`  EXHIBITION_FLYERS_DIR:  ${EXHIBITION_FLYERS_DIR}`);
     console.log(`  EXHIBITION_GALLERY_DIR: ${EXHIBITION_GALLERY_DIR}`);
     console.log('  MAGNA_API_SECRET:       definido e validado (mínimo 16 caracteres) ✓');
+    // Páginas de partilha: gera já e volta a gerar sempre que artworks.json /
+    // exhibitions.json mudam (admin, Stripe ou SCP). Ver share-pages.js.
+    sharePages.regenerate();
+    sharePages.watch();
 });
 
 process.on('uncaughtException', err => console.error('Uncaught:', err));

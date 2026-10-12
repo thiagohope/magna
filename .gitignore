@@ -45,3 +45,5 @@ Thumbs.db
 
 # Production-only config with secrets (created once on server, never committed)
 ecosystem.config.js
+# --- Páginas de partilha (geradas no servidor por share-pages.js) ---
+share/

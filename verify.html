@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magna - Print Verification</title>
+    <title>Magna - Print Certificate Verification</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <link rel="canonical" href="https://magnaleite.com/verify.html">
+    <meta name="robots" content="noindex">
     <style>
         body { background: #fdfbf7; color: #1a1a1a; font-family: 'Inter', sans-serif; }
         .serif { font-family: 'Playfair Display', serif; }
@@ -25,255 +26,394 @@
     </div>
 
     <div class="max-w-2xl w-full bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200">
-        
-        <div class="bg-green-50 border-b border-green-100 p-4 flex items-center justify-center gap-2">
-            <svg class="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
-            <span class="text-green-800 font-bold text-xs uppercase tracking-widest" data-i18n="headerTitle">Official Registered Print</span>
+
+        <!-- Estado da verificação: loading / issued / void / notfound -->
+        <div id="statusBar" class="bg-gray-50 border-b border-gray-100 p-4 flex items-center justify-center gap-2">
+            <span id="statusIcon" class="text-gray-400">…</span>
+            <span id="statusText" class="text-gray-500 font-bold text-xs uppercase tracking-widest">Verifying…</span>
         </div>
 
-        <div class="p-8 pb-6 text-center">
-            
+        <!-- Certificado não encontrado / sem código -->
+        <div id="notFound" class="hidden p-8 text-center">
+            <p id="notFoundText" class="text-gray-600 mb-6"></p>
+        </div>
+
+        <!-- Certificado -->
+        <div id="content" class="hidden p-8 pb-6 text-center">
+
             <div class="flex justify-center mb-6">
-                <div id="imgContainer" class="relative bg-gray-100 rounded shadow-sm overflow-hidden mx-auto transition-all duration-500" style="width: 100%; max-width: 100%; max-height: 50vh;">
-                    <img id="artImage" src="" alt="Artwork" class="w-full h-full object-cover opacity-0 transition-opacity duration-500">
-                    <div id="imgLoader" class="absolute inset-0 flex items-center justify-center text-gray-400 text-xs">Loading Image...</div>
+                <div id="imgContainer" class="relative bg-gray-100 rounded shadow-sm overflow-hidden mx-auto" style="width: 100%; max-height: 50vh;">
+                    <img id="artImage" src="" alt="Artwork" class="w-full h-full object-cover">
                 </div>
             </div>
-            
-            <h1 id="artTitle" class="serif text-3xl mb-2">Loading...</h1>
+
+            <h1 id="artTitle" class="serif text-3xl mb-2">…</h1>
             <p class="text-gray-500 italic mb-6">by Magna Leite</p>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left bg-gray-50 p-6 rounded-lg border border-gray-100">
-                
+
                 <div>
                     <h3 class="text-xs font-bold uppercase text-gray-400 mb-3 border-b pb-1" data-i18n="secPrint">This Item (Reproduction)</h3>
-                    
+
                     <div class="mb-3">
                         <span class="block text-xs text-gray-500" data-i18n="lblEdition">Edition Number</span>
-                        <span id="editionNum" class="font-bold text-lg text-blue-900">--</span>
+                        <span id="editionNum" class="font-bold text-2xl text-blue-900">--</span>
                     </div>
                     <div class="mb-3">
                         <span class="block text-xs text-gray-500" data-i18n="lblType">Print Type</span>
-                        <span id="printType" class="text-sm font-medium">Fine Art Giclée</span>
+                        <span id="printType" class="text-sm font-medium">--</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="block text-xs text-gray-500" data-i18n="lblCode">Certificate Code</span>
+                        <span id="certCode" class="font-mono text-sm bg-white border px-1.5 py-0.5 rounded">--</span>
                     </div>
                     <div class="mb-4">
-                        <span class="block text-xs text-gray-500" data-i18n="lblHash">Verification Hash</span>
-                        <span id="hashId" class="font-mono text-[10px] bg-white border px-1 py-0.5 rounded break-all text-gray-600">Pending</span>
+                        <span class="block text-xs text-gray-500" data-i18n="lblIssued">Issued On</span>
+                        <span id="issuedAt" class="text-sm font-medium">--</span>
                     </div>
 
-                    <div class="bg-amber-50 border border-amber-200 rounded p-2 text-[9px] leading-tight text-amber-800">
+                    <div class="bg-amber-50 border border-amber-200 rounded p-2 text-[10px] leading-tight text-amber-800">
                         <strong class="block mb-1">⚠️ <span data-i18n="discTitle">DISCLAIMER</span></strong>
                         <span data-i18n="discText">This certificate validates a Limited Edition copy. It implies NO ownership of the original unique artwork.</span>
                     </div>
                 </div>
 
                 <div class="border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6 flex flex-col">
-                    <h3 class="text-xs font-bold uppercase text-gray-400 mb-3 border-b pb-1" data-i18n="secOriginal">Original Masterpiece</h3>
-                    
+                    <h3 class="text-xs font-bold uppercase text-gray-400 mb-3 border-b pb-1" data-i18n="secOriginal">Original Artwork</h3>
+
                     <div class="mb-3">
                         <span class="block text-xs text-gray-500" data-i18n="lblTech">Technique</span>
-                        <span id="origTech" class="text-sm font-medium">...</span>
+                        <span id="origTech" class="text-sm font-medium">…</span>
                     </div>
-                    <div class="mb-4">
-                        <span class="block text-xs text-gray-500" data-i18n="lblYear">Original Year</span>
-                        <span id="origYear" class="text-sm font-medium">...</span>
+                    <div class="mb-3">
+                        <span class="block text-xs text-gray-500" data-i18n="lblYear">Year</span>
+                        <span id="origYear" class="text-sm font-medium">…</span>
+                    </div>
+                    <div class="mb-3">
+                        <span class="block text-xs text-gray-500" data-i18n="lblDim">Dimensions</span>
+                        <span id="origDim" class="text-sm font-medium">…</span>
+                    </div>
+                    <div id="origCollectionRow" class="mb-4 hidden">
+                        <span class="block text-xs text-gray-500" data-i18n="lblCollection">Public Collection</span>
+                        <span id="origCollection" class="text-sm font-medium"></span>
                     </div>
 
                     <div class="mt-auto flex items-center gap-3 bg-white p-2 rounded border border-gray-200 shadow-sm">
-                        <div id="qrOriginal" class="w-16 h-16 flex-shrink-0 flex items-center justify-center bg-white">
-                            </div>
+                        <div id="qrOriginal" class="w-16 h-16 flex-shrink-0 flex items-center justify-center bg-white"></div>
                         <div class="flex-grow">
-                            <span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold mb-1" data-i18n="lblTrace">Trace Original</span>
-                            <a id="artworkLink" href="#" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 border border-blue-100 bg-blue-50 rounded px-2 py-1 w-fit">
-                                <span data-i18n="btnView">View Page</span> &rarr;
+                            <span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold mb-1" data-i18n="lblTrace">Original Certificate</span>
+                            <a id="originalLink" href="#" class="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 border border-blue-100 bg-blue-50 rounded px-2 py-1 w-fit">
+                                <span data-i18n="btnView">View</span> &rarr;
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <!-- Todas as reproduções desta obra (só totais) -->
+            <div class="mt-6 text-left border border-gray-100 rounded-lg p-5">
+                <h3 class="text-xs font-bold uppercase text-gray-400 mb-3 border-b pb-1" data-i18n="secRepro">Authorised Reproductions of This Artwork</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between"><span data-i18n="typeGalleryShort">Gallery Print</span><span id="cntGallery" class="font-semibold">--</span></div>
+                    <div class="flex justify-between"><span data-i18n="typeCollectorShort">Collector Print</span><span id="cntCollector" class="font-semibold">--</span></div>
+                    <div class="flex justify-between text-gray-500"><span data-i18n="typeDigitalShort">Digital Download</span><span data-i18n="digitalOpen">Open edition · not numbered</span></div>
+                </div>
+            </div>
+
             <div class="mt-8 text-sm text-gray-500 leading-relaxed px-4 italic">
-                <p data-i18n="footerText">"This page certifies that the print associated with the ID above is a genuine Limited Edition Giclée produced by Magna Studio."</p>
+                <p data-i18n="footerText">"This page confirms that the copy identified by the code above is registered in the Magna Leite Certified Registry."</p>
             </div>
         </div>
 
+        <!-- Verificar outro código -->
+        <form id="lookupForm" class="border-t border-gray-100 px-8 py-5 flex flex-col sm:flex-row gap-2 items-stretch sm:items-center" onsubmit="lookup(event)">
+            <label for="codeInput" class="text-xs text-gray-500 sm:w-40" data-i18n="lblLookup">Verify a certificate code</label>
+            <input id="codeInput" type="text" placeholder="MG-XXXX-XXXX" autocomplete="off" class="flex-grow font-mono uppercase border border-gray-300 rounded px-3 py-2 text-sm">
+            <button type="submit" class="bg-black text-white text-xs font-bold uppercase tracking-wider px-4 py-2 rounded" data-i18n="btnLookup">Verify</button>
+        </form>
+
         <div class="bg-gray-900 text-gray-400 text-center py-4 text-xs uppercase tracking-widest">
-            Magna &middot; Provenance Ledger
+            Magna &middot; Certified Registry
         </div>
     </div>
 
     <script>
-        // Auto-detect environment
-        const IS_DEV   = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
-        const BASE_URL = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
-        const JSON_PATH = 'artworks.json';
-        let currentArt = null;
-        
+        const IS_DEV    = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+        const API_BASE  = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
+        const PUBLIC_SITE = 'https://magnaleite.com';
+        const CODE_PATTERN = /^MG-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+
+        let current = null;      // resposta da API
+        let currentState = 'loading';
+
         const translations = {
             en: {
-                headerTitle: "Official Registered Print",
+                verifying: "Verifying…",
+                stIssued: "Official Registered Print",
+                stVoid: "Certificate Voided",
+                stNotFound: "Certificate Not Found",
+                noCode: "This link does not contain a certificate code. Valid certificates carry a code in the format MG-XXXX-XXXX — type it below.",
+                notFound: "There is no copy registered with this code. Check the code printed on your certificate.",
+                voidText: "This certificate was voided on {date} and is no longer valid.",
+                serverError: "The registry could not be reached. Please try again later.",
                 secPrint: "This Item (Reproduction)",
                 lblEdition: "Edition Number",
                 lblType: "Print Type",
-                lblHash: "Verification Hash",
+                lblCode: "Certificate Code",
+                lblIssued: "Issued On",
                 discTitle: "DISCLAIMER",
                 discText: "This certificate validates a Limited Edition copy. It implies NO ownership of the original unique artwork.",
-                secOriginal: "Original Masterpiece",
+                secOriginal: "Original Artwork",
                 lblTech: "Technique",
-                lblYear: "Original Year",
+                lblYear: "Year",
+                lblDim: "Dimensions",
+                lblCollection: "Public Collection",
                 lblTrace: "Original Certificate",
-                btnView: "View Artwork",
-                footerText: "\"This page certifies that the print associated with the ID above is a genuine Limited Edition Giclée produced by Magna Studio.\"",
-                typeGallery: "Gallery Print (70x100cm)",
-                typeCollector: "Collector Print (50x70cm)"
+                btnView: "View",
+                secRepro: "Authorised Reproductions of This Artwork",
+                typeGallery: "Gallery Print · up to 70 × 100 cm",
+                typeCollector: "Collector Print · up to 50 × 70 cm",
+                typeGalleryShort: "Gallery Print",
+                typeCollectorShort: "Collector Print",
+                typeDigitalShort: "Digital Download",
+                digitalOpen: "Open edition · not numbered",
+                countIssued: "{n} of {limit} issued",
+                footerText: "\"This page confirms that the copy identified by the code above is registered in the Magna Leite Certified Registry.\"",
+                lblLookup: "Verify a certificate code",
+                btnLookup: "Verify"
             },
             pt: {
-                headerTitle: "Impressão Registada Oficial",
+                verifying: "A verificar…",
+                stIssued: "Impressão Registada Oficial",
+                stVoid: "Certificado Anulado",
+                stNotFound: "Certificado Não Encontrado",
+                noCode: "Este link não contém um código de certificado. Os certificados válidos têm um código no formato MG-XXXX-XXXX — escreva-o abaixo.",
+                notFound: "Não existe nenhuma cópia registada com este código. Confirme o código impresso no seu certificado.",
+                voidText: "Este certificado foi anulado em {date} e já não é válido.",
+                serverError: "Não foi possível contactar o registo. Tente novamente mais tarde.",
                 secPrint: "Este Item (Reprodução)",
                 lblEdition: "Número da Edição",
                 lblType: "Tipo de Impressão",
-                lblHash: "Hash de Verificação",
-                discTitle: "AVISO LEGAL",
+                lblCode: "Código do Certificado",
+                lblIssued: "Emitido em",
+                discTitle: "AVISO",
                 discText: "Este certificado valida uma cópia de Edição Limitada. NÃO confere propriedade da obra original única.",
-                secOriginal: "Obra-Prima Original",
+                secOriginal: "Obra Original",
                 lblTech: "Técnica",
-                lblYear: "Ano Original",
-                lblTrace: "Certificado Original",
-                btnView: "Ver Obra",
-                footerText: "\"Esta página certifica que a impressão associada ao ID acima é um Giclée de Edição Limitada genuíno produzido pelo Magna Studio.\"",
-                typeGallery: "Print Galeria (70x100cm)",
-                typeCollector: "Print Colecionador (50x70cm)"
+                lblYear: "Ano",
+                lblDim: "Dimensões",
+                lblCollection: "Coleção Pública",
+                lblTrace: "Certificado do Original",
+                btnView: "Ver",
+                secRepro: "Reproduções Autorizadas Desta Obra",
+                typeGallery: "Print Galeria · até 70 × 100 cm",
+                typeCollector: "Print Colecionador · até 50 × 70 cm",
+                typeGalleryShort: "Print Galeria",
+                typeCollectorShort: "Print Colecionador",
+                typeDigitalShort: "Download Digital",
+                digitalOpen: "Edição aberta · não numerada",
+                countIssued: "{n} de {limit} emitidas",
+                footerText: "\"Esta página confirma que a cópia identificada pelo código acima está registada no Registo Certificado Magna Leite.\"",
+                lblLookup: "Verificar um código",
+                btnLookup: "Verificar"
             },
             es: {
-                headerTitle: "Impresión Registrada Oficial",
+                verifying: "Verificando…",
+                stIssued: "Impresión Registrada Oficial",
+                stVoid: "Certificado Anulado",
+                stNotFound: "Certificado No Encontrado",
+                noCode: "Este enlace no contiene un código de certificado. Los certificados válidos llevan un código con el formato MG-XXXX-XXXX — escríbalo abajo.",
+                notFound: "No existe ninguna copia registrada con este código. Compruebe el código impreso en su certificado.",
+                voidText: "Este certificado fue anulado el {date} y ya no es válido.",
+                serverError: "No fue posible contactar el registro. Inténtelo más tarde.",
                 secPrint: "Este Artículo (Reproducción)",
                 lblEdition: "Número de Edición",
                 lblType: "Tipo de Impresión",
-                lblHash: "Hash de Verificación",
-                discTitle: "AVISO LEGAL",
+                lblCode: "Código del Certificado",
+                lblIssued: "Emitido el",
+                discTitle: "AVISO",
                 discText: "Este certificado valida una copia de Edición Limitada. NO otorga la propiedad de la obra original única.",
-                secOriginal: "Obra Maestra Original",
+                secOriginal: "Obra Original",
                 lblTech: "Técnica",
-                lblYear: "Año Original",
-                lblTrace: "Certificado Original",
-                btnView: "Ver Obra",
-                footerText: "\"Esta página certifica que la impresión asociada con el ID anterior es un Giclée de Edición Limitada genuino producido por Magna Studio.\"",
-                typeGallery: "Print Galería (70x100cm)",
-                typeCollector: "Print Coleccionista (50x70cm)"
+                lblYear: "Año",
+                lblDim: "Dimensiones",
+                lblCollection: "Colección Pública",
+                lblTrace: "Certificado del Original",
+                btnView: "Ver",
+                secRepro: "Reproducciones Autorizadas de Esta Obra",
+                typeGallery: "Print Galería · hasta 70 × 100 cm",
+                typeCollector: "Print Coleccionista · hasta 50 × 70 cm",
+                typeGalleryShort: "Print Galería",
+                typeCollectorShort: "Print Coleccionista",
+                typeDigitalShort: "Descarga Digital",
+                digitalOpen: "Edición abierta · no numerada",
+                countIssued: "{n} de {limit} emitidas",
+                footerText: "\"Esta página confirma que la copia identificada por el código anterior está registrada en el Registro Certificado Magna Leite.\"",
+                lblLookup: "Verificar un código",
+                btnLookup: "Verificar"
             }
         };
 
         function getLang() {
-            return localStorage.getItem('magna_lang') || 'en';
+            const saved = localStorage.getItem('magna_lang');
+            const nav = (navigator.language || 'en').substring(0, 2);
+            return saved || ((nav === 'pt' || nav === 'es') ? nav : 'en');
         }
+        function T() { return translations[getLang()] || translations.en; }
+        function fmt(str, vars) { return str.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? ''); }
 
         function changeLanguage(lang) {
             localStorage.setItem('magna_lang', lang);
-            applyTranslations(lang);
-            if (currentArt) renderData(currentArt);
+            applyTranslations();
+            render();
         }
 
-        function applyTranslations(lang) {
-            const t = translations[lang];
-            document.getElementById('langSelector').value = lang;
+        function applyTranslations() {
+            const t = T();
+            document.getElementById('langSelector').value = getLang();
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (t[key]) el.textContent = t[key];
             });
         }
 
-        async function init() {
-            const lang = getLang();
-            applyTranslations(lang);
+        function setStatus(state) {
+            const t = T();
+            const bar = document.getElementById('statusBar');
+            const icon = document.getElementById('statusIcon');
+            const text = document.getElementById('statusText');
+            const styles = {
+                loading:  ['bg-gray-50 border-gray-100',   'text-gray-400',  'text-gray-500',  '…',  t.verifying],
+                issued:   ['bg-green-50 border-green-100', 'text-green-600', 'text-green-800', '✔',  t.stIssued],
+                void:     ['bg-amber-50 border-amber-200', 'text-amber-600', 'text-amber-800', '⚠',  t.stVoid],
+                notfound: ['bg-red-50 border-red-100',     'text-red-600',   'text-red-800',   '✕',  t.stNotFound]
+            }[state];
+            bar.className  = `${styles[0]} border-b p-4 flex items-center justify-center gap-2`;
+            icon.className = `${styles[1]} font-bold`;
+            icon.textContent = styles[3];
+            text.className = `${styles[2]} font-bold text-xs uppercase tracking-widest`;
+            text.textContent = styles[4];
+        }
 
-            const params = new URLSearchParams(window.location.search);
-            const artSlug = params.get('art') || params.get('id');
-            
-            if (!artSlug) {
-                document.getElementById('artTitle').innerText = "Error: Artwork ID missing";
+        function showNotFound(message) {
+            document.getElementById('content').classList.add('hidden');
+            document.getElementById('notFound').classList.remove('hidden');
+            document.getElementById('notFoundText').textContent = message;
+        }
+
+        function formatDate(iso) {
+            if (!iso) return '--';
+            const lang = getLang();
+            const d = new Date(iso + 'T12:00:00Z');
+            return d.toLocaleDateString(lang === 'pt' ? 'pt-PT' : (lang === 'es' ? 'es-ES' : 'en-GB'), { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        function render() {
+            const t = T();
+            setStatus(currentState);
+            if (currentState === 'loading') return;
+            if (currentState === 'notfound') {
+                showNotFound(current && current._message ? t[current._message] : t.notFound);
                 return;
             }
 
-            try {
-                const response = await fetch(JSON_PATH);
-                const db = await response.json();
-                const art = db[artSlug];
+            const e = current;
+            const art = e.artwork || {};
+            const lang = getLang();
+            document.getElementById('notFound').classList.toggle('hidden', currentState !== 'void');
+            if (currentState === 'void') document.getElementById('notFoundText').textContent = fmt(t.voidText, { date: formatDate(e.voidedAt) });
+            document.getElementById('content').classList.remove('hidden');
 
-                if (!art) {
-                    document.getElementById('artTitle').innerText = "Artwork Not Found";
-                    return;
-                }
+            // Imagem com a proporção real da obra
+            const match = (art.dimensions || '').match(/(\d+)\s*x\s*(\d+)/i);
+            if (match) document.getElementById('imgContainer').style.aspectRatio = `${match[2]} / ${match[1]}`;
+            const img = document.getElementById('artImage');
+            img.src = art.thumbnail || art.image || '';
+            img.onerror = function () { this.onerror = null; this.src = art.image || ''; };
 
-                currentArt = art;
-                renderData(art);
+            document.title = `Magna — ${art.title || ''} · ${e.number}/${e.limit}`;
+            document.getElementById('artTitle').textContent = art.title || e.slug;
+            document.getElementById('editionNum').textContent = `Nº ${String(e.number).padStart(2, '0')} / ${e.limit}`;
+            document.getElementById('printType').textContent = e.type === 'gallery' ? t.typeGallery : t.typeCollector;
+            document.getElementById('certCode').textContent = e.code;
+            document.getElementById('issuedAt').textContent = formatDate(e.issuedAt);
 
-            } catch (error) {
-                console.error("Erro:", error);
-                document.getElementById('artTitle').innerText = "System Error";
+            document.getElementById('origTech').textContent = (art.technique && (art.technique[lang] || art.technique.en)) || '—';
+            document.getElementById('origYear').textContent = art.year || '—';
+            document.getElementById('origDim').textContent = art.dimensions || '—';
+            document.getElementById('origCollection').textContent = art.publicCollection || '';
+            document.getElementById('origCollectionRow').classList.toggle('hidden', !art.publicCollection);
+
+            const c = e.counts || {};
+            document.getElementById('cntGallery').textContent   = c.gallery   ? fmt(t.countIssued, { n: c.gallery.issued,   limit: c.gallery.limit })   : '--';
+            document.getElementById('cntCollector').textContent = c.collector ? fmt(t.countIssued, { n: c.collector.issued, limit: c.collector.limit }) : '--';
+
+            const originalUrl = `${PUBLIC_SITE}/verify-original.html?id=${encodeURIComponent(e.slug)}`;
+            document.getElementById('originalLink').href = `verify-original.html?id=${encodeURIComponent(e.slug)}`;
+            const qr = document.getElementById('qrOriginal');
+            qr.innerHTML = '';
+            if (window.QRCode) {
+                new QRCode(qr, { text: originalUrl, width: 64, height: 64, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
             }
         }
 
-        function renderData(art) {
-            const lang = localStorage.getItem('magna_lang') || 'en';
-            const t = translations[lang];
-            const params = new URLSearchParams(window.location.search);
-            const artSlug = params.get('art') || params.get('id'); 
-
-            // === 1. IMAGEM (Aspect Ratio Real) ===
-            const imgContainer = document.getElementById('imgContainer');
-            const dimRegex = /(\d+)\s*x\s*(\d+)/i;
-            const match = art.dimensions.match(dimRegex);
-            
-            if (match) {
-                const width = match[1];
-                const height = match[2];
-                // Aplica a proporção exata da obra ao container
-                imgContainer.style.aspectRatio = `${width} / ${height}`;
+        async function load(code) {
+            currentState = 'loading';
+            render();
+            try {
+                const res = await fetch(`${API_BASE}/edition?code=${encodeURIComponent(code)}`);
+                if (res.status === 404 || res.status === 400) {
+                    current = { _message: 'notFound' };
+                    currentState = 'notfound';
+                } else if (!res.ok) {
+                    current = { _message: 'serverError' };
+                    currentState = 'notfound';
+                } else {
+                    current = await res.json();
+                    currentState = current.status === 'void' ? 'void' : 'issued';
+                }
+            } catch (err) {
+                console.error(err);
+                current = { _message: 'serverError' };
+                currentState = 'notfound';
             }
+            render();
+        }
 
-            let imgPath = art.image;
-            let thumbPath = art.thumbnail || imgPath.replace('assets/paintings/full/', 'assets/paintings/thumbnails/');
-            const imgEl = document.getElementById('artImage');
-            
-            imgEl.src = thumbPath;
-            imgEl.onload = () => {
-                imgEl.classList.remove('opacity-0');
-                document.getElementById('imgLoader').style.display = 'none';
-            };
-            imgEl.onerror = function() { 
-                this.src = imgPath; 
-                this.onerror = null; 
-            };
-            
-            // === 2. DADOS ===
-            document.getElementById('artTitle').textContent = art.title;
-            document.getElementById('editionNum').textContent = `${params.get('edition') || '--'} / ${params.get('total') || '50'}`;
-            document.getElementById('hashId').textContent = params.get('hash') || (params.get('art') ? params.get('id') : 'Pending');
-            
-            const type = params.get('type');
-            if(type === 'gallery') document.getElementById('printType').textContent = t.typeGallery;
-            else if(type === 'collector') document.getElementById('printType').textContent = t.typeCollector;
-            else document.getElementById('printType').textContent = "Fine Art Giclée";
+        function lookup(ev) {
+            ev.preventDefault();
+            const code = document.getElementById('codeInput').value.trim().toUpperCase();
+            if (!code) return;
+            const url = new URL(window.location.href);
+            url.search = `?code=${encodeURIComponent(code)}`;
+            window.history.replaceState({}, '', url.toString());
+            if (!CODE_PATTERN.test(code)) {
+                current = { _message: 'notFound' };
+                currentState = 'notfound';
+                render();
+                return;
+            }
+            load(code);
+        }
 
-            const tech = art.technique[lang] || art.technique['en'] || "Mixed Media";
-            document.getElementById('origTech').textContent = tech;
-            document.getElementById('origYear').textContent = art.year;
-
-            // === 3. LINKS DINÂMICOS ===
-            // Botão "View Page" -> artwork.html
-            const artworkUrl = `${BASE_URL}/artwork.html?id=${artSlug}`;
-            document.getElementById('artworkLink').href = artworkUrl;
-
-            // QR Code -> verify-original.html — self-hosted, no external dependency
-            const certOriginalUrl = `${BASE_URL}/verify-original.html?id=${artSlug}`;
-            const qrContainer = document.getElementById('qrOriginal');
-            qrContainer.innerHTML = '';
-            new QRCode(qrContainer, {
-                text: certOriginalUrl,
-                width: 64, height: 64,
-                colorDark: '#000000', colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
-            });
+        function init() {
+            applyTranslations();
+            const code = (new URLSearchParams(window.location.search).get('code') || '').trim().toUpperCase();
+            document.getElementById('codeInput').value = code;
+            if (!code) {
+                // Links antigos (?art=…&edition=…) ou sem parâmetros: nada a verificar
+                current = { _message: 'noCode' };
+                currentState = 'notfound';
+                render();
+                return;
+            }
+            if (!CODE_PATTERN.test(code)) {
+                current = { _message: 'notFound' };
+                currentState = 'notfound';
+                render();
+                return;
+            }
+            load(code);
         }
 
         window.addEventListener('load', init);

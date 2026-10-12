@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magna - Digital Ownership Token</title>
+    <title>Magna - Order Confirmed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="canonical" href="https://magnaleite.com/digital-token.html">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@1,400;1,600&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
         </div>
 
         <div class="p-8 text-center">
-            <p class="text-slate-400 text-xs uppercase tracking-[0.2em] mb-4" data-i18n="tokenLabel">Token of Ownership</p>
+            <p class="text-slate-400 text-xs uppercase tracking-[0.2em] mb-4" data-i18n="tokenLabel">Order Confirmed</p>
             
             <div class="relative mx-auto w-48 h-48 mb-6 rounded-full p-1 bg-gradient-to-tr from-yellow-500 to-slate-800">
                 <img id="artImage" src="" alt="Artwork" class="w-full h-full object-cover rounded-full border-4 border-slate-800" style="display: none;">
@@ -49,7 +49,6 @@
             <p id="artEdition" class="text-yellow-500/80 text-sm font-medium mb-6 uppercase tracking-wider">...</p>
 
             <div class="bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-700/50 text-left relative overflow-hidden">
-                <img id="bgQr" src="" class="absolute top-0 right-0 w-32 h-32 opacity-10 -mr-4 -mt-4 mix-blend-overlay">
                 
                 <div class="flex justify-between mb-2 relative z-10">
                     <span class="text-slate-500 text-xs uppercase" data-i18n="ownerLabel">Owner</span>
@@ -59,14 +58,10 @@
                     <span class="text-slate-500 text-xs uppercase" data-i18n="dateLabel">Date</span>
                     <span id="dateDisplay" class="text-slate-200 text-sm font-medium">--</span>
                 </div>
-                <div class="flex flex-col relative z-10 mt-2">
-                    <span class="text-slate-500 text-xs uppercase mb-1" data-i18n="hashLabel">Unique Hash (Token ID)</span>
-                    <span id="hashDisplay" class="text-yellow-500/90 text-xs font-mono break-all bg-black/30 p-2 rounded border border-yellow-500/20">Generating...</span>
-                </div>
             </div>
 
             <p class="text-xs text-slate-500 leading-relaxed italic border-t border-slate-700 pt-4" data-i18n="tokenCertify">
-                "This token certifies digital ownership of the specified edition. A physical certificate signed by Magna Leite will be shipped to you."
+                Your print will receive its own number in the Magna Leite Certified Registry.
             </p>
         </div>
     </div>
@@ -109,13 +104,13 @@
         // --- TRADUÇÕES ---
         const translations = {
             en: {
-                securing: "Securing Asset...",
-                verified: "Ownership Verified & Registered",
-                tokenLabel: "Token of Ownership",
+                securing: "Confirming order…",
+                verified: "Order Received",
+                tokenLabel: "Order Confirmed",
                 ownerLabel: "Owner",
                 dateLabel: "Date",
                 hashLabel: "Unique Hash (Token ID)",
-                tokenCertify: "\"This token certifies digital ownership of the specified edition. A physical certificate signed by Magna Leite will be shipped to you.\"",
+                tokenCertify: "Your print will receive its own number in the Magna Leite Certified Registry. The certificate signed by Magna Leite — with the copy number and a verification code — is shipped together with your print.",
                 shippingHeader: "Shipping & Contact Info",
                 phoneLabel: "Phone",
                 addrLabel: "Delivery Address",
@@ -128,13 +123,13 @@
                 limitedEd: "Limited Edition Print"
             },
             pt: {
-                securing: "Protegendo Ativo...",
-                verified: "Propriedade Verificada & Registrada",
-                tokenLabel: "Token de Propriedade",
+                securing: "A confirmar encomenda…",
+                verified: "Encomenda Recebida",
+                tokenLabel: "Encomenda Confirmada",
                 ownerLabel: "Proprietário",
                 dateLabel: "Data",
                 hashLabel: "Hash Único (ID do Token)",
-                tokenCertify: "\"Este token certifica a propriedade digital da edição especificada. Um certificado físico assinado por Magna Leite será enviado para você.\"",
+                tokenCertify: "A sua impressão vai receber um número próprio no Registo Certificado Magna Leite. O certificado assinado por Magna Leite — com o número da cópia e um código de verificação — segue junto com a impressão.",
                 shippingHeader: "Dados de Envio e Contato",
                 phoneLabel: "Telefone / WhatsApp",
                 addrLabel: "Endereço de Entrega",
@@ -147,13 +142,13 @@
                 limitedEd: "Impressão Edição Limitada"
             },
             es: {
-                securing: "Asegurando Activo...",
-                verified: "Propiedad Verificada y Registrada",
-                tokenLabel: "Token de Propiedad",
+                securing: "Confirmando pedido…",
+                verified: "Pedido Recibido",
+                tokenLabel: "Pedido Confirmado",
                 ownerLabel: "Propietario",
                 dateLabel: "Fecha",
                 hashLabel: "Hash Único (ID del Token)",
-                tokenCertify: "\"Este token certifica la propiedad digital de la edición especificada. Se le enviará un certificado físico firmado por Magna Leite.\"",
+                tokenCertify: "Su impresión recibirá un número propio en el Registro Certificado Magna Leite. El certificado firmado por Magna Leite — con el número de la copia y un código de verificación — se envía junto con su impresión.",
                 shippingHeader: "Datos de Envío y Contacto",
                 phoneLabel: "Teléfono / WhatsApp",
                 addrLabel: "Dirección de Entrega",
@@ -254,21 +249,9 @@
                 const dateStr = today.toLocaleDateString(lang === 'pt' ? 'pt-PT' : (lang === 'es' ? 'es-ES' : 'en-US'), { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute:'2-digit' });
                 document.getElementById('dateDisplay').textContent = dateStr;
 
-                // 4. Hash e Token
-                const tokenKey = 'magna_token_' + artId + '_' + (typeParam || 'standard');
-                let savedHash = localStorage.getItem(tokenKey);
-                
-                if (!savedHash) {
-                    savedHash = generateUUID();
-                    localStorage.setItem(tokenKey, savedHash);
-                }
-
-                document.getElementById('hashDisplay').textContent = savedHash;
-
-                // 5. QR Code
-                const verifyUrl = `${window.location.origin}/digital-token.html?art=${artId}&type=${typeParam || ''}&id=${savedHash}`; 
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&color=94a3b8&bgcolor=1e293b&data=${encodeURIComponent(verifyUrl)}`;
-                document.getElementById('bgQr').src = qrUrl;
+                // (O antigo "hash/token" gerado no browser foi removido: não estava
+                // registado em lado nenhum. O número e o código verificável da
+                // cópia vêm do registo de edições — ver verify.html?code=…)
 
                 // Sucesso
                 setTimeout(() => markSuccess(), 1000);

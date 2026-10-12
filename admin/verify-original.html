@@ -98,6 +98,15 @@
                 </div>
             </div>
 
+            <div id="reproBlock" class="hidden pt-2 mb-4">
+                <h3 class="official text-[10px] font-bold uppercase border-b border-gray-300 inline-block mb-3 text-gold" data-i18n="labelRepro">Authorised Reproductions</h3>
+                <div class="text-xs space-y-1">
+                    <div class="flex justify-between"><span data-i18n="reproGallery">Gallery Print</span><span id="reproGallery" class="font-semibold"></span></div>
+                    <div class="flex justify-between"><span data-i18n="reproCollector">Collector Print</span><span id="reproCollector" class="font-semibold"></span></div>
+                    <div class="flex justify-between text-gray-500"><span data-i18n="reproDigital">Digital Download</span><span data-i18n="reproDigitalOpen">Open edition · not numbered</span></div>
+                </div>
+            </div>
+
             <div class="pt-2 flex-grow">
                 <h3 class="official text-[10px] font-bold uppercase border-b border-gray-300 inline-block mb-4 text-gold" data-i18n="labelHistory">Provenance History</h3>
                 <ul id="historyList" class="relative border-l border-gray-200 ml-1.5 space-y-4 pb-2"></ul>
@@ -132,7 +141,9 @@
         const IS_DEV   = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
         const BASE_URL = IS_DEV ? 'http://127.0.0.1:5500' : 'https://brainboxmed.com/magna';
         const JSON_PATH = 'artworks.json';
+        const API_BASE  = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
         let currentArtData = null; 
+        let reproCounts = null; // cópias emitidas por tipo (só totais, do registo de edições)
 
         // === 1. DICIONÁRIO ===
         const translations = {
@@ -145,6 +156,12 @@
                 labelDim: "Dimensions",
                 labelTech: "Technique",
                 labelCollection: "Public Collection",
+                labelRepro: "Authorised Reproductions",
+                reproGallery: "Gallery Print",
+                reproCollector: "Collector Print",
+                reproDigital: "Digital Download",
+                reproDigitalOpen: "Open edition · not numbered",
+                reproIssued: "{n} of {limit} issued",
                 labelHash: "Unique Digital Hash (UUID)",
                 labelHistory: "Provenance History",
                 labelSign: "Artist Signature",
@@ -165,6 +182,12 @@
                 labelDim: "Dimensões",
                 labelTech: "Técnica",
                 labelCollection: "Coleção Pública",
+                labelRepro: "Reproduções Autorizadas",
+                reproGallery: "Print Galeria",
+                reproCollector: "Print Colecionador",
+                reproDigital: "Download Digital",
+                reproDigitalOpen: "Edição aberta · não numerada",
+                reproIssued: "{n} de {limit} emitidas",
                 labelHash: "Hash Digital Único (UUID)",
                 labelHistory: "Histórico e Proveniência",
                 labelSign: "Assinatura do Artista",
@@ -185,6 +208,12 @@
                 labelDim: "Dimensiones",
                 labelTech: "Técnica",
                 labelCollection: "Colección Pública",
+                labelRepro: "Reproducciones Autorizadas",
+                reproGallery: "Print Galería",
+                reproCollector: "Print Coleccionista",
+                reproDigital: "Descarga Digital",
+                reproDigitalOpen: "Edición abierta · no numerada",
+                reproIssued: "{n} de {limit} emitidas",
                 labelHash: "Hash Digital Único (UUID)",
                 labelHistory: "Historial y Procedencia",
                 labelSign: "Firma del Artista",
@@ -205,9 +234,28 @@
             return saved || (browser === 'pt' || browser === 'es' ? browser : 'en');
         }
 
+        async function loadReproCounts(slug) {
+            try {
+                const res = await fetch(`${API_BASE}/edition-counts?art=${encodeURIComponent(slug)}`);
+                if (!res.ok) return;
+                reproCounts = (await res.json()).counts || null;
+                renderRepro(getLang());
+            } catch (e) { /* registo indisponível: o bloco fica escondido */ }
+        }
+
+        function renderRepro(lang) {
+            if (!reproCounts) return;
+            const t = translations[lang] || translations.en;
+            const f = c => c ? t.reproIssued.replace('{n}', c.issued).replace('{limit}', c.limit) : '—';
+            document.getElementById('reproGallery').textContent   = f(reproCounts.gallery);
+            document.getElementById('reproCollector').textContent = f(reproCounts.collector);
+            document.getElementById('reproBlock').classList.remove('hidden');
+        }
+
         function changeLanguage(lang) {
             localStorage.setItem('magna_lang', lang);
             applyTranslations(lang);
+            renderRepro(lang);
             if(currentArtData) renderData(currentArtData, lang);
         }
 
@@ -257,6 +305,7 @@
 
                 currentArtData = art;
                 renderData(art, lang, slug);
+                loadReproCounts(slug);
 
                 loading.style.display = 'none';
                 document.getElementById('content').classList.remove('hidden');

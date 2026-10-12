@@ -129,6 +129,31 @@ O site é **estático** (HTML/CSS/JS puro, sem framework de build) servido diret
 
 ---
 
+## 2B. Certificados: original vs. cópias numeradas (Outubro 2026)
+
+**Porquê:** o antigo `verify.html` mostrava o que viesse no URL (`?edition=7&total=50&hash=…`) — qualquer pessoa podia fabricar um "Official Registered Print". Não havia registo nem limite real da tiragem. O QR da página da obra levava a esse certificado de cópia em vez do certificado do original.
+
+**Modelo atual:**
+
+| | Certificado do Original | Certificado de Cópia |
+|---|---|---|
+| Página | `verify-original.html?id=<slug>` | `verify.html?code=MG-XXXX-XXXX` |
+| QR em | página da obra, certificado do original | certificado impresso da cópia |
+| Mostra | dados da obra, proveniência pública, coleção pública, **reproduções autorizadas: X/50 Gallery, Y/50 Collector, digital = edição aberta** | **nº da cópia (ex.: 07/50)**, tipo, código, data de emissão, totais de cópias de cada edição, dados do original + link/QR para o certificado do original |
+| Fonte | `artworks.json` + `GET /edition-counts` | `GET /edition` (registo) — nunca o URL |
+
+- **Registo de edições:** `/home/brainboxmed/magna-private/editions.json` (fora da pasta servida, backups em `magna-private/backups/`). Cada cópia: código único `MG-XXXX-XXXX`, obra, tipo (`gallery`/`collector`), número, limite, data, estado (`issued`/`void`) e — privado — comprador, email, notas, sessão Stripe.
+- **Limite:** 50 por obra e por tipo (`EDITION_TYPES` em `save-artworks.js`). O servidor recusa a 51.ª. O número seguinte é sempre o maior já usado + 1: **números anulados nunca são reutilizados** (nunca há dois certificados com o mesmo número).
+- **Público:** só totais e dados da cópia — nunca comprador. Código inexistente → "Certificado não encontrado"; anulado → "Certificado anulado".
+- **Download digital:** edição aberta, não numerada, sem certificado — licença de uso pessoal e ficheiro sempre com marca de água.
+- **Emitir uma cópia (hoje, manual):** Admin Hub → **Cópias Certificadas** (`admin/admin-generator.html`) → obra + edição (+ comprador/email/notas/sessão Stripe, privados) → **Emitir cópia** → **Certificado para imprimir** (`admin/print-certificate.html?code=…`, A4, QR para `verify.html?code=…`). Uma cópia anulada abre com carimbo "VOID · ANULADO" e não deixa imprimir.
+- **Idempotência:** se a sessão Stripe for indicada, a mesma compra devolve sempre a mesma cópia.
+- **Fase 2 (por fazer):** atribuição automática do número depois do pagamento (redirect dos Payment Links dos prints com `{CHECKOUT_SESSION_ID}`, como no digital). Até lá, emitir manualmente após cada venda de print.
+- **Endpoints:** `GET /edition?code=` e `GET /edition-counts?art=` (públicos); `GET /edition-list`, `POST /edition-issue`, `POST /edition-void` (com `X-Magna-Secret`). Um único bloco Nginx `location /magna/api/edition` (prefixo) cobre os cinco — em **ambos** os vhosts, porque as páginas públicas chamam `/magna/api/…` relativo.
+- **"Controle de Edições Vendidas"** no Manager (`editionsSold`) ficou redundante — a fonte de verdade é o registo.
+
+---
+
 ## 3. Como gerir coleções
 
 Coleções são etiquetas/categorias (ex: `setubal`, `alentejo`, `nature`) usadas para filtrar obras no site. Vivem em `collections.json`, como um dicionário `{ id: { pt, en } }`.
@@ -425,8 +450,10 @@ Usa isto antes de considerares qualquer alteração "pronta para produção", e 
 | `/upload-exhibition-gallery` | POST | Sim | ✅ Sim | ✅ |
 | `/about-photos` | GET | Não | ✅ Sim | ✅ |
 | `/update-stripe-price` | POST | Sim | ✅ Escrito (Set. 2026) | ❌ Por fazer |
-| `/private-registry` | GET | Sim | — | ❌ Por fazer (Out. 2026) — só no vhost brainboxmed |
-| `/save-private-registry` | POST | Sim | — | ❌ Por fazer (Out. 2026) — só no vhost brainboxmed |
+| `/private-registry` | GET | Sim | — | ✅ (Out. 2026) — só no vhost brainboxmed |
+| `/save-private-registry` | POST | Sim | — | ✅ (Out. 2026) — só no vhost brainboxmed |
+| `/edition`, `/edition-counts` | GET | Não (público) | — | ❌ Por fazer — bloco `location /magna/api/edition` nos DOIS vhosts |
+| `/edition-list`, `/edition-issue`, `/edition-void` | GET/POST | Sim | — | (coberto pelo mesmo bloco) |
 
 **Handler `/check-image` no código:** corrigido em Setembro 2026 — antes não existia (sempre 404), agora valida `filename`/`type` e responde `{ exists }`.
 

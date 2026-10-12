@@ -491,7 +491,8 @@
                 document.getElementById('btnDigital').href         = withDigitalReference(getPaymentLink(art.priceDigital), effectiveSlug);
 
                 // QR Code — self-hosted, points to verify page
-                const verifyUrl = `${BASE_URL}/verify.html?id=${slug || Object.keys(artworksDB)[0]}`;
+                // QR → certificado do ORIGINAL (o verify.html é só para cópias, por código)
+                const verifyUrl = `${BASE_URL}/verify-original.html?id=${slug || Object.keys(artworksDB)[0]}`;
                 const qrContainer = document.getElementById('provenanceQR');
                 qrContainer.innerHTML = '';
                 new QRCode(qrContainer, {

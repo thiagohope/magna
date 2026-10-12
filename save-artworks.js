@@ -12,6 +12,11 @@
  *   POST /save-price-tiers         [ ...price tiers array... ]          -> price-tiers.json
  *   GET  /private-registry         (header only)                        -> registo privado (motivo/detentor/arquivo)
  *   POST /save-private-registry    { <slug>: {reason, holderType, ...} } -> ../magna-private/registry.json
+ *   GET  /edition                  ?code=MG-XXXX-XXXX  (PÚBLICO)        -> dados públicos de uma cópia certificada
+ *   GET  /edition-counts           ?art=<slug>         (PÚBLICO)        -> cópias emitidas por tipo (só totais)
+ *   GET  /edition-list             (header only)                        -> registo completo de cópias (com comprador)
+ *   POST /edition-issue            { slug, type, buyerName?, ... }      -> emite a próxima cópia numerada (limite por tipo)
+ *   POST /edition-void             { code, reason }                     -> anula uma cópia (o número não é reutilizado)
  *
  *   NOTA — estado "unavailable": ao gravar /save-artworks o servidor retira do
  *   ficheiro público o preço e os links do Original das obras indisponíveis e
@@ -85,6 +90,18 @@ const PRIVATE_HOLDER_TYPES = ['private', 'institution'];
 const PRIVATE_EVENTS       = ['Transfer'];           // eventos de proveniência que nunca ficam públicos
 const PRIVATE_ART_KEYS     = ['private', 'internal', 'reason', 'holderType', 'holderName', 'holder'];
 const REGISTRY_KEY_PATTERN = /^[A-Za-z0-9_-]{1,100}$/;  // slugs existentes incluem "Time", "nova_anfora"
+
+// ── REGISTO DE EDIÇÕES (cópias certificadas) ────────────────────────────────
+// Cada print vendido tem um registo com código único (MG-XXXX-XXXX), número
+// sequencial por obra e por tipo, e limite de tiragem. É a única fonte de
+// verdade dos certificados: o verify.html só mostra o que existe aqui.
+// Vive no diretório privado porque guarda o comprador (nunca publicado).
+// O download digital é edição aberta, não numerada — não entra aqui.
+const EDITIONS_PATH         = path.join(PRIVATE_DIR, 'editions.json');
+const EDITION_TYPES         = { gallery: { limit: 50 }, collector: { limit: 50 } };
+const EDITION_CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // sem 0/O, 1/I/L
+const EDITION_CODE_PATTERN  = /^MG-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+const STRIPE_SESSION_PATTERN = /^cs_(live|test)_[A-Za-z0-9]+$/;
 
 // ── SECRET — obrigatório, sem fallback inseguro ─────────────────────────────
 // Antes, um MAGNA_API_SECRET em falta caía silenciosamente para o valor
@@ -172,6 +189,78 @@ function writePrivateRegistry(registry) {
     const tmpPath = PRIVATE_REGISTRY_PATH + '.tmp';
     fs.writeFileSync(tmpPath, JSON.stringify(registry, null, 2), { encoding: 'utf8', mode: 0o600 });
     fs.renameSync(tmpPath, PRIVATE_REGISTRY_PATH);
+}
+
+// ── REGISTO DE EDIÇÕES — leitura/escrita e resumos públicos ────────────────
+function readEditions() {
+    if (!fs.existsSync(EDITIONS_PATH)) return [];
+    const parsed = JSON.parse(fs.readFileSync(EDITIONS_PATH, 'utf8'));
+    return (parsed && Array.isArray(parsed.editions)) ? parsed.editions : [];
+}
+
+function writeEditions(list) {
+    if (!fs.existsSync(PRIVATE_DIR)) fs.mkdirSync(PRIVATE_DIR, { recursive: true, mode: 0o700 });
+    makeBackup(EDITIONS_PATH, 'editions', PRIVATE_BACKUP_DIR);
+    const tmpPath = EDITIONS_PATH + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify({ editions: list }, null, 2), { encoding: 'utf8', mode: 0o600 });
+    fs.renameSync(tmpPath, EDITIONS_PATH);
+}
+
+function newEditionCode(list) {
+    const used = new Set(list.map(e => e.code));
+    for (;;) {
+        let s = '';
+        for (let i = 0; i < 8; i++) s += EDITION_CODE_ALPHABET[crypto.randomInt(EDITION_CODE_ALPHABET.length)];
+        const code = `MG-${s.slice(0, 4)}-${s.slice(4)}`;
+        if (!used.has(code)) return code;
+    }
+}
+
+// Só totais — nunca quem comprou. "issued" conta as cópias válidas; o
+// próximo número é sempre o maior já usado + 1 (números anulados não voltam
+// a ser emitidos, para nunca existirem dois certificados com o mesmo número).
+function editionCounts(list, slug) {
+    const out = {};
+    Object.entries(EDITION_TYPES).forEach(([type, cfg]) => {
+        const ofType = list.filter(e => e.slug === slug && e.type === type);
+        out[type] = {
+            issued:     ofType.filter(e => e.status !== 'void').length,
+            limit:      cfg.limit,
+            lastNumber: ofType.reduce((m, e) => Math.max(m, e.number || 0), 0)
+        };
+    });
+    return out;
+}
+
+function publicArtworkSummary(art) {
+    return {
+        title:            art.title || '',
+        year:             art.year || '',
+        dimensions:       art.dimensions || '',
+        technique:        art.technique || {},
+        image:            Array.isArray(art.image) ? art.image[0] : (art.image || ''),
+        thumbnail:        art.thumbnail || '',
+        originalHash:     art.originalHash || '',
+        publicCollection: art.publicCollection || '',
+        status:           normalizePublicStatus(art.status)
+    };
+}
+
+function publicEdition(e, list, artworks) {
+    const art = artworks[e.slug];
+    const out = {
+        code:     e.code,
+        slug:     e.slug,
+        type:     e.type,
+        number:   e.number,
+        limit:    e.limit,
+        issuedAt: (e.issuedAt || '').slice(0, 10),
+        status:   e.status === 'void' ? 'void' : 'issued',
+        counts:   editionCounts(list, e.slug),
+        artwork:  art ? publicArtworkSummary(art) : null
+    };
+    if (e.status === 'void') out.voidedAt = (e.voidedAt || '').slice(0, 10);
+    return out;
 }
 
 // Estado público: só "available" ou "unavailable". Os antigos sold_private /
@@ -864,6 +953,149 @@ const server = http.createServer((req, res) => {
                 respond(req, res, 200, { success: true, entries: Object.keys(next).length, registry: next });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Save error (private-registry):`, err.message);
+                respond(req, res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── REGISTO DE EDIÇÕES ───────────────────────────────────────────────────
+    const editionUrl = req.url.startsWith('/edition') ? new URL(req.url, 'http://localhost') : null;
+
+    // Público: verificação de um certificado de cópia pelo código.
+    if (req.method === 'GET' && editionUrl && editionUrl.pathname === '/edition') {
+        try {
+            const code = (editionUrl.searchParams.get('code') || '').trim().toUpperCase();
+            if (!EDITION_CODE_PATTERN.test(code)) {
+                respond(req, res, 400, { error: 'invalid_code' });
+                return;
+            }
+            const list = readEditions();
+            const e = list.find(x => x.code === code);
+            if (!e) {
+                respond(req, res, 404, { error: 'not_found' });
+                return;
+            }
+            respond(req, res, 200, publicEdition(e, list, JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8'))));
+        } catch (err) {
+            console.error(`[${new Date().toISOString()}] Erro edition:`, err.message);
+            respond(req, res, 500, { error: 'server_error' });
+        }
+        return;
+    }
+
+    // Público: totais de cópias emitidas de uma obra (para o certificado do original).
+    if (req.method === 'GET' && editionUrl && editionUrl.pathname === '/edition-counts') {
+        try {
+            const slug = editionUrl.searchParams.get('art') || '';
+            const artworks = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8'));
+            if (!REGISTRY_KEY_PATTERN.test(slug) || !artworks[slug]) {
+                respond(req, res, 404, { error: 'not_found' });
+                return;
+            }
+            respond(req, res, 200, { slug, counts: editionCounts(readEditions(), slug) });
+        } catch (err) {
+            console.error(`[${new Date().toISOString()}] Erro edition-counts:`, err.message);
+            respond(req, res, 500, { error: 'server_error' });
+        }
+        return;
+    }
+
+    // Admin: registo completo (inclui comprador).
+    if (req.method === 'GET' && editionUrl && editionUrl.pathname === '/edition-list') {
+        if (!checkAuth(req, res)) return;
+        try {
+            const list = readEditions().slice().sort((a, b) => (b.issuedAt || '').localeCompare(a.issuedAt || ''));
+            respond(req, res, 200, { editions: list, types: EDITION_TYPES });
+        } catch (err) {
+            console.error(`[${new Date().toISOString()}] Erro edition-list:`, err.message);
+            respond(req, res, 500, { error: err.message });
+        }
+        return;
+    }
+
+    // Admin: emite a próxima cópia numerada. Tudo síncrono dentro do callback —
+    // em Node não há dois pedidos a meio desta secção ao mesmo tempo, por isso
+    // dois cliques seguidos nunca recebem o mesmo número.
+    if (req.method === 'POST' && editionUrl && editionUrl.pathname === '/edition-issue') {
+        if (!checkAuth(req, res)) return;
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                const str = (v, max) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
+                const slug = str(parsed && parsed.slug, 100);
+                const type = str(parsed && parsed.type, 20);
+                const stripeSessionId = str(parsed && parsed.stripeSessionId, 300);
+
+                const cfg = EDITION_TYPES[type];
+                if (!cfg) throw new Error(`Tipo inválido: "${type}" (use ${Object.keys(EDITION_TYPES).join(' ou ')}).`);
+                const artworks = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8'));
+                if (!REGISTRY_KEY_PATTERN.test(slug) || !artworks[slug]) throw new Error(`Obra não encontrada: "${slug}".`);
+                if (stripeSessionId && !STRIPE_SESSION_PATTERN.test(stripeSessionId)) throw new Error('ID de sessão Stripe inválido (deve começar por cs_live_ ou cs_test_).');
+
+                const list = readEditions();
+
+                // Idempotente por sessão Stripe: a mesma compra nunca gera dois números.
+                if (stripeSessionId) {
+                    const existing = list.find(e => e.stripeSessionId === stripeSessionId && e.status !== 'void');
+                    if (existing) {
+                        respond(req, res, 200, { success: true, existing: true, edition: existing, counts: editionCounts(list, existing.slug) });
+                        return;
+                    }
+                }
+
+                const next = editionCounts(list, slug)[type].lastNumber + 1;
+                if (next > cfg.limit) {
+                    respond(req, res, 409, { error: `Edição esgotada: ${type} de "${slug}" já chegou a ${cfg.limit}/${cfg.limit}.` });
+                    return;
+                }
+
+                const edition = {
+                    code:       newEditionCode(list),
+                    slug,
+                    type,
+                    number:     next,
+                    limit:      cfg.limit,
+                    issuedAt:   new Date().toISOString(),
+                    status:     'issued',
+                    buyerName:  str(parsed.buyerName, 200),
+                    buyerEmail: str(parsed.buyerEmail, 200),
+                    notes:      str(parsed.notes, 2000),
+                    stripeSessionId
+                };
+                list.push(edition);
+                writeEditions(list);
+                console.log(`[${new Date().toISOString()}] Cópia emitida — ${edition.code} ${slug} ${type} ${next}/${cfg.limit}`);
+                respond(req, res, 200, { success: true, edition, counts: editionCounts(list, slug) });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro edition-issue:`, err.message);
+                respond(req, res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // Admin: anula uma cópia (ex.: emitida por engano, devolução). O registo
+    // fica, marcado como anulado — o certificado passa a mostrar "Anulado".
+    if (req.method === 'POST' && editionUrl && editionUrl.pathname === '/edition-void') {
+        if (!checkAuth(req, res)) return;
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                const code = (typeof parsed?.code === 'string' ? parsed.code : '').trim().toUpperCase();
+                const reason = (typeof parsed?.reason === 'string' ? parsed.reason : '').trim().slice(0, 500);
+                if (!EDITION_CODE_PATTERN.test(code)) throw new Error('Código inválido.');
+                if (!reason) throw new Error('Indique o motivo da anulação.');
+                const list = readEditions();
+                const e = list.find(x => x.code === code);
+                if (!e) { respond(req, res, 404, { error: 'Código não encontrado.' }); return; }
+                if (e.status === 'void') { respond(req, res, 409, { error: 'Esta cópia já está anulada.' }); return; }
+                e.status = 'void';
+                e.voidedAt = new Date().toISOString();
+                e.voidReason = reason;
+                writeEditions(list);
+                console.log(`[${new Date().toISOString()}] Cópia anulada — ${code} (${reason})`);
+                respond(req, res, 200, { success: true, edition: e, counts: editionCounts(list, e.slug) });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro edition-void:`, err.message);
                 respond(req, res, 400, { error: err.message });
             }
         });
@@ -1590,6 +1822,7 @@ server.listen(PORT, HOST, () => {
     console.log(`  EXHIBITIONS_PATH:       ${EXHIBITIONS_PATH}`);
     console.log(`  BACKUP_DIR:             ${BACKUP_DIR}`);
     console.log(`  PRIVATE_REGISTRY_PATH:  ${PRIVATE_REGISTRY_PATH}`);
+    console.log(`  EDITIONS_PATH:          ${EDITIONS_PATH}`);
     console.log(`  PAINTINGS_FULL_DIR:     ${PAINTINGS_FULL_DIR}`);
     console.log(`  PAINTINGS_THUMBS_DIR:   ${PAINTINGS_THUMBS_DIR}`);
     console.log(`  EXHIBITION_FLYERS_DIR:  ${EXHIBITION_FLYERS_DIR}`);

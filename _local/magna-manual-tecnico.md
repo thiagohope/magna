@@ -159,6 +159,28 @@ O site é **estático** (HTML/CSS/JS puro, sem framework de build) servido diret
 
 ---
 
+## 2C. Situações temporárias das obras (Outubro 2026)
+
+Três dimensões independentes de cada obra:
+
+| Dimensão | Onde vive | Exemplo |
+|---|---|---|
+| Disponibilidade (venda do Original) | `artworks.json` → `status` | Disponível / Indisponível |
+| Pertença pública | `artworks.json` → `publicCollection` | Coleção pública: Forte de Albarquel |
+| **Situação temporária** | **`situations.json`** | Em exposição no Forte até 30 nov · Reservada · Em restauro |
+
+- **Admin → Situações das Obras** (`admin/situations.html`): cria uma situação (tipo, local, início, fim opcional) e seleciona **várias obras de uma vez**. Lista "Em curso / Agendadas / Terminadas" com Editar, **Terminar agora** (fim = ontem) e Apagar.
+- **Nada é revertido:** cada situação é um período. As páginas mostram só as situações em que a data de hoje (do visitante) está entre início e fim. Acabado o prazo, a obra volta sozinha ao que mostrava antes. Podem agendar-se situações futuras.
+- **Em exposição:** etiqueta azul no cartão da galeria, linha "Situação atual" no lightbox, na página da obra e no certificado do original. **Quando termina, entra automaticamente na proveniência** do certificado (sem duplicar uma entrada "Exhibition" escrita à mão com o mesmo local e ano). Apagar uma exposição terminada também a retira da proveniência.
+- **Reservada:** o preço do Original continua visível; o botão de compra é substituído por **"Reservada — pedir informações"**, que abre o formulário de contacto já com o nome da obra (na página da obra, leva a `index.html?inquire=<slug>#contact`). O link do Stripe **não** é bloqueado — só deixa de aparecer no site. Prints e digital continuam à venda.
+- **Em restauro:** etiqueta e linha "Situação atual"; nada mais muda.
+- **Ficheiro:** `situations.json` (raiz do site, **público**, gitignored, backups em `backups/situations-*.json`). Só guarda tipo, local, datas e obras — nunca nomes de clientes.
+- **Código partilhado:** `situations-lib.js` (cálculo das situações ativas, textos PT/EN/ES), usado por `index.html`, `artwork.html`, `verify-original.html` e `admin/certificate.html`.
+- **Endpoint:** `POST /save-situations` (com `X-Magna-Secret`) — valida tipos, datas (fim ≥ início), obras existentes e local obrigatório nas exposições. Bloco Nginx `location /magna/api/save-situations` só no vhost brainboxmed.
+- **`exhibitions.json`** continua a ser o arquivo das exposições realizadas (com flyer e fotografias) — independente das situações.
+
+---
+
 ## 3. Como gerir coleções
 
 Coleções são etiquetas/categorias (ex: `setubal`, `alentejo`, `nature`) usadas para filtrar obras no site. Vivem em `collections.json`, como um dicionário `{ id: { pt, en } }`.

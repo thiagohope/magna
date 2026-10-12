@@ -6,6 +6,7 @@
     <title>Magna - Certificate of Authenticity</title>
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="../situations-lib.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
@@ -247,8 +248,18 @@
 
                 // 6. Timeline
                 const historyList = document.getElementById('historyList');
-                // Transferências nunca são públicas (vivem no registo privado)
-                const publicHistory = (art.history || []).filter(h => h && h.event !== 'Transfer');
+                // Transferências nunca são públicas (vivem no registo privado).
+                // Exposições já terminadas (situations.json) entram automaticamente,
+                // sem duplicar as escritas à mão (mesmo local e mesmo ano).
+                const ended = MagnaSituations.endedExhibitionsFor(await MagnaSituations.load('../'), slug);
+                const norm = v => String(v || '').toLowerCase().trim();
+                const manual = (art.history || []).filter(h => h && h.event !== 'Transfer');
+                const publicHistory = manual.slice();
+                ended.forEach(s => {
+                    const dup = manual.some(h => h.event === 'Exhibition' && norm(h.location) === norm(s.place) && String(h.date || '').slice(0, 4) === s.startDate.slice(0, 4));
+                    if (!dup) publicHistory.push({ date: s.startDate, event: 'Exhibition', location: s.place, details: `${s.startDate} → ${s.endDate}` });
+                });
+                publicHistory.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
                 const history = publicHistory.length > 0
                     ? publicHistory
                     : [{ date: art.year || "", event: "Creation", location: "Magna Studio", details: "Artwork completed." }];

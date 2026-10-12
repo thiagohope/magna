@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magna - Official Verification</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="situations-lib.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
@@ -85,6 +86,10 @@
                             <span class="block text-[8px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="labelTech">Technique</span>
                             <span id="artTechnique" class="font-medium">...</span>
                         </div>
+                        <div id="situationBlock" class="col-span-2 hidden">
+                            <span id="situationLabel" class="block text-[8px] text-gray-400 uppercase tracking-wide font-bold">Current Status</span>
+                            <span id="artSituation" class="font-medium text-blue-800"></span>
+                        </div>
                         <div id="collectionBlock" class="col-span-2 hidden">
                             <span class="block text-[8px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="labelCollection">Public Collection</span>
                             <span id="artCollection" class="font-medium"></span>
@@ -144,6 +149,7 @@
         const API_BASE  = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
         let currentArtData = null; 
         let reproCounts = null; // cópias emitidas por tipo (só totais, do registo de edições)
+        let situationsList = []; // situações temporárias (situations.json)
 
         // === 1. DICIONÁRIO ===
         const translations = {
@@ -234,6 +240,18 @@
             return saved || (browser === 'pt' || browser === 'es' ? browser : 'en');
         }
 
+        // Junta à proveniência as exposições terminadas, sem duplicar as que
+        // já tenham sido escritas à mão (mesmo local e mesmo ano).
+        function mergeEndedExhibitions(history, ended) {
+            const norm = v => String(v || '').toLowerCase().trim();
+            const out = history.slice();
+            ended.forEach(s => {
+                const dup = history.some(h => h.event === 'Exhibition' && norm(h.location) === norm(s.place) && String(h.date || '').slice(0, 4) === s.startDate.slice(0, 4));
+                if (!dup) out.push({ date: s.startDate, event: 'Exhibition', location: s.place, details: `${s.startDate} → ${s.endDate}` });
+            });
+            return out.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+        }
+
         async function loadReproCounts(slug) {
             try {
                 const res = await fetch(`${API_BASE}/edition-counts?art=${encodeURIComponent(slug)}`);
@@ -304,6 +322,7 @@
                 }
 
                 currentArtData = art;
+                situationsList = await MagnaSituations.load('');
                 renderData(art, lang, slug);
                 loadReproCounts(slug);
 
@@ -341,6 +360,12 @@
             document.getElementById('artCollection').textContent = art.publicCollection || '';
             document.getElementById('collectionBlock').classList.toggle('hidden', !art.publicCollection);
 
+            const sitSlug = slug || new URLSearchParams(window.location.search).get('id');
+            const sits = MagnaSituations.activeFor(situationsList, sitSlug);
+            document.getElementById('situationLabel').textContent = MagnaSituations.labels(lang).current;
+            document.getElementById('artSituation').textContent = sits.map(s => MagnaSituations.describe(s, lang)).join(' · ');
+            document.getElementById('situationBlock').classList.toggle('hidden', !sits.length);
+
             const finalSlug = slug || new URLSearchParams(window.location.search).get('id');
             document.getElementById('artworkLink').href = `artwork.html?id=${finalSlug}`;
 
@@ -348,8 +373,11 @@
             const historyList = document.getElementById('historyList');
             historyList.innerHTML = ''; 
             
-            // Transferências nunca são públicas (vivem no registo privado)
-            const publicHistory = (art.history || []).filter(h => h && h.event !== 'Transfer');
+            // Transferências nunca são públicas (vivem no registo privado).
+            // Exposições já terminadas (situations.json) entram automaticamente.
+            const publicHistory = mergeEndedExhibitions(
+                (art.history || []).filter(h => h && h.event !== 'Transfer'),
+                MagnaSituations.endedExhibitionsFor(situationsList, sitSlug));
             const history = publicHistory.length > 0
                 ? publicHistory
                 : [{ date: art.year, event: "Creation", location: "Magna Studio" }];

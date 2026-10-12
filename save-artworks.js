@@ -10,6 +10,8 @@
  *   POST /save-exhibitions         { ...exhibitions object... }         -> exhibitions.json
  *   POST /save-collections         { ...collections object... }         -> collections.json
  *   POST /save-price-tiers         [ ...price tiers array... ]          -> price-tiers.json
+ *   POST /save-situations          { situations: [...] }                -> situations.json (situações temporárias das obras:
+ *                                                                          em exposição / reservada / em restauro, com datas)
  *   GET  /private-registry         (header only)                        -> registo privado (motivo/detentor/arquivo)
  *   POST /save-private-registry    { <slug>: {reason, holderType, ...} } -> ../magna-private/registry.json
  *   GET  /edition                  ?code=MG-XXXX-XXXX  (PÚBLICO)        -> dados públicos de uma cópia certificada
@@ -61,6 +63,9 @@ const ARTWORKS_PATH    = path.join(__dirname, 'artworks.json');
 const EXHIBITIONS_PATH = path.join(__dirname, 'exhibitions.json');
 const COLLECTIONS_PATH = path.join(__dirname, 'collections.json');
 const PRICE_TIERS_PATH = path.join(__dirname, 'price-tiers.json');
+const SITUATIONS_PATH  = path.join(__dirname, 'situations.json');   // público — só tipo, local, datas e obras
+const SITUATION_TYPES  = ['exhibition', 'reserved', 'restoration'];
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const BACKUP_DIR   = path.join(__dirname, 'backups');
 const ASSETS_DIR   = path.join(__dirname, 'assets');
 const PAINTINGS_FULL_DIR      = path.join(ASSETS_DIR, 'paintings', 'full');
@@ -1306,6 +1311,58 @@ const server = http.createServer((req, res) => {
                 respond(req, res, 200, { success: true, edition: e, counts: editionCounts(list, e.slug) });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Erro edition-void:`, err.message);
+                respond(req, res, 400, { error: err.message });
+            }
+        });
+        return;
+    }
+
+    // ── SITUAÇÕES TEMPORÁRIAS (em exposição / reservada / em restauro) ───────
+    // Cada situação é um período [startDate, endDate] aplicado a várias obras.
+    // Nada é revertido no fim: as páginas mostram só as situações em que a
+    // data de hoje está dentro do período. Ficheiro público — não pôr aqui
+    // nomes de quem reservou nem notas internas.
+    if (req.method === 'POST' && req.url === '/save-situations') {
+        if (!checkAuth(req, res)) return;
+        readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
+            try {
+                const list = parsed && Array.isArray(parsed.situations) ? parsed.situations : null;
+                if (!list) throw new Error('Corpo deve ser { situations: [...] }');
+                const artworks = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8'));
+                const ids = new Set();
+                const clean = list.map((x, i) => {
+                    const where = `Situação ${i + 1}`;
+                    const id = typeof x.id === 'string' && /^sit_[a-z0-9]{6,20}$/.test(x.id) ? x.id : null;
+                    if (!id) throw new Error(`${where}: id inválido.`);
+                    if (ids.has(id)) throw new Error(`${where}: id repetido.`);
+                    ids.add(id);
+                    if (!SITUATION_TYPES.includes(x.type)) throw new Error(`${where}: tipo inválido "${x.type}".`);
+                    if (!ISO_DATE_PATTERN.test(x.startDate || '')) throw new Error(`${where}: data de início em falta ou inválida.`);
+                    const endDate = x.endDate || '';
+                    if (endDate && !ISO_DATE_PATTERN.test(endDate)) throw new Error(`${where}: data de fim inválida.`);
+                    if (endDate && endDate < x.startDate) throw new Error(`${where}: a data de fim é anterior à de início.`);
+                    const slugs = Array.isArray(x.artworks) ? [...new Set(x.artworks)] : [];
+                    if (!slugs.length) throw new Error(`${where}: sem obras selecionadas.`);
+                    const unknown = slugs.filter(sl => !artworks[sl]);
+                    if (unknown.length) throw new Error(`${where}: obra(s) inexistente(s): ${unknown.join(', ')}`);
+                    const place = typeof x.place === 'string' ? x.place.trim().slice(0, 200) : '';
+                    if (x.type === 'exhibition' && !place) throw new Error(`${where}: indique o local da exposição.`);
+                    return {
+                        id, type: x.type, place,
+                        startDate: x.startDate, endDate,
+                        artworks: slugs,
+                        updatedAt: typeof x.updatedAt === 'string' ? x.updatedAt.slice(0, 30) : new Date().toISOString()
+                    };
+                });
+
+                makeBackup(SITUATIONS_PATH, 'situations');
+                const tmpPath = SITUATIONS_PATH + '.tmp';
+                fs.writeFileSync(tmpPath, JSON.stringify({ situations: clean }, null, 2), 'utf8');
+                fs.renameSync(tmpPath, SITUATIONS_PATH);
+                console.log(`[${new Date().toISOString()}] situations.json saved — ${clean.length} situação(ões)`);
+                respond(req, res, 200, { success: true, situations: clean });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Save error (situations):`, err.message);
                 respond(req, res, 400, { error: err.message });
             }
         });

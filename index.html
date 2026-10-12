@@ -18,6 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script src="situations-lib.js"></script>
 
     <style>
       :root {
@@ -322,6 +323,14 @@
         text-transform: uppercase; letter-spacing: .03em;
         margin-top: .35rem;
       }
+      /* Situação temporária (em exposição / em restauro) */
+      .art-card__tag {
+        display: inline-block; font-size: .6rem; font-weight: 600;
+        padding: .15rem .45rem; border-radius: 999px; margin: .35rem 0 0 .25rem;
+        text-transform: uppercase; letter-spacing: .03em;
+      }
+      .tag-exhibition  { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+      .tag-restoration { background: #f5f5f4; color: #57534e; border: 1px solid #e7e5e4; }
 
       /* ── HERO ── */
       .hero-photo {
@@ -625,6 +634,7 @@
               <span id="lbStatus" class="text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1"></span>
             </div>
             <p id="lbMeta" class="lightbox__meta"></p>
+            <p id="lbSituation" class="text-xs text-blue-800 mt-1 hidden"></p>
           </div>
           <p id="lbStory" class="lightbox__story"></p>
           <hr class="lightbox__divider">
@@ -792,6 +802,7 @@
 
       // ── STATE ──
       let allArtworks      = [];
+      let allSituations    = []; // situações temporárias (situations.json)
       let globalCollections = {};
       let currentLang      = 'en';
       let currentSlug      = null;
@@ -837,11 +848,15 @@
           if (!artRes.ok) throw new Error('Failed to load artworks.json');
           const data = await artRes.json();
           allArtworks = Object.entries(data).map(([slug, work]) => ({ ...work, slug }));
+          allSituations = await MagnaSituations.load();
           if (colRes.ok) {
             globalCollections = await colRes.json();
             buildFilterPills();
           }
           renderGallery();
+          // Link "pedir informações" vindo da página da obra (?inquire=<slug>)
+          const inquireSlug = new URLSearchParams(window.location.search).get('inquire');
+          if (inquireSlug) inquireArtwork(inquireSlug);
         } catch(err) {
           console.error(err);
           document.getElementById('galleryGrid').innerHTML =
@@ -881,8 +896,13 @@
           const isSold   = !isAvailable(art);
           const price    = isSold ? 0 : art.priceDisplay?.original;
           const printsFrom = art.priceDisplay?.printCollector || 0;
-          const statusClass = isSold ? 'sold' : 'available';
-          const statusText  = isSold ? t('soldLabel') : t('availableLabel');
+          const SL = MagnaSituations.labels(currentLang);
+          const sits = MagnaSituations.activeFor(allSituations, art.slug);
+          const isReserved = !isSold && sits.some(s => s.type === 'reserved');
+          const statusClass = isSold ? 'sold' : (isReserved ? 'reserved' : 'available');
+          const statusText  = isSold ? t('soldLabel') : (isReserved ? SL.reserved : t('availableLabel'));
+          const sitTags = sits.filter(s => s.type !== 'reserved')
+            .map(s => `<span class="art-card__tag tag-${s.type}">${SL[s.type]}</span>`).join('');
           const card = document.createElement('div');
           card.className = 'art-card';
           card.style.animationDelay = `${i * 55}ms`;
@@ -900,7 +920,7 @@
                 <div class="art-card__price">€${price.toLocaleString('de-DE')}</div>
                 <div class="art-card__prints">Prints from €${printsFrom.toLocaleString('de-DE')}</div>
               ` : (printsFrom ? `<div class="art-card__prints">Prints from €${printsFrom.toLocaleString('de-DE')}</div>` : '')}
-              <span class="art-card__status status-${statusClass}">${statusText}</span>
+              <span class="art-card__status status-${statusClass}">${statusText}</span>${sitTags}
             </div>`;
           return card;
         });
@@ -1052,9 +1072,15 @@
         isSold ? soldBadge.classList.remove('hidden') : soldBadge.classList.add('hidden');
         soldBadge.textContent = t('soldLabel');
 
+        const SL = MagnaSituations.labels(currentLang);
+        const sits = MagnaSituations.activeFor(allSituations, slug);
+        const isReserved = !isSold && sits.some(s => s.type === 'reserved');
         const statusEl = document.getElementById('lbStatus');
-        statusEl.textContent = isSold ? t('soldLabel') : t('availableLabel');
-        statusEl.className   = `text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1 status-${isSold ? 'sold' : 'available'}`;
+        statusEl.textContent = isSold ? t('soldLabel') : (isReserved ? SL.reserved : t('availableLabel'));
+        statusEl.className   = `text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 mt-1 status-${isSold ? 'sold' : (isReserved ? 'reserved' : 'available')}`;
+        const sitEl = document.getElementById('lbSituation');
+        sitEl.textContent = sits.map(s => MagnaSituations.describe(s, currentLang)).join(' · ');
+        sitEl.classList.toggle('hidden', !sits.length);
 
         const pricingEl = document.getElementById('lbPricing');
         pricingEl.innerHTML = '';
@@ -1077,7 +1103,10 @@
         // client_reference_id = <slug>__<tipo>: permite ao servidor confirmar a
         // compra (download digital) e numerar a cópia (prints) após o pagamento.
         const ref = (url, suffix) => url + (url.includes('?') ? '&' : '?') + 'client_reference_id=' + encodeURIComponent(`${slug}__${suffix}`);
-        if (!isSold && art.priceOriginal?.live)
+        // Reservada: o preço continua visível, mas em vez de comprar pede-se informação
+        if (!isSold && isReserved && pd.original)
+          btnsEl.innerHTML += `<button type="button" onclick="inquireArtwork('${slug}')" class="btn-acquire w-full">${SL.inquire} — €${(pd.original||0).toLocaleString('de-DE')}</button>`;
+        else if (!isSold && art.priceOriginal?.live)
           btnsEl.innerHTML += `<a href="${art.priceOriginal.live}" target="_blank" rel="noopener" class="btn-acquire">${t('acquireBtn')} — €${(pd.original||0).toLocaleString('de-DE')}</a>`;
         if (art.pricePrintGallery?.live)
           btnsEl.innerHTML += `<a href="${ref(art.pricePrintGallery.live, 'gallery')}" target="_blank" rel="noopener" class="btn-secondary">${t('buyGalleryBtn')} — €${(pd.printGallery||0).toLocaleString('de-DE')}</a>`;
@@ -1220,6 +1249,19 @@
       })();
 
       // ── EMAIL MODAL ──
+      // Abre o formulário de contacto já com a obra indicada (obras reservadas)
+      function inquireArtwork(slug) {
+        const art = allArtworks.find(a => a.slug === slug);
+        if (document.getElementById('lightbox').classList.contains('open')) closeLightbox();
+        openEmailModal();
+        const msg = document.querySelector('#emailForm textarea[name="message"]');
+        if (art && msg && !msg.value) {
+          msg.value = currentLang === 'pt' ? `Olá, tenho interesse na obra «${art.title}» (reservada). Gostaria de saber mais.`
+                    : currentLang === 'es' ? `Hola, me interesa la obra «${art.title}» (reservada). Me gustaría saber más.`
+                    : `Hello, I am interested in the artwork "${art.title}" (reserved). I would like to know more.`;
+        }
+      }
+
       function openEmailModal() {
         const el = document.getElementById('emailOverlay');
         el.classList.add('open');

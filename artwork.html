@@ -6,6 +6,7 @@
     <title>Magna — Artwork</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="situations-lib.js"></script>
     <link rel="canonical" href="https://magnaleite.com/artwork.html">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 
@@ -173,6 +174,10 @@
                     <div class="flex justify-between">
                         <span class="text-gray-500" data-i18n="locLabel">Current Location:</span>
                         <span id="artLocation" class="font-medium text-gray-800">...</span>
+                    </div>
+                    <div id="situationRow" class="flex justify-between gap-2 hidden">
+                        <span id="situationLabel" class="text-gray-500 flex-shrink-0">Current status:</span>
+                        <span id="artSituation" class="font-medium text-blue-800 text-right"></span>
                     </div>
                     <div id="collectionRow" class="flex justify-between gap-2 hidden">
                         <span class="text-gray-500 flex-shrink-0" data-i18n="collectionLabel">Public Collection:</span>
@@ -386,6 +391,7 @@
             applyTranslations();
 
             try {
+                const situationsPromise = MagnaSituations.load();
                 const res = await fetch(JSON_PATH);
                 if (!res.ok) throw new Error('Failed to fetch artworks.json');
                 const artworksDB = await res.json();
@@ -473,6 +479,17 @@
                     badge.textContent  = T.statusUnavailable;
                     badge.className    = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-gray-200 text-gray-700 border border-gray-300';
                 }
+                // Situação temporária (em exposição / reservada / em restauro), só enquanto dura
+                const SL = MagnaSituations.labels(currentLang);
+                const sits = MagnaSituations.activeFor(await situationsPromise, effectiveSlug);
+                const isReserved = isAvailable && sits.some(s => s.type === 'reserved');
+                document.getElementById('situationLabel').textContent = SL.current + ':';
+                document.getElementById('artSituation').textContent = sits.map(s => MagnaSituations.describe(s, currentLang)).join(' · ');
+                document.getElementById('situationRow').classList.toggle('hidden', !sits.length);
+                if (isReserved) {
+                    badge.textContent = SL.reserved;
+                    badge.className   = 'px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide bg-amber-100 text-amber-800 border border-amber-200';
+                }
                 document.getElementById('artCollection').textContent = art.publicCollection || '';
                 document.getElementById('collectionRow').classList.toggle('hidden', !art.publicCollection);
 
@@ -485,7 +502,13 @@
 
                 // Payment links
                 const btnOriginal = document.getElementById('btnOriginal');
-                if (isAvailable && art.priceOriginal) {
+                if (isReserved && pd.original) {
+                    // Reservada: preço visível, mas o botão leva ao contacto em vez do checkout
+                    btnOriginal.href = `index.html?inquire=${encodeURIComponent(effectiveSlug)}#contact`;
+                    btnOriginal.querySelector('[data-i18n="btnOriginal"]').textContent = SL.inquire;
+                    btnOriginal.querySelector('[data-i18n="btnOriginal"]').removeAttribute('data-i18n');
+                    btnOriginal.classList.remove('hidden');
+                } else if (isAvailable && art.priceOriginal) {
                     btnOriginal.href = getPaymentLink(art.priceOriginal);
                     btnOriginal.classList.remove('hidden');
                 }

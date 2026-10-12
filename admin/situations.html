@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magna Admin - Situações das Obras</title>
+    <meta name="robots" content="noindex">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        body { background: #f3f4f6; color: #1a1a1a; font-family: 'Inter', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+        label.f { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #4b5563; margin-bottom: 4px; }
+        input[type=text], input[type=date] { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 14px; background: white; }
+        .type-btn { border: 1px solid #d1d5db; border-radius: 999px; padding: 6px 14px; font-size: 13px; background: white; }
+        .type-btn.on { background: #111; color: white; border-color: #111; }
+        .art-pick { border: 2px solid transparent; border-radius: 10px; padding: 4px; cursor: pointer; background: white; text-align: center; }
+        .art-pick.on { border-color: #111; }
+        .art-pick img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: #e5e7eb; }
+        .art-pick span { display: block; font-size: 11px; margin-top: 3px; line-height: 1.2; }
+    </style>
+    <script>
+    (function() {
+      const TRUST_KEY = 'magna_trust_token';
+      const TRUST_EXPIRY_KEY = 'magna_trust_expiry';
+      const token = localStorage.getItem(TRUST_KEY);
+      const expiry = parseInt(localStorage.getItem(TRUST_EXPIRY_KEY) || '0', 10);
+      const trusted = !!token && Date.now() < expiry;
+
+      if (!trusted) {
+        document.documentElement.innerHTML = `
+          <head><meta charset="UTF-8"><title>Acesso Restrito</title></head>
+          <body style="margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0f172a;font-family:sans-serif;color:white;text-align:center;padding:2rem;">
+            <div>
+              <h1 style="font-size:1.5rem;margin-bottom:0.5rem;">Acesso Restrito</h1>
+              <p style="color:#94a3b8;font-size:0.875rem;margin-bottom:1.5rem;">Esta página só pode ser acedida através do Admin Hub.</p>
+              <a href="admin-hub.html" style="display:inline-block;background:white;color:black;padding:0.75rem 1.5rem;border-radius:0.5rem;font-weight:bold;text-decoration:none;">← Ir para o Admin Hub</a>
+            </div>
+          </body>`;
+      }
+    })();
+  </script>
+</head>
+<body class="min-h-screen py-8 px-4">
+<div class="max-w-5xl mx-auto">
+
+    <a href="admin-hub.html" class="text-xs text-gray-500 hover:text-black">← Voltar ao Admin Hub</a>
+    <h1 class="serif text-3xl mt-2 mb-1">Situações das Obras</h1>
+    <p class="text-sm text-gray-500 mb-6">Situações temporárias, para várias obras de uma vez: <strong>em exposição</strong>, <strong>reservada</strong> ou <strong>em restauro</strong>. Cada uma só aparece no site entre a data de início e a de fim; depois a obra volta sozinha ao que era. Este ficheiro é público — não escreva aqui nomes de clientes.</p>
+
+    <div id="statusBar" class="hidden mb-4 p-3 rounded-lg text-sm font-medium"></div>
+
+    <div id="loginBox" class="hidden bg-white rounded-xl border p-6 mb-6 max-w-md">
+        <label class="f" for="secretInput">MAGNA_API_SECRET</label>
+        <input type="password" id="secretInput" autocomplete="off" class="mb-3" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;">
+        <button onclick="login()" class="bg-black text-white rounded-lg px-4 py-2 text-sm font-bold">Entrar</button>
+    </div>
+
+    <div id="app" class="hidden">
+        <div class="bg-white rounded-xl border p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 id="formTitle" class="font-bold">Nova situação</h2>
+                <button id="cancelEdit" onclick="resetForm()" class="hidden text-xs underline">Cancelar edição</button>
+            </div>
+
+            <label class="f">Tipo</label>
+            <div class="flex gap-2 mb-4 flex-wrap" id="typeBtns">
+                <button type="button" class="type-btn on" data-type="exhibition" onclick="setType('exhibition')">Em exposição</button>
+                <button type="button" class="type-btn" data-type="reserved" onclick="setType('reserved')">Reservada</button>
+                <button type="button" class="type-btn" data-type="restoration" onclick="setType('restoration')">Em restauro</button>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-4 mb-4">
+                <div class="md:col-span-1">
+                    <label class="f" for="place" id="placeLabel">Local da exposição</label>
+                    <input type="text" id="place" placeholder="Ex.: Forte de Albarquel, Setúbal">
+                </div>
+                <div>
+                    <label class="f" for="startDate">Início</label>
+                    <input type="date" id="startDate">
+                </div>
+                <div>
+                    <label class="f" for="endDate">Fim <span class="normal-case font-normal text-gray-400">(vazio = até nova indicação)</span></label>
+                    <input type="date" id="endDate">
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mb-2">
+                <label class="f !mb-0">Obras <span id="pickCount" class="normal-case font-normal text-gray-500"></span></label>
+                <div class="text-xs flex gap-3">
+                    <button type="button" class="underline" onclick="pickAll(true)">Selecionar todas</button>
+                    <button type="button" class="underline" onclick="pickAll(false)">Limpar</button>
+                </div>
+            </div>
+            <div id="artGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 mb-5"></div>
+
+            <button id="saveBtn" onclick="saveForm()" class="bg-black text-white rounded-lg px-5 py-2.5 text-sm font-bold">Guardar situação</button>
+        </div>
+
+        <div class="bg-white rounded-xl border p-6">
+            <h2 class="font-bold mb-3">Situações</h2>
+            <div id="lists"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const IS_DEV = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    const API    = IS_DEV ? 'http://127.0.0.1:3100' : 'https://brainboxmed.com/magna/api';
+    const SECRET_STORAGE_KEY = 'magna_api_secret';
+    const TYPE_LABEL = { exhibition: 'Em exposição', reserved: 'Reservada', restoration: 'Em restauro' };
+    const TYPE_COLOR = { exhibition: 'bg-blue-50 text-blue-800', reserved: 'bg-amber-50 text-amber-800', restoration: 'bg-stone-100 text-stone-700' };
+
+    let SECRET = localStorage.getItem(SECRET_STORAGE_KEY) || sessionStorage.getItem(SECRET_STORAGE_KEY) || '';
+    let artworks = {};
+    let situations = [];
+    let currentType = 'exhibition';
+    let picked = new Set();
+    let editingId = null;
+
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+    const pad = n => String(n).padStart(2, '0');
+    const isoDay = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const today = () => isoDay(new Date());
+    const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return isoDay(d); };
+    const fmt = iso => iso ? new Date(iso + 'T12:00:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+    function showStatus(msg, type) {
+        const bar = document.getElementById('statusBar');
+        bar.textContent = msg;
+        bar.className = 'mb-4 p-3 rounded-lg text-sm font-medium ' +
+            (type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200');
+        if (type !== 'error') setTimeout(() => bar.classList.add('hidden'), 5000);
+    }
+
+    async function api(path, opts = {}) {
+        const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': SECRET } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw Object.assign(new Error(data.error || `HTTP ${res.status}`), { status: res.status });
+        return data;
+    }
+
+    async function login() {
+        const v = document.getElementById('secretInput').value.trim();
+        if (!v) return;
+        SECRET = v;
+        try { await api('/verify-secret'); sessionStorage.setItem(SECRET_STORAGE_KEY, v); start(); }
+        catch (e) { showStatus('Secret inválido, ou servidor inacessível.', 'error'); }
+    }
+
+    async function start() {
+        document.getElementById('loginBox').classList.add('hidden');
+        document.getElementById('app').classList.remove('hidden');
+        try {
+            artworks = await fetch('../artworks.json?v=' + Date.now()).then(r => r.json());
+            const sres = await fetch('../situations.json?v=' + Date.now());
+            situations = sres.ok ? ((await sres.json()).situations || []) : [];
+        } catch (e) {
+            showStatus('Erro ao carregar dados: ' + e.message, 'error');
+        }
+        resetForm();
+        renderLists();
+    }
+
+    function setType(t) {
+        currentType = t;
+        document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('on', b.dataset.type === t));
+        document.getElementById('placeLabel').textContent =
+            t === 'exhibition' ? 'Local da exposição' : (t === 'restoration' ? 'Local (opcional)' : 'Nota pública (opcional)');
+        document.getElementById('place').placeholder =
+            t === 'exhibition' ? 'Ex.: Forte de Albarquel, Setúbal' : (t === 'restoration' ? 'Ex.: Atelier de restauro' : '');
+    }
+
+    function renderGrid() {
+        const grid = document.getElementById('artGrid');
+        grid.innerHTML = Object.entries(artworks)
+            .sort((a, b) => (a[1].title || a[0]).localeCompare(b[1].title || b[0]))
+            .map(([slug, a]) => `
+                <div class="art-pick ${picked.has(slug) ? 'on' : ''}" onclick="togglePick('${esc(slug)}')" title="${esc(a.title || slug)}">
+                    <img loading="lazy" src="../${esc(a.thumbnail || (Array.isArray(a.image) ? a.image[0] : a.image) || '')}" alt="">
+                    <span>${esc(a.title || slug)}</span>
+                </div>`).join('');
+        document.getElementById('pickCount').textContent = `(${picked.size} selecionada${picked.size === 1 ? '' : 's'})`;
+    }
+    function togglePick(slug) { picked.has(slug) ? picked.delete(slug) : picked.add(slug); renderGrid(); }
+    function pickAll(on) { picked = on ? new Set(Object.keys(artworks)) : new Set(); renderGrid(); }
+
+    function resetForm() {
+        editingId = null;
+        picked = new Set();
+        setType('exhibition');
+        document.getElementById('place').value = '';
+        document.getElementById('startDate').value = today();
+        document.getElementById('endDate').value = '';
+        document.getElementById('formTitle').textContent = 'Nova situação';
+        document.getElementById('cancelEdit').classList.add('hidden');
+        renderGrid();
+    }
+
+    function editSituation(id) {
+        const s = situations.find(x => x.id === id);
+        if (!s) return;
+        editingId = id;
+        setType(s.type);
+        document.getElementById('place').value = s.place || '';
+        document.getElementById('startDate').value = s.startDate;
+        document.getElementById('endDate').value = s.endDate || '';
+        picked = new Set(s.artworks);
+        document.getElementById('formTitle').textContent = 'Editar situação';
+        document.getElementById('cancelEdit').classList.remove('hidden');
+        renderGrid();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function persist(next, okMsg) {
+        try {
+            const data = await api('/save-situations', { method: 'POST', body: JSON.stringify({ situations: next }) });
+            situations = data.situations;
+            showStatus(okMsg, 'success');
+            renderLists();
+            return true;
+        } catch (e) {
+            showStatus('❌ ' + e.message, 'error');
+            return false;
+        }
+    }
+
+    async function saveForm() {
+        const entry = {
+            id: editingId || ('sit_' + Math.random().toString(36).slice(2, 12)),
+            type: currentType,
+            place: document.getElementById('place').value.trim(),
+            startDate: document.getElementById('startDate').value,
+            endDate: document.getElementById('endDate').value,
+            artworks: [...picked],
+            updatedAt: new Date().toISOString()
+        };
+        if (!entry.artworks.length) { showStatus('Selecione pelo menos uma obra.', 'error'); return; }
+        const next = editingId ? situations.map(s => s.id === editingId ? entry : s) : [...situations, entry];
+        if (await persist(next, `✅ Situação guardada (${entry.artworks.length} obra${entry.artworks.length === 1 ? '' : 's'}).`)) resetForm();
+    }
+
+    async function endNow(id) {
+        const s = situations.find(x => x.id === id);
+        if (!s) return;
+        if (s.startDate >= today()) {
+            if (!confirm('Esta situação começou hoje ou ainda não começou. Terminar agora equivale a apagá-la. Continuar?')) return;
+            return persist(situations.filter(x => x.id !== id), 'Situação removida.');
+        }
+        if (!confirm(`Terminar agora? A data de fim passa a ${fmt(yesterday())} e a situação deixa de aparecer no site.`)) return;
+        persist(situations.map(x => x.id === id ? { ...x, endDate: yesterday(), updatedAt: new Date().toISOString() } : x), 'Situação terminada.');
+    }
+
+    async function removeSituation(id) {
+        const s = situations.find(x => x.id === id);
+        const warn = s && s.type === 'exhibition' && s.endDate && s.endDate < today()
+            ? '\n\nAtenção: esta exposição já terminou e aparece na proveniência dos certificados. Ao apagá-la, sai de lá também.' : '';
+        if (!confirm('Apagar esta situação?' + warn)) return;
+        persist(situations.filter(x => x.id !== id), 'Situação apagada.');
+    }
+
+    function renderLists() {
+        const t = today();
+        const groups = [
+            ['Em curso',   situations.filter(s => s.startDate <= t && (!s.endDate || t <= s.endDate))],
+            ['Agendadas',  situations.filter(s => s.startDate > t)],
+            ['Terminadas', situations.filter(s => s.endDate && s.endDate < t)]
+        ];
+        document.getElementById('lists').innerHTML = groups.map(([title, items]) => `
+            <h3 class="text-xs font-bold uppercase text-gray-400 mt-4 mb-2">${title} (${items.length})</h3>
+            ${items.length ? items.sort((a, b) => b.startDate.localeCompare(a.startDate)).map(s => `
+                <div class="border rounded-lg p-3 mb-2 flex flex-wrap items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <span class="text-[11px] font-bold uppercase px-2 py-0.5 rounded ${TYPE_COLOR[s.type]}">${TYPE_LABEL[s.type]}</span>
+                        <span class="text-sm font-medium ml-1">${esc(s.place || '')}</span>
+                        <div class="text-xs text-gray-500 mt-1">${fmt(s.startDate)} → ${s.endDate ? fmt(s.endDate) : 'até nova indicação'} · ${s.artworks.length} obra${s.artworks.length === 1 ? '' : 's'}:
+                            ${s.artworks.map(sl => esc((artworks[sl] || {}).title || sl)).join(', ')}</div>
+                    </div>
+                    <div class="text-xs whitespace-nowrap flex gap-3">
+                        <button class="underline" onclick="editSituation('${s.id}')">Editar</button>
+                        ${title === 'Em curso' ? `<button class="underline" onclick="endNow('${s.id}')">Terminar agora</button>` : ''}
+                        <button class="underline text-red-600" onclick="removeSituation('${s.id}')">Apagar</button>
+                    </div>
+                </div>`).join('') : '<p class="text-sm text-gray-400 italic">Nenhuma.</p>'}
+        `).join('');
+    }
+
+    (async function boot() {
+        if (!SECRET) { document.getElementById('loginBox').classList.remove('hidden'); return; }
+        try { await api('/verify-secret'); start(); }
+        catch (e) { document.getElementById('loginBox').classList.remove('hidden'); }
+    })();
+</script>
+</body>
+</html>

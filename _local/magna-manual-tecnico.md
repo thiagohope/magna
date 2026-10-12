@@ -148,7 +148,12 @@ O site é **estático** (HTML/CSS/JS puro, sem framework de build) servido diret
 - **Download digital:** edição aberta, não numerada, sem certificado — licença de uso pessoal e ficheiro sempre com marca de água.
 - **Emitir uma cópia (hoje, manual):** Admin Hub → **Cópias Certificadas** (`admin/admin-generator.html`) → obra + edição (+ comprador/email/notas/sessão Stripe, privados) → **Emitir cópia** → **Certificado para imprimir** (`admin/print-certificate.html?code=…`, A4, QR para `verify.html?code=…`). Uma cópia anulada abre com carimbo "VOID · ANULADO" e não deixa imprimir.
 - **Idempotência:** se a sessão Stripe for indicada, a mesma compra devolve sempre a mesma cópia.
-- **Fase 2 (por fazer):** atribuição automática do número depois do pagamento (redirect dos Payment Links dos prints com `{CHECKOUT_SESSION_ID}`, como no digital). Até lá, emitir manualmente após cada venda de print.
+- **Atribuição automática (fase 2):** os Payment Links dos prints redirecionam, depois do pagamento, para `digital-token.html?art=<slug>&type=gallery|collector&session_id={CHECKOUT_SESSION_ID}`. A página chama `GET /edition-claim`, que só numera uma Checkout Session **paga** desta obra/edição (confirmada pelo `client_reference_id` `<slug>__gallery|collector` que o site acrescenta aos links, ou pelo próprio Payment Link da sessão) e mostra ao comprador o número, o código e o link do certificado. A mesma sessão devolve sempre a(s) mesma(s) cópia(s); quantidade 2 = duas cópias. Comprador (nome/email do Stripe) fica só no registo privado.
+- **Configurar/verificar os redirects:** `node _local/apply-checkout-redirects.js` (diagnóstico) e `--apply` (corrige). Cobre digital + prints. Substitui o antigo `apply-download-redirects.js` da raiz.
+- **Esgotar:** ao emitir a 50.ª cópia (manual ou automática), o servidor desativa os Payment Links dessa edição (live + test) e a página da obra mostra "Esgotada". Se duas pessoas pagarem ao mesmo tempo a última cópia, a segunda fica sem número: o log do PM2 regista `ATENÇÃO: sessão paga … sem número disponível` e a página pede desculpa e promete reembolso — reembolsar no Stripe.
+- **Troca de preço:** o link novo herda do antigo o redirect pós-pagamento, morada de envio, telefone, opções de envio, textos e campos personalizados (antes só herdava o produto — perdia o redirect). Se a Stripe recusar alguma definição, cria-se com as essenciais e o resultado traz `settingsWarning`.
+- **Compras de teste** (`cs_test_…`) são recusadas pelo `/edition-claim` em produção, para nunca gastarem números reais. Num servidor de testes, ligar com `ALLOW_TEST_EDITION_CLAIMS=1` no `ecosystem.config.js`.
+- **Emissão manual** continua disponível para vendas fora do site (feiras, venda direta).
 - **Endpoints:** `GET /edition?code=` e `GET /edition-counts?art=` (públicos); `GET /edition-list`, `POST /edition-issue`, `POST /edition-void` (com `X-Magna-Secret`). Um único bloco Nginx `location /magna/api/edition` (prefixo) cobre os cinco — em **ambos** os vhosts, porque as páginas públicas chamam `/magna/api/…` relativo.
 - **"Controle de Edições Vendidas"** no Manager (`editionsSold`) ficou redundante — a fonte de verdade é o registo.
 
@@ -452,8 +457,9 @@ Usa isto antes de considerares qualquer alteração "pronta para produção", e 
 | `/update-stripe-price` | POST | Sim | ✅ Escrito (Set. 2026) | ❌ Por fazer |
 | `/private-registry` | GET | Sim | — | ✅ (Out. 2026) — só no vhost brainboxmed |
 | `/save-private-registry` | POST | Sim | — | ✅ (Out. 2026) — só no vhost brainboxmed |
-| `/edition`, `/edition-counts` | GET | Não (público) | — | ❌ Por fazer — bloco `location /magna/api/edition` nos DOIS vhosts |
+| `/edition`, `/edition-counts` | GET | Não (público) | — | ✅ bloco `location /magna/api/edition` nos DOIS vhosts |
 | `/edition-list`, `/edition-issue`, `/edition-void` | GET/POST | Sim | — | (coberto pelo mesmo bloco) |
+| `/edition-claim` | GET | Não (público; exige sessão Stripe paga) | — | (coberto pelo mesmo bloco) |
 
 **Handler `/check-image` no código:** corrigido em Setembro 2026 — antes não existia (sempre 404), agora valida `filename`/`type` e responde `{ exists }`.
 

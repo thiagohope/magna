@@ -48,6 +48,15 @@
             
             <p id="artEdition" class="text-yellow-500/80 text-sm font-medium mb-6 uppercase tracking-wider">...</p>
 
+            <!-- Número da cópia, atribuído pelo registo depois de confirmar o pagamento -->
+            <div id="editionBox" class="hidden bg-slate-900/60 border border-yellow-500/30 rounded-lg p-4 mb-6">
+                <p class="text-slate-400 text-xs uppercase tracking-widest mb-1" data-i18n="yourCopy">Your copy</p>
+                <p id="editionNumbers" class="text-white text-2xl font-bold font-mono"></p>
+                <p id="editionCodes" class="text-yellow-500/90 text-xs font-mono mt-1 break-all"></p>
+                <a id="editionLink" href="#" class="inline-block mt-3 text-xs text-slate-300 hover:text-white underline" data-i18n="viewCert">View certificate →</a>
+            </div>
+            <p id="editionNote" class="hidden text-amber-300 text-xs mb-6"></p>
+
             <div class="bg-slate-900/50 rounded-lg p-4 mb-6 border border-slate-700/50 text-left relative overflow-hidden">
                 
                 <div class="flex justify-between mb-2 relative z-10">
@@ -110,6 +119,9 @@
                 ownerLabel: "Owner",
                 dateLabel: "Date",
                 hashLabel: "Unique Hash (Token ID)",
+                yourCopy: "Your copy", viewCert: "View certificate →",
+                soldOutMsg: "We are sorry: this edition sold out at the same moment as your payment. We will contact you to arrange a full refund.",
+                claimLater: "Your copy number will be confirmed by email and printed on the certificate shipped with your print.",
                 tokenCertify: "Your print will receive its own number in the Magna Leite Certified Registry. The certificate signed by Magna Leite — with the copy number and a verification code — is shipped together with your print.",
                 shippingHeader: "Shipping & Contact Info",
                 phoneLabel: "Phone",
@@ -129,6 +141,9 @@
                 ownerLabel: "Proprietário",
                 dateLabel: "Data",
                 hashLabel: "Hash Único (ID do Token)",
+                yourCopy: "A sua cópia", viewCert: "Ver certificado →",
+                soldOutMsg: "Lamentamos: esta edição esgotou no mesmo momento do seu pagamento. Vamos contactá-lo para o reembolso integral.",
+                claimLater: "O número da sua cópia será confirmado por email e impresso no certificado que segue com a impressão.",
                 tokenCertify: "A sua impressão vai receber um número próprio no Registo Certificado Magna Leite. O certificado assinado por Magna Leite — com o número da cópia e um código de verificação — segue junto com a impressão.",
                 shippingHeader: "Dados de Envio e Contato",
                 phoneLabel: "Telefone / WhatsApp",
@@ -148,6 +163,9 @@
                 ownerLabel: "Propietario",
                 dateLabel: "Fecha",
                 hashLabel: "Hash Único (ID del Token)",
+                yourCopy: "Su copia", viewCert: "Ver certificado →",
+                soldOutMsg: "Lo sentimos: esta edición se agotó en el mismo momento de su pago. Le contactaremos para el reembolso completo.",
+                claimLater: "El número de su copia se confirmará por email y se imprimirá en el certificado que acompaña su impresión.",
                 tokenCertify: "Su impresión recibirá un número propio en el Registro Certificado Magna Leite. El certificado firmado por Magna Leite — con el número de la copia y un código de verificación — se envía junto con su impresión.",
                 shippingHeader: "Datos de Envío y Contacto",
                 phoneLabel: "Teléfono / WhatsApp",
@@ -254,6 +272,13 @@
                 // cópia vêm do registo de edições — ver verify.html?code=…)
 
                 // Sucesso
+                // 4. Número da cópia: o servidor confirma a sessão Stripe paga e
+                //    atribui o número (a mesma sessão devolve sempre o mesmo).
+                const sessionId = getQueryParam('session_id');
+                if (sessionId && (typeParam === 'gallery' || typeParam === 'collector')) {
+                    await claimEdition(artId, typeParam, sessionId);
+                }
+
                 setTimeout(() => markSuccess(), 1000);
 
             } catch (error) {
@@ -261,6 +286,30 @@
                 const statusText = document.getElementById('statusText');
                 statusText.textContent = "Error loading asset.";
                 statusText.classList.replace('text-yellow-400', 'text-red-500');
+            }
+        }
+
+        async function claimEdition(artId, type, sessionId) {
+            const IS_DEV = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+            const apiBase = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
+            const note = document.getElementById('editionNote');
+            try {
+                const res = await fetch(`${apiBase}/edition-claim?art=${encodeURIComponent(artId)}&type=${encodeURIComponent(type)}&session_id=${encodeURIComponent(sessionId)}`);
+                const data = await res.json().catch(() => ({}));
+                if (res.status === 409 || (data.editions && !data.editions.length)) {
+                    note.textContent = t.soldOutMsg; note.classList.remove('hidden'); return;
+                }
+                if (!res.ok || !data.editions) {
+                    note.textContent = t.claimLater; note.classList.remove('hidden'); return;
+                }
+                const eds = data.editions;
+                document.getElementById('editionNumbers').textContent = eds.map(e => `Nº ${String(e.number).padStart(2, '0')} / ${e.limit}`).join(' · ');
+                document.getElementById('editionCodes').textContent = eds.map(e => e.code).join(' · ');
+                document.getElementById('editionLink').href = `verify.html?code=${encodeURIComponent(eds[0].code)}`;
+                document.getElementById('editionBox').classList.remove('hidden');
+                if (data.soldOut) { note.textContent = t.soldOutMsg; note.classList.remove('hidden'); }
+            } catch (err) {
+                note.textContent = t.claimLater; note.classList.remove('hidden');
             }
         }
 

@@ -275,7 +275,7 @@
                 printCollectorSize: "Up to 50 × 70 cm · Proportionally scaled · Hahnemühle 308g",
                 certDisclaimer: "All items include a Magna Certificate of Authenticity.",
                 closeHint: "Click to close",
-                statusAvailable: "Available", statusUnavailable: "Unavailable", collectionLabel: "Public Collection:"
+                statusAvailable: "Available", statusUnavailable: "Unavailable", soldOut: "Sold out", collectionLabel: "Public Collection:"
             },
             pt: {
                 backBtn: "Voltar à Galeria", yearLabel: "Ano:", techLabel: "Técnica:", dimLabel: "Dimensões:",
@@ -288,7 +288,7 @@
                 printCollectorSize: "Até 50 × 70 cm · Proporção preservada · Hahnemühle 308g",
                 certDisclaimer: "Todos os itens acompanham Certificado de Autenticidade Magna.",
                 closeHint: "Clique para fechar",
-                statusAvailable: "Disponível", statusUnavailable: "Indisponível", collectionLabel: "Coleção Pública:"
+                statusAvailable: "Disponível", statusUnavailable: "Indisponível", soldOut: "Esgotada", collectionLabel: "Coleção Pública:"
             },
             es: {
                 backBtn: "Volver a la Galería", yearLabel: "Año:", techLabel: "Técnica:", dimLabel: "Dimensiones:",
@@ -301,7 +301,7 @@
                 printCollectorSize: "Hasta 50 × 70 cm · Proporción preservada · Hahnemühle 308g",
                 certDisclaimer: "Todos los artículos incluyen Certificado de Autenticidad Magna.",
                 closeHint: "Clic para cerrar",
-                statusAvailable: "Disponible", statusUnavailable: "No disponible", collectionLabel: "Colección Pública:"
+                statusAvailable: "Disponible", statusUnavailable: "No disponible", soldOut: "Agotada", collectionLabel: "Colección Pública:"
             }
         };
 
@@ -332,11 +332,14 @@
         // para o servidor confirmar, depois do pagamento, a que obra a compra
         // corresponde (ver /verify-download em save-artworks.js). A Stripe aceita
         // este parâmetro diretamente na URL do Payment Link.
-        function withDigitalReference(url, slug) {
+        // Os prints usam o mesmo mecanismo (<slug>__gallery / <slug>__collector)
+        // para o número da cópia ser atribuído automaticamente após o pagamento.
+        function withReference(url, slug, suffix) {
             if (!url || url === '#' || !slug) return url;
-            const ref = encodeURIComponent(`${slug}__digital`);
+            const ref = encodeURIComponent(`${slug}__${suffix}`);
             return url + (url.includes('?') ? '&' : '?') + `client_reference_id=${ref}`;
         }
+        function withDigitalReference(url, slug) { return withReference(url, slug, 'digital'); }
 
         function formatPrice(val) {
             if (!val) return '';
@@ -486,8 +489,27 @@
                     btnOriginal.href = getPaymentLink(art.priceOriginal);
                     btnOriginal.classList.remove('hidden');
                 }
-                document.getElementById('btnPrintGallery').href    = getPaymentLink(art.pricePrintGallery);
-                document.getElementById('btnPrintCollector').href  = getPaymentLink(art.pricePrintCollector);
+                document.getElementById('btnPrintGallery').href    = withReference(getPaymentLink(art.pricePrintGallery), effectiveSlug, 'gallery');
+                document.getElementById('btnPrintCollector').href  = withReference(getPaymentLink(art.pricePrintCollector), effectiveSlug, 'collector');
+
+                // Edição esgotada (50/50): o servidor já desativou o link no
+                // Stripe — aqui só se mostra "Esgotada" em vez do preço.
+                (async () => {
+                    try {
+                        const apiBase = IS_DEV ? 'http://127.0.0.1:3100' : '/magna/api';
+                        const r = await fetch(`${apiBase}/edition-counts?art=${encodeURIComponent(effectiveSlug)}`);
+                        if (!r.ok) return;
+                        const { counts } = await r.json();
+                        [['gallery', 'btnPrintGallery', 'priceGalleryTag'], ['collector', 'btnPrintCollector', 'priceCollectorTag']].forEach(([type, btnId, tagId]) => {
+                            const c = counts && counts[type];
+                            if (!c || c.lastNumber < c.limit) return;
+                            const btn = document.getElementById(btnId);
+                            btn.removeAttribute('href');
+                            btn.classList.add('opacity-50', 'pointer-events-none');
+                            document.getElementById(tagId).textContent = T.soldOut;
+                        });
+                    } catch (e) { /* registo indisponível: botões ficam como estão */ }
+                })();
                 document.getElementById('btnDigital').href         = withDigitalReference(getPaymentLink(art.priceDigital), effectiveSlug);
 
                 // QR Code — self-hosted, points to verify page

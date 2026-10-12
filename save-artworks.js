@@ -17,6 +17,8 @@
  *   GET  /edition-list             (header only)                        -> registo completo de cópias (com comprador)
  *   POST /edition-issue            { slug, type, buyerName?, ... }      -> emite a próxima cópia numerada (limite por tipo)
  *   POST /edition-void             { code, reason }                     -> anula uma cópia (o número não é reutilizado)
+ *   GET  /edition-claim            ?art=&type=&session_id= (PÚBLICO)    -> depois do pagamento de um print: confirma a sessão
+ *                                                                          Stripe e atribui o(s) número(s) — idempotente por sessão
  *
  *   NOTA — estado "unavailable": ao gravar /save-artworks o servidor retira do
  *   ficheiro público o preço e os links do Original das obras indisponíveis e
@@ -26,8 +28,8 @@
  *   GET  /check-payment-links      (header only, sem body)              -> diagnóstico: links mortos/inativos
  *   GET  /suggest-payment-link-fixes (header only, sem body)            -> sugere correções, NÃO escreve nada
  *   POST /apply-payment-link-fixes { fixes: [...] }                     -> aplica correções revistas, com verificação e backup
- *   GET  /check-download-redirects (header only)                        -> diagnóstico: redirects pós-pagamento do tier digital
- *   POST /apply-download-redirects { fixes: [...] }                     -> configura o after_completion.redirect dos Payment Links digitais
+ *   GET  /check-download-redirects (header only)                        -> diagnóstico: redirects pós-pagamento (digital + prints)
+ *   POST /apply-download-redirects { fixes: [...] }                     -> configura o after_completion.redirect desses Payment Links
  *   POST /upload-painting-image    { filename, type, imageData }        -> assets/paintings/<full|thumbnails>/<filename>
  *        (a full-res upload also produces a resized + watermarked assets/downloads/<slug>-print.jpg)
  *   GET  /verify-download        ?art=&session_id=                    -> confirma compra paga na Stripe, devolve token assinado (público)
@@ -372,6 +374,104 @@ const FIELD_BY_VARIATION = {
     digital:        'priceDigital'
 };
 
+// Variações vendidas com redirect pós-pagamento para o site, e o sufixo do
+// client_reference_id que o site acrescenta aos links (<slug>__<sufixo>).
+const VARIATION_BY_EDITION_TYPE = { gallery: 'printGallery', collector: 'printCollector' };
+const REFERENCE_SUFFIX = { digital: 'digital', printGallery: 'gallery', printCollector: 'collector' };
+const CHECKOUT_REDIRECT = {
+    digital:        slug => `https://magnaleite.com/download-page.html?art=${slug}&session_id={CHECKOUT_SESSION_ID}`,
+    printGallery:   slug => `https://magnaleite.com/digital-token.html?art=${slug}&type=gallery&session_id={CHECKOUT_SESSION_ID}`,
+    printCollector: slug => `https://magnaleite.com/digital-token.html?art=${slug}&type=collector&session_id={CHECKOUT_SESSION_ID}`
+};
+
+// Confirma que uma Checkout Session paga corresponde a esta obra/variação.
+// Aceita (1) o client_reference_id que o site acrescenta ao link, ou (2) o
+// Payment Link da sessão ser exatamente o desta variação em artworks.json —
+// assim compras feitas por links sem referência (ex.: lightbox antiga)
+// também são reconhecidas, e nunca as de outra obra.
+async function sessionMatchesVariation(stripeClient, session, slug, variation, artworks) {
+    if (session.client_reference_id && session.client_reference_id === `${slug}__${REFERENCE_SUFFIX[variation]}`) return true;
+    const art = artworks[slug];
+    const links = art && art[FIELD_BY_VARIATION[variation]];
+    const plId = session.payment_link && (typeof session.payment_link === 'string' ? session.payment_link : session.payment_link.id);
+    if (!links || !plId) return false;
+    try {
+        const pl = await stripeClient.paymentLinks.retrieve(plId);
+        return !!pl.url && (pl.url === links.live || pl.url === links.test);
+    } catch (err) {
+        return false;
+    }
+}
+
+// Definições de um Payment Link que têm de passar para o link novo quando o
+// preço muda (a Stripe obriga a criar um link novo). Antes só se copiava o
+// line item — o link novo perdia o redirect pós-pagamento, a recolha de
+// morada de envio/telefone, etc.
+function paymentLinkSettingsToCarry(l) {
+    const out = {};
+    const ac = l.after_completion;
+    if (ac && ac.type === 'redirect' && ac.redirect && ac.redirect.url) {
+        out.after_completion = { type: 'redirect', redirect: { url: ac.redirect.url } };
+    } else if (ac && ac.type === 'hosted_confirmation' && ac.hosted_confirmation && ac.hosted_confirmation.custom_message) {
+        out.after_completion = { type: 'hosted_confirmation', hosted_confirmation: { custom_message: ac.hosted_confirmation.custom_message } };
+    }
+    if (typeof l.allow_promotion_codes === 'boolean') out.allow_promotion_codes = l.allow_promotion_codes;
+    if (l.billing_address_collection) out.billing_address_collection = l.billing_address_collection;
+    if (l.phone_number_collection && l.phone_number_collection.enabled) out.phone_number_collection = { enabled: true };
+    if (l.shipping_address_collection && Array.isArray(l.shipping_address_collection.allowed_countries) && l.shipping_address_collection.allowed_countries.length) {
+        out.shipping_address_collection = { allowed_countries: [...l.shipping_address_collection.allowed_countries] };
+    }
+    if (Array.isArray(l.shipping_options) && l.shipping_options.length) {
+        out.shipping_options = l.shipping_options
+            .map(o => ({ shipping_rate: typeof o.shipping_rate === 'string' ? o.shipping_rate : (o.shipping_rate && o.shipping_rate.id) }))
+            .filter(o => o.shipping_rate);
+    }
+    if (l.custom_text) {
+        const ct = {};
+        ['after_submit', 'shipping_address', 'submit', 'terms_of_service_acceptance'].forEach(k => {
+            if (l.custom_text[k] && l.custom_text[k].message) ct[k] = { message: l.custom_text[k].message };
+        });
+        if (Object.keys(ct).length) out.custom_text = ct;
+    }
+    if (Array.isArray(l.custom_fields) && l.custom_fields.length) {
+        out.custom_fields = l.custom_fields.map(f => {
+            const o = { key: f.key, label: { type: f.label.type, custom: f.label.custom }, type: f.type, optional: !!f.optional };
+            if (f.type === 'dropdown' && f.dropdown) o.dropdown = { options: f.dropdown.options.map(x => ({ label: x.label, value: x.value })) };
+            return o;
+        });
+    }
+    if (l.customer_creation) out.customer_creation = l.customer_creation;
+    if (l.invoice_creation && l.invoice_creation.enabled) out.invoice_creation = { enabled: true };
+    if (l.automatic_tax && l.automatic_tax.enabled) out.automatic_tax = { enabled: true };
+    if (l.tax_id_collection && l.tax_id_collection.enabled) out.tax_id_collection = { enabled: true };
+    if (l.metadata && Object.keys(l.metadata).length) out.metadata = { ...l.metadata };
+    return out;
+}
+
+// Quando uma edição chega ao limite, desativa os Payment Links dessa
+// variação (live + test) — é isto que impede, de facto, a venda da cópia 51.
+// Melhor-esforço: corre em segundo plano e só regista no log.
+async function deactivateSoldOutLinks(slug, type) {
+    try {
+        const artworks = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8'));
+        const links = artworks[slug] && artworks[slug][FIELD_BY_VARIATION[VARIATION_BY_EDITION_TYPE[type]]];
+        if (!links) return;
+        for (const env of ['live', 'test']) {
+            const client = env === 'live' ? stripeLive : stripeTest;
+            if (!client || !links[env]) continue;
+            const link = (await listAllPaymentLinks(client)).find(l => l.url === links[env]);
+            if (!link || !link.active) continue;
+            await client.paymentLinks.update(link.id, {
+                active: false,
+                inactive_message: 'Esta edição está esgotada. / This edition is sold out.'
+            });
+            console.log(`[${new Date().toISOString()}] Edição esgotada — Payment Link ${env} desativado: ${slug} ${type} (${link.id})`);
+        }
+    } catch (err) {
+        console.error(`[${new Date().toISOString()}] AVISO: edição ${slug} ${type} esgotada mas falhou desativar o Payment Link — desative à mão no Stripe:`, err.message);
+    }
+}
+
 // Depois de um swap bem-sucedido no Stripe, grava o(s) novo(s) URL(s) de
 // Payment Link diretamente no artworks.json em disco — sem depender de um
 // 2º pedido HTTP separado vindo do browser (o Manager também faz esse 2º
@@ -598,9 +698,22 @@ async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
 
     const newPrice = await stripeClient.prices.create(newPriceParams);
 
-    const newLink = await stripeClient.paymentLinks.create({
-        line_items: [{ price: newPrice.id, quantity }]
-    });
+    // Copia do link antigo o redirect pós-pagamento, morada/telefone, etc.
+    // Se a Stripe recusar alguma definição copiada, tenta de novo só com as
+    // essenciais (redirect + morada + telefone) e devolve um aviso.
+    const oldLink = await stripeClient.paymentLinks.retrieve(oldPaymentLinkId);
+    const carried = paymentLinkSettingsToCarry(oldLink);
+    let settingsWarning = null;
+    let newLink;
+    try {
+        newLink = await stripeClient.paymentLinks.create({ line_items: [{ price: newPrice.id, quantity }], ...carried });
+    } catch (err) {
+        settingsWarning = `Algumas definições do link antigo não foram aceites (${err.message}) — criado só com redirect/morada/telefone. Confirme o link novo no Stripe.`;
+        const essential = {};
+        ['after_completion', 'shipping_address_collection', 'phone_number_collection'].forEach(k => { if (carried[k]) essential[k] = carried[k]; });
+        newLink = await stripeClient.paymentLinks.create({ line_items: [{ price: newPrice.id, quantity }], ...essential });
+        console.warn(`[${new Date().toISOString()}] ${settingsWarning}`);
+    }
 
     await stripeClient.paymentLinks.update(oldPaymentLinkId, {
         active: false,
@@ -630,7 +743,9 @@ async function swapPaymentLinkPrice(stripeClient, url, newAmountUnits) {
         oldPriceId,
         newPriceId: newPrice.id,
         oldPriceArchived,
-        archiveWarning
+        archiveWarning,
+        carriedSettings: Object.keys(carried),
+        settingsWarning
     };
 }
 
@@ -808,9 +923,9 @@ const server = http.createServer((req, res) => {
                     return;
                 }
 
-                const expectedRef = `${slug}__digital`;
-                if (session.client_reference_id !== expectedRef) {
-                    console.warn(`[${new Date().toISOString()}] verify-download — client_reference_id não corresponde (esperado ${expectedRef}, recebido ${session.client_reference_id})`);
+                const artworksForCheck = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8'));
+                if (!(await sessionMatchesVariation(stripeClient, session, slug, 'digital', artworksForCheck))) {
+                    console.warn(`[${new Date().toISOString()}] verify-download — sessão não corresponde a ${slug}/digital (client_reference_id=${session.client_reference_id}, payment_link=${session.payment_link})`);
                     respond(req, res, 403, { error: 'Esta compra não corresponde a esta obra.' });
                     return;
                 }
@@ -1001,6 +1116,100 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // Público: chamado pela página pós-pagamento de um print (digital-token.html).
+    // Só atribui número a uma Checkout Session PAGA desta obra/edição; a mesma
+    // sessão devolve sempre a(s) mesma(s) cópia(s). Quantidade > 1 = várias cópias.
+    if (req.method === 'GET' && editionUrl && editionUrl.pathname === '/edition-claim') {
+        (async () => {
+            try {
+                const slug = editionUrl.searchParams.get('art') || '';
+                const type = editionUrl.searchParams.get('type') || '';
+                const sessionId = editionUrl.searchParams.get('session_id') || '';
+                const cfg = EDITION_TYPES[type];
+                if (!REGISTRY_KEY_PATTERN.test(slug) || !cfg || !STRIPE_SESSION_PATTERN.test(sessionId)) {
+                    respond(req, res, 400, { error: 'invalid_params' });
+                    return;
+                }
+                // Compras em modo de teste nunca consomem números reais da
+                // edição, a não ser que isso seja ligado explicitamente
+                // (ALLOW_TEST_EDITION_CLAIMS=1 — só num servidor de testes).
+                if (sessionId.startsWith('cs_test_') && process.env.ALLOW_TEST_EDITION_CLAIMS !== '1') {
+                    respond(req, res, 403, { error: 'test_session' });
+                    return;
+                }
+                const stripeClient = sessionId.startsWith('cs_test_') ? stripeTest : stripeLive;
+                if (!stripeClient) { respond(req, res, 500, { error: 'stripe_not_configured' }); return; }
+
+                let session;
+                try {
+                    session = await stripeClient.checkout.sessions.retrieve(sessionId);
+                } catch (e) {
+                    respond(req, res, 403, { error: 'session_not_found' });
+                    return;
+                }
+                if (session.payment_status !== 'paid') { respond(req, res, 403, { error: 'not_paid' }); return; }
+
+                const artworks = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8'));
+                if (!artworks[slug]) { respond(req, res, 404, { error: 'not_found' }); return; }
+                if (!(await sessionMatchesVariation(stripeClient, session, slug, VARIATION_BY_EDITION_TYPE[type], artworks))) {
+                    console.warn(`[${new Date().toISOString()}] edition-claim — sessão ${sessionId} não corresponde a ${slug}/${type}`);
+                    respond(req, res, 403, { error: 'session_mismatch' });
+                    return;
+                }
+
+                let quantity = 1;
+                try {
+                    const items = await stripeClient.checkout.sessions.listLineItems(sessionId, { limit: 20 });
+                    quantity = Math.max(1, items.data.reduce((n, it) => n + (it.quantity || 0), 0));
+                } catch (e) { /* sem acesso aos itens: assume 1 */ }
+                quantity = Math.min(quantity, cfg.limit);
+
+                // Daqui para baixo é síncrono: ler, numerar e gravar sem interrupções.
+                const list = readEditions();
+                const mine = list.filter(e => e.stripeSessionId === sessionId && e.status !== 'void');
+                const issuedNow = [];
+                let soldOut = false;
+                const customer = session.customer_details || {};
+                for (let i = mine.length; i < quantity; i++) {
+                    const next = editionCounts(list, slug)[type].lastNumber + 1;
+                    if (next > cfg.limit) { soldOut = true; break; }
+                    const edition = {
+                        code: newEditionCode(list), slug, type, number: next, limit: cfg.limit,
+                        issuedAt: new Date().toISOString(), status: 'issued',
+                        buyerName: (customer.name || '').slice(0, 200),
+                        buyerEmail: (customer.email || '').slice(0, 200),
+                        notes: 'Emitida automaticamente após pagamento Stripe.',
+                        stripeSessionId: sessionId
+                    };
+                    list.push(edition);
+                    issuedNow.push(edition);
+                }
+                if (issuedNow.length) {
+                    writeEditions(list);
+                    issuedNow.forEach(e => console.log(`[${new Date().toISOString()}] Cópia emitida (automática) — ${e.code} ${slug} ${type} ${e.number}/${e.limit} sessão ${sessionId}`));
+                    if (editionCounts(list, slug)[type].lastNumber >= cfg.limit) deactivateSoldOutLinks(slug, type);
+                }
+                if (soldOut) {
+                    console.error(`[${new Date().toISOString()}] ATENÇÃO: sessão paga ${sessionId} (${slug} ${type}) sem número disponível — edição esgotada. Contactar o comprador / reembolsar.`);
+                }
+
+                const all = list.filter(e => e.stripeSessionId === sessionId && e.status !== 'void');
+                if (!all.length) { respond(req, res, 409, { error: 'sold_out' }); return; }
+                respond(req, res, 200, {
+                    success: true,
+                    soldOut,
+                    requested: quantity,
+                    editions: all.map(e => ({ code: e.code, type: e.type, number: e.number, limit: e.limit, issuedAt: (e.issuedAt || '').slice(0, 10) })),
+                    counts: editionCounts(list, slug)
+                });
+            } catch (err) {
+                console.error(`[${new Date().toISOString()}] Erro edition-claim:`, err.message);
+                respond(req, res, 500, { error: 'server_error' });
+            }
+        })();
+        return;
+    }
+
     // Admin: registo completo (inclui comprador).
     if (req.method === 'GET' && editionUrl && editionUrl.pathname === '/edition-list') {
         if (!checkAuth(req, res)) return;
@@ -1065,6 +1274,7 @@ const server = http.createServer((req, res) => {
                 list.push(edition);
                 writeEditions(list);
                 console.log(`[${new Date().toISOString()}] Cópia emitida — ${edition.code} ${slug} ${type} ${next}/${cfg.limit}`);
+                if (next >= cfg.limit) deactivateSoldOutLinks(slug, type);
                 respond(req, res, 200, { success: true, edition, counts: editionCounts(list, slug) });
             } catch (err) {
                 console.error(`[${new Date().toISOString()}] Erro edition-issue:`, err.message);
@@ -1640,18 +1850,20 @@ const server = http.createServer((req, res) => {
                     const linksByUrl = new Map(allLinks.map(l => [l.url, l]));
 
                     for (const [slug, art] of Object.entries(artworks)) {
-                        const digitalUrl = art.priceDigital && art.priceDigital[env];
-                        if (!digitalUrl) continue;
-                        const link = linksByUrl.get(digitalUrl);
+                      for (const variation of Object.keys(CHECKOUT_REDIRECT)) {
+                        const linkUrl = art[FIELD_BY_VARIATION[variation]] && art[FIELD_BY_VARIATION[variation]][env];
+                        if (!linkUrl) continue;
+                        const link = linksByUrl.get(linkUrl);
                         if (!link) {
-                            results.push({ slug, env, ok: false, reason: 'Payment Link não encontrado na Stripe (URL desatualizada em artworks.json?)' });
+                            results.push({ slug, variation, env, ok: false, reason: 'Payment Link não encontrado na Stripe (URL desatualizada em artworks.json?)' });
                             continue;
                         }
-                        const expectedUrl = `https://magnaleite.com/download-page.html?art=${slug}&session_id={CHECKOUT_SESSION_ID}`;
+                        const expectedUrl = CHECKOUT_REDIRECT[variation](slug);
                         const current = link.after_completion || {};
                         const currentUrl = current.type === 'redirect' ? (current.redirect && current.redirect.url) : null;
                         const ok = currentUrl === expectedUrl;
-                        results.push({ slug, env, ok, linkId: link.id, currentUrl: currentUrl || `(sem redirect — usa a confirmação padrão da Stripe)`, expectedUrl });
+                        results.push({ slug, variation, env, ok, active: link.active, linkId: link.id, currentUrl: currentUrl || `(sem redirect — usa a confirmação padrão da Stripe)`, expectedUrl });
+                      }
                     }
                 }
 

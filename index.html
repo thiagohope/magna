@@ -1074,14 +1074,17 @@
 
         const btnsEl = document.getElementById('lbButtons');
         btnsEl.innerHTML = '';
+        // client_reference_id = <slug>__<tipo>: permite ao servidor confirmar a
+        // compra (download digital) e numerar a cópia (prints) após o pagamento.
+        const ref = (url, suffix) => url + (url.includes('?') ? '&' : '?') + 'client_reference_id=' + encodeURIComponent(`${slug}__${suffix}`);
         if (!isSold && art.priceOriginal?.live)
           btnsEl.innerHTML += `<a href="${art.priceOriginal.live}" target="_blank" rel="noopener" class="btn-acquire">${t('acquireBtn')} — €${(pd.original||0).toLocaleString('de-DE')}</a>`;
         if (art.pricePrintGallery?.live)
-          btnsEl.innerHTML += `<a href="${art.pricePrintGallery.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyGalleryBtn')} — €${(pd.printGallery||0).toLocaleString('de-DE')}</a>`;
+          btnsEl.innerHTML += `<a href="${ref(art.pricePrintGallery.live, 'gallery')}" target="_blank" rel="noopener" class="btn-secondary">${t('buyGalleryBtn')} — €${(pd.printGallery||0).toLocaleString('de-DE')}</a>`;
         if (art.pricePrintCollector?.live)
-          btnsEl.innerHTML += `<a href="${art.pricePrintCollector.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyCollectorBtn')} — €${(pd.printCollector||0).toLocaleString('de-DE')}</a>`;
+          btnsEl.innerHTML += `<a href="${ref(art.pricePrintCollector.live, 'collector')}" target="_blank" rel="noopener" class="btn-secondary">${t('buyCollectorBtn')} — €${(pd.printCollector||0).toLocaleString('de-DE')}</a>`;
         if (art.priceDigital?.live)
-          btnsEl.innerHTML += `<a href="${art.priceDigital.live}" target="_blank" rel="noopener" class="btn-secondary">${t('buyDigitalBtn')} — €${(pd.digital||0).toLocaleString('de-DE')}</a>`;
+          btnsEl.innerHTML += `<a href="${ref(art.priceDigital.live, 'digital')}" target="_blank" rel="noopener" class="btn-secondary">${t('buyDigitalBtn')} — €${(pd.digital||0).toLocaleString('de-DE')}</a>`;
       }
 
       document.addEventListener('keydown', e => {

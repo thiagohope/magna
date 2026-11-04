@@ -866,7 +866,7 @@
           ]);
           if (!artRes.ok) throw new Error('Failed to load artworks.json');
           const data = await artRes.json();
-          allArtworks = Object.entries(data).map(([slug, work]) => ({ ...work, slug }));
+          allArtworks = Object.entries(data).map(([slug, work], i) => ({ ...work, slug, _order: i })); // _order: posição no JSON (mais abaixo = mais recente)
           allSituations = await MagnaSituations.load();
           if (colRes.ok) {
             globalCollections = await colRes.json();
@@ -897,7 +897,16 @@
           filter==='all' || (a.collections || (a.collection ? [a.collection] : [])).includes(filter)
         );
         items.sort((a,b) => {
-          if (sort==='recent')    return (b.year||0)-(a.year||0);
+          if (sort==='recent') {
+            // 1) ano desc; 2) createdAt desc; 3) com createdAt antes de sem (obras novas);
+            // 4) sem createdAt: mais abaixo no JSON = mais recente
+            const dy = (b.year||0)-(a.year||0);
+            if (dy) return dy;
+            const ca = a.createdAt || '', cb = b.createdAt || '';
+            if (ca && cb && ca !== cb) return ca > cb ? -1 : 1;
+            if (!ca !== !cb) return ca ? -1 : 1;
+            return (b._order||0)-(a._order||0);
+          }
           if (sort==='alpha')     return a.title.localeCompare(b.title);
           // Obras indisponíveis (sem preço do Original) ficam sempre no fim
           if ((sort==='priceLow' || sort==='priceHigh') && isAvailable(a) !== isAvailable(b)) return isAvailable(a) ? -1 : 1;

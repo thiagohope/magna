@@ -1006,6 +1006,25 @@ const server = http.createServer((req, res) => {
                     throw new Error('Root must be a JSON object');
                 }
 
+                // createdAt (data de publicação, AAAA-MM-DD): nunca se perde por omissão
+                // (o admin reconstrói cada obra só a partir do formulário). Se o pedido não
+                // trouxer uma data válida, mantém-se a do disco; slugs novos recebem a de hoje.
+                // Obras antigas sem data ficam sem data (ordenadas pela posição no JSON).
+                {
+                    let onDisk = null;
+                    try { onDisk = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8')); } catch (_) { onDisk = null; }
+                    const isDate = v => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+                    const today  = new Date().toISOString().slice(0, 10);
+                    Object.entries(parsed).forEach(([slug, art]) => {
+                        if (!art || typeof art !== 'object' || Array.isArray(art)) return;
+                        if (isDate(art.createdAt)) return;
+                        delete art.createdAt;
+                        const prev = onDisk && onDisk[slug];
+                        if (prev && isDate(prev.createdAt)) art.createdAt = prev.createdAt;
+                        else if (onDisk && !prev) art.createdAt = today; // só carimba se o disco foi lido com sucesso
+                    });
+                }
+
                 // Retira do ficheiro público tudo o que é privado. O registo
                 // privado é gravado PRIMEIRO: se falhar, o público não é
                 // tocado e nada do que foi retirado se perde.

@@ -184,6 +184,7 @@
 
                     <div class="grid grid-cols-3 gap-4 mb-4">
                         <div><label>Ano</label><input type="text" id="year"></div>
+                        <div><label>Data de publicação</label><input type="date" id="createdAt"></div>
                         <div><label>Dimensões</label><input type="text" id="dimensions" placeholder="150 x 100 cm (H x W)"></div>
                     </div>
 
@@ -1626,6 +1627,7 @@
                 document.getElementById('artForm').reset();
                 loadedPriceDisplay = null;
                 document.getElementById('slug').value = '';
+                document.getElementById('createdAt').value = new Date().toLocaleDateString('sv-SE'); // hoje, AAAA-MM-DD (hora local)
                 document.getElementById('slug').readOnly = false;
                 document.getElementById('historyList').innerHTML = '';
                 generateUUID();
@@ -1644,6 +1646,7 @@
             document.getElementById('slug').readOnly   = true;
             document.getElementById('title').value     = data.title || '';
             document.getElementById('year').value      = data.year || '';
+            document.getElementById('createdAt').value = (data.createdAt || '').slice(0, 10);
             document.getElementById('dimensions').value = data.dimensions || '';
             const _imgVal = Array.isArray(data.image) ? data.image[0] : (data.image || '');
             document.getElementById('image').value = _imgVal.replace('assets/paintings/full/', '');
@@ -1726,6 +1729,7 @@
             return {
                 title:      document.getElementById('title').value,
                 year:       document.getElementById('year').value,
+                createdAt:  document.getElementById('createdAt').value || undefined, // vazio = omitido; o servidor preserva o que já estiver em disco
                 technique:  { pt: document.getElementById('tech_pt').value, en: document.getElementById('tech_en').value, es: document.getElementById('tech_es').value },
                 dimensions: document.getElementById('dimensions').value,
                 image:      'assets/paintings/full/' + document.getElementById('image').value.replace(/^assets\/(paintings\/(full|thumbnails)\/)?/, ''),

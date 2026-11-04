@@ -6,7 +6,7 @@
     <title>Magna - Certificate of Authenticity</title>
     <meta name="robots" content="noindex, nofollow">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="../situations-lib.js?v=20261104"></script>
+    <script src="../situations-lib.js?v=20261104b"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
@@ -254,14 +254,10 @@
                 // Transferências nunca são públicas (vivem no registo privado).
                 // Exposições já terminadas (situations.json) entram automaticamente,
                 // sem duplicar as escritas à mão (mesmo local e mesmo ano).
-                const ended = MagnaSituations.endedExhibitionsFor(await MagnaSituations.load('../'), slug);
-                const norm = v => String(v || '').toLowerCase().trim();
+                // Exposições terminadas: exhibitions.json + situations.json, sem duplicados.
                 const manual = (art.history || []).filter(h => h && h.event !== 'Transfer');
-                const publicHistory = manual.slice();
-                ended.forEach(s => {
-                    const dup = manual.some(h => h.event === 'Exhibition' && norm(h.location) === norm(s.place) && String(h.date || '').slice(0, 4) === s.startDate.slice(0, 4));
-                    if (!dup) publicHistory.push({ date: s.startDate, event: 'Exhibition', location: s.place, details: `${s.startDate} → ${s.endDate}` });
-                });
+                const [sitList, exhObj] = await Promise.all([MagnaSituations.load('../'), MagnaSituations.loadExhibitions('../')]);
+                const publicHistory = manual.concat(MagnaSituations.provenanceExhibitions(sitList, exhObj, slug, manual));
                 const coll = MagnaSituations.collectionEntry ? MagnaSituations.collectionEntry(art) : null; // tolera versão antiga do lib em cache
                 if (coll) publicHistory.push(coll);
                 publicHistory.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));

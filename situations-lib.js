@@ -90,5 +90,44 @@
         return null;
     }
 
-    global.MagnaSituations = { load, today, isActive, activeFor, hasActive, endedExhibitionsFor, labels, describe, formatDate, collectionEntry };
+    // exhibitions.json (páginas de exposição do site) — também alimenta a proveniência.
+    async function loadExhibitions(base) {
+        try {
+            const r = await fetch((base || '') + 'exhibitions.json?v=' + Date.now());
+            if (!r.ok) return {};
+            const j = await r.json();
+            return (j && typeof j === 'object' && !Array.isArray(j)) ? j : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    // Todas as exposições JÁ TERMINADAS de uma obra, vindas de exhibitions.json e de
+    // situations.json, sem duplicar entre si nem com as escritas à mão no histórico.
+    // Duplicado = mesma data de início, ou mesmo ano e mesmo local (ignorando acentos,
+    // maiúsculas e pontuação: "Setúbal" = "Setubal").
+    function provenanceExhibitions(situations, exhibitions, slug, manual, t) {
+        t = t || today();
+        const key   = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+        const same  = (a, b) => (!!a.date && a.date === b.date) ||
+                                (String(a.date || '').slice(0, 4) === String(b.date || '').slice(0, 4) && key(a.location) === key(b.location));
+        const range = (s, e) => (e && e !== s) ? `${s} → ${e}` : s;
+        const seen  = (manual || []).filter(h => h && h.event === 'Exhibition');
+        const out   = [];
+        const add   = e => { if (![...seen, ...out].some(h => same(h, e))) out.push(e); };
+        const low   = String(slug || '').trim().toLowerCase();
+
+        Object.values(exhibitions || {}).forEach(x => {
+            if (!x || !x.startDate || !(x.artworks || []).some(a => String(a).trim().toLowerCase() === low)) return;
+            const end = x.endDate || x.startDate;
+            if (end >= t) return; // ainda a decorrer ou futura
+            add({ date: x.startDate, event: 'Exhibition', location: x.location || x.title || '',
+                  details: [x.title, range(x.startDate, end)].filter(Boolean).join(' · ') });
+        });
+        endedExhibitionsFor(situations, slug, t).forEach(s =>
+            add({ date: s.startDate, event: 'Exhibition', location: s.place || '', details: range(s.startDate, s.endDate) }));
+        return out;
+    }
+
+    global.MagnaSituations = { load, today, isActive, activeFor, hasActive, endedExhibitionsFor, labels, describe, formatDate, collectionEntry, loadExhibitions, provenanceExhibitions };
 })(window);

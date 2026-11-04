@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Magna - Official Verification</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="situations-lib.js?v=20261104"></script>
+    <script src="situations-lib.js?v=20261104b"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
@@ -150,6 +150,7 @@
         let currentArtData = null; 
         let reproCounts = null; // cópias emitidas por tipo (só totais, do registo de edições)
         let situationsList = []; // situações temporárias (situations.json)
+        let exhibitionsObj = {}; // exposições do site (exhibitions.json)
 
         // === 1. DICIONÁRIO ===
         const translations = {
@@ -322,7 +323,7 @@
                 }
 
                 currentArtData = art;
-                situationsList = await MagnaSituations.load('');
+                [situationsList, exhibitionsObj] = await Promise.all([MagnaSituations.load(''), MagnaSituations.loadExhibitions('')]);
                 renderData(art, lang, slug);
                 loadReproCounts(slug);
 
@@ -376,9 +377,12 @@
             // Transferências nunca são públicas (vivem no registo privado).
             // Exposições já terminadas (situations.json) entram automaticamente.
             const coll = MagnaSituations.collectionEntry ? MagnaSituations.collectionEntry(art) : null; // tolera versão antiga do lib em cache
-            const publicHistory = mergeEndedExhibitions(
-                (art.history || []).filter(h => h && h.event !== 'Transfer').concat(coll ? [coll] : []),
-                MagnaSituations.endedExhibitionsFor(situationsList, sitSlug));
+            // Exposições terminadas: exhibitions.json + situations.json, sem duplicados.
+            const manual = (art.history || []).filter(h => h && h.event !== 'Transfer');
+            const publicHistory = manual
+                .concat(MagnaSituations.provenanceExhibitions(situationsList, exhibitionsObj, sitSlug, manual))
+                .concat(coll ? [coll] : [])
+                .sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
             const history = publicHistory.length > 0
                 ? publicHistory
                 : [{ date: art.year, event: "Creation", location: "Magna Studio" }];

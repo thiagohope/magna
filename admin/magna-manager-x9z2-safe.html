@@ -267,7 +267,7 @@
                             <label class="text-blue-800">Registry ID (Hash único)</label>
                             <div class="flex gap-2 mt-1">
                                 <input type="text" id="originalHash" class="font-mono text-xs" readonly>
-                                <button type="button" onclick="generateUUID()" class="p-2 bg-white rounded border text-xs flex-shrink-0">Gerar</button>
+                                <button type="button" onclick="regenerateUUID()" class="p-2 bg-white rounded border text-xs flex-shrink-0">Gerar</button>
                             </div>
                         </div>
                         <div>
@@ -276,8 +276,20 @@
                                 <option value="available">Disponível</option>
                                 <option value="unavailable">Indisponível</option>
                             </select>
-                            <label>Coleção pública <span class="normal-case font-normal text-gray-400">(opcional — aparece no site e no certificado)</span></label>
-                            <input type="text" id="publicCollection" placeholder="Ex: Forte de Albarquel" class="mb-2">
+                            <label>Situação atual <span class="normal-case font-normal text-gray-400">(só obras indisponíveis — aparece na proveniência, em inglês)</span></label>
+                            <select id="collectionType" class="mb-2" onchange="onCollectionTypeChange()">
+                                <option value="">— (nenhuma)</option>
+                                <option value="public">Coleção pública — mostra o nome</option>
+                                <option value="private">Coleção privada — mostra só o país</option>
+                            </select>
+                            <div class="grid grid-cols-2 gap-2 mb-2">
+                                <div><label>Desde</label><input type="date" id="collectionSince"></div>
+                                <div id="collectionCountryBox"><label>País</label><input type="text" id="collectionCountry" placeholder="Portugal"></div>
+                            </div>
+                            <div id="publicCollectionBox">
+                                <label>Nome da coleção pública</label>
+                                <input type="text" id="publicCollection" placeholder="Ex: Forte de Albarquel" class="mb-2">
+                            </div>
                             <label>Localização (PT)</label>
                             <input type="text" id="loc_pt" placeholder="Ex: Lisboa, Portugal">
                         </div>
@@ -541,6 +553,22 @@
             return o;
         }
 
+        // Situação atual: coleção pública mostra o nome; privada só o país.
+        function onCollectionTypeChange() {
+            const t = document.getElementById('collectionType').value;
+            document.getElementById('publicCollectionBox').classList.toggle('hidden', t !== 'public');
+            document.getElementById('collectionCountryBox').classList.toggle('invisible', t !== 'private');
+            const country = document.getElementById('collectionCountry');
+            if (t === 'private' && !country.value.trim()) country.value = 'Portugal';
+        }
+        // A data do registo interno preenche o "Desde" quando este está vazio (fica editável).
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('priv_date').addEventListener('change', e => {
+                const since = document.getElementById('collectionSince');
+                if (!since.value && e.target.value) since.value = e.target.value;
+            });
+        });
+
         function onStatusChange() {
             const unavailable = document.getElementById('status').value === 'unavailable';
             ['price_original', 'price_pct_adjust', 'priceOriginal_test', 'priceOriginal_live'].forEach(id => {
@@ -560,6 +588,7 @@
                 delete art.priceOriginal;
                 if (art.priceDisplay) delete art.priceDisplay.original;
             }
+            if (art.collectionType === 'private') delete art.publicCollection;
             if (Array.isArray(art.history)) art.history = art.history.filter(h => h && h.event !== 'Transfer');
         }
 
@@ -1635,6 +1664,7 @@
                 populateCollections([]); // reinicia coleções limpas — evita herdar seleção da obra anterior
                 fillPrivateFields(null);
                 onStatusChange();
+                onCollectionTypeChange();
                 updateInterface();
                 return;
             }
@@ -1656,6 +1686,10 @@
             populateCollections(selectedCols);
             document.getElementById('status').value    = normalizeStatus(data.status);
             document.getElementById('publicCollection').value = data.publicCollection || '';
+            document.getElementById('collectionType').value    = data.collectionType || (data.publicCollection ? 'public' : '');
+            document.getElementById('collectionSince').value   = data.collectionSince || '';
+            document.getElementById('collectionCountry').value = data.collectionCountry || '';
+            onCollectionTypeChange();
             fillPrivateFields(slug);
             document.getElementById('loc_pt').value    = (typeof data.location === 'object') ? data.location.pt : (data.location || '');
             document.getElementById('originalHash').value = data.originalHash || '';
@@ -1743,7 +1777,10 @@
                 },
                 story:      { pt: document.getElementById('story_pt').value, en: document.getElementById('story_en').value, es: document.getElementById('story_es').value },
                 status:     document.getElementById('status').value,
-                publicCollection: document.getElementById('publicCollection').value.trim(),
+                publicCollection: document.getElementById('collectionType').value === 'private' ? '' : document.getElementById('publicCollection').value.trim(),
+                collectionType:    document.getElementById('collectionType').value || undefined,
+                collectionSince:   document.getElementById('collectionSince').value || undefined,
+                collectionCountry: document.getElementById('collectionCountry').value.trim() || undefined,
                 location:   { pt: document.getElementById('loc_pt').value, en: 'Setubal', es: 'Setubal' },
                 originalHash: document.getElementById('originalHash').value,
                 editionsSold: {
@@ -1797,6 +1834,13 @@
         // ============================================================
         // UUID
         // ============================================================
+        // Mudar o Registry ID de uma obra já certificada invalida os certificados impressos.
+        function regenerateUUID() {
+            if (document.getElementById('originalHash').value &&
+                !confirm('Esta obra já tem um Registry ID. Mudá-lo faz com que os certificados já impressos deixem de corresponder ao site. Gerar um novo mesmo assim?')) return;
+            generateUUID();
+        }
+
         function generateUUID() {
             document.getElementById('originalHash').value = ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
                 (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)

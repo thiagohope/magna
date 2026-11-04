@@ -77,5 +77,18 @@
         return txt;
     }
 
-    global.MagnaSituations = { load, today, isActive, activeFor, hasActive, endedExhibitionsFor, labels, describe, formatDate };
+    // Situação atual de uma obra (linha "Collection" da proveniência) — sempre em inglês.
+    // Coleção pública: mostra o nome. Coleção privada: mostra só o país (o detentor
+    // fica no registo interno). Sem data "desde" não se mostra nada.
+    function collectionEntry(art) {
+        if (!art || !art.collectionSince) return null;
+        const type = art.collectionType || (art.publicCollection ? 'public' : '');
+        if (type === 'public' && art.publicCollection)
+            return { date: art.collectionSince, event: 'Collection', location: `Public collection — ${art.publicCollection}` };
+        if (type === 'private')
+            return { date: art.collectionSince, event: 'Collection', location: 'Private collection' + (art.collectionCountry ? ` — ${art.collectionCountry}` : '') };
+        return null;
+    }
+
+    global.MagnaSituations = { load, today, isActive, activeFor, hasActive, endedExhibitionsFor, labels, describe, formatDate, collectionEntry };
 })(window);

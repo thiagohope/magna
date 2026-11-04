@@ -58,7 +58,7 @@
             <p class="text-[9px] uppercase tracking-[0.3em] text-gold font-bold" data-i18n="certSubtitle">Official Provenance Record</p>
         </header>
 
-        <div id="loading" class="text-center py-10 text-gray-400 text-sm animate-pulse" data-i18n="loading">Verifying blockchain record...</div>
+        <div id="loading" class="text-center py-10 text-gray-400 text-sm animate-pulse" data-i18n="loading">Verifying certified registry...</div>
         
         <div id="content" class="hidden relative z-10 flex flex-col h-full justify-between">
             
@@ -97,7 +97,7 @@
                     </div>
 
                     <div class="bg-yellow-50 p-3 rounded border border-yellow-100">
-                        <span class="block text-[8px] text-yellow-700 uppercase tracking-wide font-bold mb-1" data-i18n="labelHash">Unique Digital Hash (UUID)</span>
+                        <span class="block text-[8px] text-yellow-700 uppercase tracking-wide font-bold mb-1" data-i18n="labelHash">Registry ID</span>
                         <code id="artHash" class="block font-mono text-[9px] text-black break-all">...</code>
                     </div>
                 </div>
@@ -156,7 +156,7 @@
             en: {
                 certTitle: "Certificate of Authenticity",
                 certSubtitle: "Official Provenance Record",
-                loading: "Verifying blockchain record...",
+                loading: "Verifying certified registry...",
                 originalBy: "Original Artwork by Magna",
                 labelYear: "Creation Year",
                 labelDim: "Dimensions",
@@ -168,7 +168,7 @@
                 reproDigital: "Digital Download",
                 reproDigitalOpen: "Open edition · not numbered",
                 reproIssued: "{n} of {limit} issued",
-                labelHash: "Unique Digital Hash (UUID)",
+                labelHash: "Registry ID",
                 labelHistory: "Provenance History",
                 labelSign: "Artist Signature",
                 labelVerified: "Verified",
@@ -182,7 +182,7 @@
             pt: {
                 certTitle: "Certificado de Autenticidade",
                 certSubtitle: "Registo Oficial de Proveniência",
-                loading: "Verificando registo na blockchain...",
+                loading: "A verificar o registo certificado...",
                 originalBy: "Obra Original de Magna",
                 labelYear: "Ano de Criação",
                 labelDim: "Dimensões",
@@ -194,7 +194,7 @@
                 reproDigital: "Download Digital",
                 reproDigitalOpen: "Edição aberta · não numerada",
                 reproIssued: "{n} de {limit} emitidas",
-                labelHash: "Hash Digital Único (UUID)",
+                labelHash: "Registry ID",
                 labelHistory: "Histórico e Proveniência",
                 labelSign: "Assinatura do Artista",
                 labelVerified: "Verificado",
@@ -208,7 +208,7 @@
             es: {
                 certTitle: "Certificado de Autenticidad",
                 certSubtitle: "Registro Oficial de Procedencia",
-                loading: "Verificando registro en blockchain...",
+                loading: "Verificando el registro certificado...",
                 originalBy: "Obra Original de Magna",
                 labelYear: "Año de Creación",
                 labelDim: "Dimensiones",
@@ -220,7 +220,7 @@
                 reproDigital: "Descarga Digital",
                 reproDigitalOpen: "Edición abierta · no numerada",
                 reproIssued: "{n} de {limit} emitidas",
-                labelHash: "Hash Digital Único (UUID)",
+                labelHash: "Registry ID",
                 labelHistory: "Historial y Procedencia",
                 labelSign: "Firma del Artista",
                 labelVerified: "Verificado",
@@ -375,8 +375,9 @@
             
             // Transferências nunca são públicas (vivem no registo privado).
             // Exposições já terminadas (situations.json) entram automaticamente.
+            const coll = MagnaSituations.collectionEntry(art);
             const publicHistory = mergeEndedExhibitions(
-                (art.history || []).filter(h => h && h.event !== 'Transfer'),
+                (art.history || []).filter(h => h && h.event !== 'Transfer').concat(coll ? [coll] : []),
                 MagnaSituations.endedExhibitionsFor(situationsList, sitSlug));
             const history = publicHistory.length > 0
                 ? publicHistory

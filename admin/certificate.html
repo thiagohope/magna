@@ -102,7 +102,7 @@
             <p class="text-[10px] uppercase tracking-[0.4em] text-gold font-bold">Official Provenance Record · BrainboxMed Registry</p>
         </header>
 
-        <div id="loading" class="text-center py-10 text-gray-400">Verifying blockchain record...</div>
+        <div id="loading" class="text-center py-10 text-gray-400">Verifying certified registry...</div>
         
         <div id="content" class="hidden relative z-10 flex flex-col h-full justify-between">
             <div class="grid grid-cols-3 gap-8 items-start mb-6">
@@ -130,7 +130,7 @@
                     </div>
 
                     <div class="mt-4 bg-yellow-50 p-3 rounded border border-yellow-100 print:bg-transparent print:border-gray-200">
-                        <span class="block text-[9px] text-yellow-700 uppercase tracking-wide font-bold mb-1 print:text-gray-500">Unique Digital Hash (UUID)</span>
+                        <span class="block text-[9px] text-yellow-700 uppercase tracking-wide font-bold mb-1 print:text-gray-500">Registry ID</span>
                         <code id="artHash" class="block font-mono text-[9px] text-black break-all">...</code>
                     </div>
                 </div>
@@ -170,7 +170,7 @@
         }
 
         async function loadDB() {
-            const res = await fetch(JSON_PATH);
+            const res = await fetch(JSON_PATH + '?v=' + Date.now(), { cache: 'no-store' }); // nunca imprimir dados em cache
             if (!res.ok) throw new Error("Failed to load artworks.json");
             return await res.json();
         }
@@ -200,7 +200,7 @@
             const loading = document.getElementById('loading');
             loading.style.display = 'block';
             loading.classList.remove('text-red-500');
-            loading.textContent = 'Verifying blockchain record...';
+            loading.textContent = 'Verifying certified registry...';
         }
 
         async function renderCertificate(db, slug) {
@@ -231,7 +231,8 @@
 
                 // 3. Hash e Data
                 document.getElementById('artHash').textContent = art.originalHash || "Pending Registration";
-                document.getElementById('currentDate').textContent = new Date().toLocaleDateString();
+                // Data de emissão, por extenso (o formato numérico 11/4/2026 é ambíguo)
+                document.getElementById('currentDate').textContent = 'Issued ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
                 // 4. Link "View Artwork"
                 const artPageUrl = `../artwork.html?id=${slug}`;
@@ -239,7 +240,9 @@
 
                 // 5. GERAR QR CODE (API Otimizada)
                 // certificate.html está em /admin/; verify-original.html está na raiz do projeto
-                const publicVerifyUrl = window.location.href.replace('/admin/certificate.html', '/verify-original.html');
+                // Sempre o domínio público — nunca o endereço onde esta página está aberta
+                // (aberta pelo Live Server, o QR apontaria para 127.0.0.1).
+                const publicVerifyUrl = `https://magnaleite.com/verify-original.html?id=${encodeURIComponent(slug)}`;
 
                 // ecc=L (Menos densidade), margin=2 (Espaço branco), 200px (Alta resolução)
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=000000&bgcolor=ffffff&ecc=L&margin=2&data=${encodeURIComponent(publicVerifyUrl)}`;
@@ -259,6 +262,8 @@
                     const dup = manual.some(h => h.event === 'Exhibition' && norm(h.location) === norm(s.place) && String(h.date || '').slice(0, 4) === s.startDate.slice(0, 4));
                     if (!dup) publicHistory.push({ date: s.startDate, event: 'Exhibition', location: s.place, details: `${s.startDate} → ${s.endDate}` });
                 });
+                const coll = MagnaSituations.collectionEntry(art);
+                if (coll) publicHistory.push(coll);
                 publicHistory.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
                 const history = publicHistory.length > 0
                     ? publicHistory
@@ -269,7 +274,8 @@
                     "Exhibition": "bg-purple-500 border-purple-600 print:border-gray-400 print:bg-gray-300",
                     "Transfer": "bg-blue-500 border-blue-600 print:border-gray-600 print:bg-gray-400",
                     "Restoration": "bg-red-400 border-red-500 print:border-gray-400 print:bg-gray-200",
-                    "Certification": "bg-gray-800 border-black print:border-black print:bg-black"
+                    "Certification": "bg-gray-800 border-black print:border-black print:bg-black",
+                    "Collection": "bg-emerald-600 border-emerald-700 print:border-gray-600 print:bg-gray-500"
                 };
 
                 history.forEach((item) => {

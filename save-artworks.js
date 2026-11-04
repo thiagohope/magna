@@ -320,6 +320,24 @@ function splitPublicAndPrivate(artworks) {
             delete art.publicCollection;
         }
 
+        // Situação atual (pública, só em obras indisponíveis): coleção pública
+        // mostra o nome; coleção privada mostra só o país — o nome de um detentor
+        // privado nunca chega ao ficheiro público, mesmo que venha preenchido.
+        if (art.status === 'unavailable' && ['public', 'private'].includes(art.collectionType)) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(art.collectionSince || '')) delete art.collectionSince;
+            if (art.collectionType === 'private') {
+                delete art.publicCollection;
+                const c = typeof art.collectionCountry === 'string' ? art.collectionCountry.trim().slice(0, 80) : '';
+                if (c) art.collectionCountry = c; else delete art.collectionCountry;
+            } else {
+                delete art.collectionCountry;
+            }
+        } else {
+            delete art.collectionType;
+            delete art.collectionSince;
+            delete art.collectionCountry;
+        }
+
         PRIVATE_ART_KEYS.forEach(k => delete art[k]);
 
         publicArtworks[slug] = art;

@@ -259,7 +259,7 @@
       .lightbox__close:hover { background: rgba(0,0,0,.8); }
       .lightbox__title { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 400; line-height: 1.2; color: #111; }
       .lightbox__meta { font-size: .8rem; color: #888; line-height: 1.7; }
-      .lightbox__story { font-family: 'Playfair Display', serif; font-style: italic; font-size: .95rem; color: #444; line-height: 1.7; border-left: 2px solid #e5e5e5; padding-left: .875rem; }
+      .lightbox__story { font-family: 'Playfair Display', serif; font-size: .95rem; color: #444; line-height: 1.7; border-left: 2px solid #e5e5e5; padding-left: .875rem; }
       .lightbox__divider { border: none; border-top: 1px solid #f0f0f0; }
 
       /* ── PRICING ── */
@@ -1094,7 +1094,7 @@
         document.getElementById('lbImage').alt   = art.title;
         document.getElementById('lbTitle').textContent = art.title;
         document.getElementById('lbMeta').textContent  = `${art.year} · ${tech} · ${art.dimensions}`;
-        document.getElementById('lbStory').textContent = `"${story}"`;
+        document.getElementById('lbStory').textContent = story;
         document.getElementById('lbLocation').textContent = loc || '—';
         const lbColRow = document.getElementById('lbCollectionRow');
         document.getElementById('lbCollection').textContent = art.publicCollection || '';

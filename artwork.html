@@ -166,7 +166,7 @@
             <!-- Artist's Vision -->
             <div>
                 <h3 class="font-bold text-xs uppercase tracking-widest text-gray-400 mb-2" data-i18n="storyLabel">Artist's Vision</h3>
-                <p id="artStory" class="text-gray-700 leading-relaxed italic text-lg font-serif">...</p>
+                <p id="artStory" class="text-gray-700 leading-relaxed text-lg font-serif">...</p>
             </div>
 
             <!-- Status & Provenance -->
@@ -487,7 +487,7 @@
                 document.getElementById('artYear').textContent     = art.year;
                 document.getElementById('artTech').textContent     = art.technique?.[currentLang] || art.technique?.en || '';
                 document.getElementById('artDim').textContent      = art.dimensions;
-                document.getElementById('artStory').textContent    = `"${art.story?.[currentLang] || art.story?.en || ''}"`;
+                document.getElementById('artStory').textContent    = art.story?.[currentLang] || art.story?.en || '';
                 document.getElementById('artLocation').textContent = (typeof art.location === 'object') ? (art.location[currentLang] || art.location.en) : (art.location || '');
                 document.getElementById('artHash').textContent     = art.originalHash || '—';
 

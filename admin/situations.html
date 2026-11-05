@@ -11,7 +11,7 @@
         body { background: #f3f4f6; color: #1a1a1a; font-family: 'Inter', sans-serif; }
         .serif { font-family: 'Playfair Display', serif; }
         label.f { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #4b5563; margin-bottom: 4px; }
-        input[type=text], input[type=date] { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 14px; background: white; }
+        input[type=text], input[type=date], select { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 14px; background: white; }
         .type-btn { border: 1px solid #d1d5db; border-radius: 999px; padding: 6px 14px; font-size: 13px; background: white; }
         .type-btn.on { background: #111; color: white; border-color: #111; }
         .art-pick { border: 2px solid transparent; border-radius: 10px; padding: 4px; cursor: pointer; background: white; text-align: center; }
@@ -47,6 +47,7 @@
     <a href="admin-hub.html" class="text-xs text-gray-500 hover:text-black">← Voltar ao Admin Hub</a>
     <h1 class="serif text-3xl mt-2 mb-1">Situações das Obras</h1>
     <p class="text-sm text-gray-500 mb-6">Situações temporárias, para várias obras de uma vez: <strong>em exposição</strong>, <strong>reservada</strong> ou <strong>em restauro</strong>. Cada uma só aparece no site entre a data de início e a de fim; depois a obra volta sozinha ao que era. Este ficheiro é público — não escreva aqui nomes de clientes.</p>
+    <p class="text-sm text-gray-500 -mt-4 mb-6">As <strong>exposições</strong> são gravadas nas Exposições do site (<code>exhibitions.json</code>) — a mesma fonte usada pela página da exposição, pela situação das obras e pela proveniência dos certificados. Uma exposição criada aqui fica em <strong>rascunho</strong>: falta juntar cartaz e fotos no <a href="magna-exhibitions-manager.html" class="underline">gestor de Exposições</a> e publicar.</p>
 
     <div id="statusBar" class="hidden mb-4 p-3 rounded-lg text-sm font-medium"></div>
 
@@ -68,6 +69,17 @@
                 <button type="button" class="type-btn on" data-type="exhibition" onclick="setType('exhibition')">Em exposição</button>
                 <button type="button" class="type-btn" data-type="reserved" onclick="setType('reserved')">Reservada</button>
                 <button type="button" class="type-btn" data-type="restoration" onclick="setType('restoration')">Em restauro</button>
+            </div>
+
+            <div id="exhBox" class="grid md:grid-cols-3 gap-4 mb-4">
+                <div>
+                    <label class="f" for="exhSelect">Exposição</label>
+                    <select id="exhSelect" onchange="onExhSelect()"></select>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="f" for="exhTitle">Título da exposição</label>
+                    <input type="text" id="exhTitle" placeholder="Ex.: Magna Leite no Forte de Albarquel">
+                </div>
             </div>
 
             <div class="grid md:grid-cols-3 gap-4 mb-4">
@@ -113,7 +125,9 @@
 
     let SECRET = localStorage.getItem(SECRET_STORAGE_KEY) || sessionStorage.getItem(SECRET_STORAGE_KEY) || '';
     let artworks = {};
-    let situations = [];
+    let situations = [];   // situations.json: reservada, em restauro (e exposições antigas por migrar)
+    let exhibitions = {};  // exhibitions.json: fonte única das exposições
+    let editingExh = null; // slug da exposição em edição
     let currentType = 'exhibition';
     let picked = new Set();
     let editingId = null;
@@ -155,6 +169,7 @@
             artworks = await fetch('../artworks.json?v=' + Date.now()).then(r => r.json());
             const sres = await fetch('../situations.json?v=' + Date.now());
             situations = sres.ok ? ((await sres.json()).situations || []) : [];
+            exhibitions = await fetchExhibitions();
         } catch (e) {
             showStatus('Erro ao carregar dados: ' + e.message, 'error');
         }
@@ -162,8 +177,54 @@
         renderLists();
     }
 
+    async function fetchExhibitions() {
+        const r = await fetch('../exhibitions.json?v=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) throw new Error('Não foi possível ler exhibitions.json (HTTP ' + r.status + ')');
+        return r.json();
+    }
+
+    const slugify = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+    const MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    // Mesmo formato do gestor de Exposições ("Sep,18 - Oct,31, 2026")
+    function dateLabel(s, e) {
+        if (!s) return '';
+        const sd = new Date(s + 'T00:00:00');
+        if (e && e !== s) {
+            const ed = new Date(e + 'T00:00:00');
+            return (sd.getFullYear() === ed.getFullYear())
+                ? `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`
+                : `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()}, ${sd.getFullYear()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`;
+        }
+        return `${MONTHS_ABBR[sd.getMonth()]}, ${sd.getFullYear()}`;
+    }
+    const resolveArt = a => artworks[a] ? a : (Object.keys(artworks).find(k => k.toLowerCase() === String(a).toLowerCase()) || a);
+
+    function renderExhSelect(selected) {
+        const opts = Object.entries(exhibitions).sort((a, b) => String(b[1].startDate || '').localeCompare(String(a[1].startDate || '')));
+        document.getElementById('exhSelect').innerHTML = '<option value="">＋ Nova exposição</option>' +
+            opts.map(([slug, x]) => `<option value="${esc(slug)}">${esc(x.title || slug)}${x.startDate ? ' · ' + esc(x.startDate.slice(0, 4)) : ''}${x.published === false ? ' (rascunho)' : ''}</option>`).join('');
+        document.getElementById('exhSelect').value = selected || '';
+    }
+
+    // Escolher uma exposição existente preenche o formulário com os dados dela
+    function onExhSelect() {
+        const slug = document.getElementById('exhSelect').value;
+        editingExh = slug || null;
+        const x = slug ? exhibitions[slug] : null;
+        document.getElementById('exhTitle').value = x ? (x.title || '') : '';
+        if (x) {
+            document.getElementById('place').value = x.location || '';
+            document.getElementById('startDate').value = x.startDate || '';
+            document.getElementById('endDate').value = x.endDate || '';
+            picked = new Set((x.artworks || []).map(resolveArt));
+            renderGrid();
+        }
+    }
+
     function setType(t) {
         currentType = t;
+        document.getElementById('exhBox').classList.toggle('hidden', t !== 'exhibition');
         document.querySelectorAll('.type-btn').forEach(b => b.classList.toggle('on', b.dataset.type === t));
         document.getElementById('placeLabel').textContent =
             t === 'exhibition' ? 'Local da exposição' : (t === 'restoration' ? 'Local (opcional)' : 'Nota pública (opcional)');
@@ -187,7 +248,10 @@
 
     function resetForm() {
         editingId = null;
+        editingExh = null;
         picked = new Set();
+        renderExhSelect('');
+        document.getElementById('exhTitle').value = '';
         setType('exhibition');
         document.getElementById('place').value = '';
         document.getElementById('startDate').value = today();
@@ -195,6 +259,72 @@
         document.getElementById('formTitle').textContent = 'Nova situação';
         document.getElementById('cancelEdit').classList.add('hidden');
         renderGrid();
+    }
+
+    function editExhibition(slug) {
+        resetForm();
+        setType('exhibition');
+        renderExhSelect(slug);
+        onExhSelect();
+        document.getElementById('formTitle').textContent = 'Editar exposição';
+        document.getElementById('cancelEdit').classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function persistExhibitions(next, okMsg) {
+        try {
+            await api('/save-exhibitions', { method: 'POST', body: JSON.stringify(next) });
+            exhibitions = next;
+            showStatus(okMsg, 'success');
+            renderLists();
+            return true;
+        } catch (e) {
+            showStatus('❌ ' + e.message, 'error');
+            return false;
+        }
+    }
+
+    // Exposição: grava em exhibitions.json, partindo sempre da versão atual do servidor
+    async function saveExhibitionForm() {
+        const title = document.getElementById('exhTitle').value.trim();
+        const place = document.getElementById('place').value.trim();
+        const startDate = document.getElementById('startDate').value;
+        const endDate = document.getElementById('endDate').value;
+        if (!title) { showStatus('Indique o título da exposição.', 'error'); return; }
+        if (!place) { showStatus('Indique o local da exposição.', 'error'); return; }
+        if (!startDate) { showStatus('Indique a data de início.', 'error'); return; }
+        if (endDate && endDate < startDate) { showStatus('A data de fim é anterior à de início.', 'error'); return; }
+        if (!picked.size) { showStatus('Selecione pelo menos uma obra.', 'error'); return; }
+        let fresh;
+        try { fresh = await fetchExhibitions(); } catch (e) { showStatus('❌ ' + e.message, 'error'); return; }
+        let slug = editingExh;
+        if (!slug) {
+            const base = [startDate.slice(0, 4), slugify(title)].filter(Boolean).join('-') || 'exposicao';
+            slug = base; let i = 2;
+            while (fresh[slug]) slug = `${base}-${i++}`;
+        }
+        const prev = fresh[slug] || { image: '', gallery: [], description: { pt: '', en: '', es: '' }, published: false };
+        const datesChanged = prev.startDate !== startDate || (prev.endDate || '') !== endDate;
+        fresh[slug] = {
+            ...prev, title, location: place, startDate, endDate,
+            date: (!prev.date || datesChanged) ? dateLabel(startDate, endDate) : prev.date,
+            artworks: [...picked]
+        };
+        const isNewExh = !editingExh;
+        if (await persistExhibitions(fresh, isNewExh
+            ? `✅ Exposição criada em rascunho (${picked.size} obra${picked.size === 1 ? '' : 's'}). Falta juntar cartaz e fotos e publicar no gestor de Exposições.`
+            : `✅ Exposição atualizada (${picked.size} obra${picked.size === 1 ? '' : 's'}).`)) resetForm();
+    }
+
+    async function endExhibitionNow(slug) {
+        const x = exhibitions[slug]; if (!x) return;
+        if (x.startDate >= today()) { showStatus('Esta exposição ainda não começou. Para a apagar ou mudar as datas, use o gestor de Exposições.', 'error'); return; }
+        if (!confirm(`Terminar agora? A data de fim passa a ${fmt(yesterday())}.`)) return;
+        let fresh;
+        try { fresh = await fetchExhibitions(); } catch (e) { showStatus('❌ ' + e.message, 'error'); return; }
+        if (!fresh[slug]) return;
+        fresh[slug] = { ...fresh[slug], endDate: yesterday(), date: dateLabel(fresh[slug].startDate, yesterday()) };
+        persistExhibitions(fresh, 'Exposição terminada.');
     }
 
     function editSituation(id) {
@@ -226,6 +356,7 @@
     }
 
     async function saveForm() {
+        if (currentType === 'exhibition') return saveExhibitionForm();
         const entry = {
             id: editingId || ('sit_' + Math.random().toString(36).slice(2, 12)),
             type: currentType,
@@ -261,10 +392,16 @@
 
     function renderLists() {
         const t = today();
+        const fromExh = Object.entries(exhibitions).filter(([, x]) => x && x.startDate).map(([slug, x]) => ({
+            id: 'exh_' + slug, exh: slug, type: 'exhibition', place: x.location || '', title: x.title || slug,
+            draft: x.published === false, startDate: x.startDate, endDate: x.endDate || '',
+            artworks: (x.artworks || []).map(resolveArt)
+        }));
+        const all = situations.map(s => ({ ...s, legacy: s.type === 'exhibition' })).concat(fromExh);
         const groups = [
-            ['Em curso',   situations.filter(s => s.startDate <= t && (!s.endDate || t <= s.endDate))],
-            ['Agendadas',  situations.filter(s => s.startDate > t)],
-            ['Terminadas', situations.filter(s => s.endDate && s.endDate < t)]
+            ['Em curso',   all.filter(s => s.startDate <= t && (!s.endDate || t <= s.endDate))],
+            ['Agendadas',  all.filter(s => s.startDate > t)],
+            ['Terminadas', all.filter(s => s.endDate && s.endDate < t)]
         ];
         document.getElementById('lists').innerHTML = groups.map(([title, items]) => `
             <h3 class="text-xs font-bold uppercase text-gray-400 mt-4 mb-2">${title} (${items.length})</h3>
@@ -272,14 +409,22 @@
                 <div class="border rounded-lg p-3 mb-2 flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                         <span class="text-[11px] font-bold uppercase px-2 py-0.5 rounded ${TYPE_COLOR[s.type]}">${TYPE_LABEL[s.type]}</span>
-                        <span class="text-sm font-medium ml-1">${esc(s.place || '')}</span>
+                        ${s.draft ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Rascunho</span>' : ''}
+                        ${s.legacy ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-red-100 text-red-800" title="Exposição antiga em situations.json — será migrada para as Exposições">Formato antigo</span>' : ''}
+                        <span class="text-sm font-medium ml-1">${esc(s.exh ? s.title : (s.place || ''))}</span>
+                        ${s.exh && s.place ? `<span class="text-xs text-gray-500">— ${esc(s.place)}</span>` : ''}
                         <div class="text-xs text-gray-500 mt-1">${fmt(s.startDate)} → ${s.endDate ? fmt(s.endDate) : 'até nova indicação'} · ${s.artworks.length} obra${s.artworks.length === 1 ? '' : 's'}:
                             ${s.artworks.map(sl => esc((artworks[sl] || {}).title || sl)).join(', ')}</div>
                     </div>
                     <div class="text-xs whitespace-nowrap flex gap-3">
+                        ${s.exh ? `
+                        <button class="underline" onclick="editExhibition('${esc(s.exh)}')">Editar</button>
+                        ${title === 'Em curso' ? `<button class="underline" onclick="endExhibitionNow('${esc(s.exh)}')">Terminar agora</button>` : ''}
+                        <a class="underline" href="magna-exhibitions-manager.html?id=${encodeURIComponent(s.exh)}">Cartaz e fotos ↗</a>` : s.legacy ? `
+                        <button class="underline text-red-600" onclick="removeSituation('${s.id}')">Apagar</button>` : `
                         <button class="underline" onclick="editSituation('${s.id}')">Editar</button>
                         ${title === 'Em curso' ? `<button class="underline" onclick="endNow('${s.id}')">Terminar agora</button>` : ''}
-                        <button class="underline text-red-600" onclick="removeSituation('${s.id}')">Apagar</button>
+                        <button class="underline text-red-600" onclick="removeSituation('${s.id}')">Apagar</button>`}
                     </div>
                 </div>`).join('') : '<p class="text-sm text-gray-400 italic">Nenhuma.</p>'}
         `).join('');

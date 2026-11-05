@@ -3,466 +3,561 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Magna Manager v3.1 (Path Fix)</title>
+    <title>Magna Admin - Exposições</title>
+    <meta name="robots" content="noindex">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
-        body { background: #f8fafc; font-family: 'Inter', sans-serif; color: #334155; }
-        
-        label { display: block; font-size: 0.65rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 0.35rem; letter-spacing: 0.05em; }
-        input, select, textarea { 
-            width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #e2e8f0; 
-            border-radius: 0.5rem; background: #fff; font-size: 0.875rem; transition: all 0.2s;
-        }
-        input:focus, textarea:focus { outline: none; border-color: #0f172a; ring: 1px solid #0f172a; }
-        
-        .section-header { 
-            font-family: 'Playfair Display', serif; font-size: 1.1rem; color: #0f172a; font-weight: 600;
-            margin: 2rem 0 1rem 0; padding-bottom: 0.5rem; border-bottom: 1px solid #e2e8f0;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-
-        .custom-select-btn {
-            display: flex; align-items: center; justify-content: space-between;
-            width: 100%; padding: 0.75rem; background: white; border: 1px solid #cbd5e1;
-            border-radius: 0.5rem; cursor: pointer; transition: all 0.2s;
-        }
-        .custom-select-btn:hover { border-color: #000; }
-        
-        .custom-options {
-            position: absolute; top: 100%; left: 0; right: 0;
-            background: white; border: 1px solid #e2e8f0; border-radius: 0.5rem;
-            margin-top: 0.5rem; max-height: 300px; overflow-y: auto;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            z-index: 50; display: none;
-        }
-        .custom-options.open { display: block; }
-        
-        .option-item {
-            display: flex; align-items: center; gap: 1rem; padding: 0.75rem;
-            cursor: pointer; border-bottom: 1px solid #f1f5f9;
-        }
-        .option-item:hover { background: #f8fafc; }
-        .option-item img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
-        
-        .drop-zone {
-            border: 2px dashed #cbd5e1; border-radius: 0.5rem; padding: 1.5rem;
-            text-align: center; cursor: pointer; transition: all 0.2s; background: #f8fafc;
-            position: relative;
-        }
-        .drop-zone:hover { border-color: #94a3b8; background: #e2e8f0; }
-
-        #loginScreen { position: fixed; inset: 0; background: #0f172a; z-index: 100; display: flex; align-items: center; justify-content: center; }
-        #adminContent { display: none; }
-        
-        /* Destaque para onde os caminhos corretos aparecem */
-        .path-preview { font-family: monospace; font-size: 0.7rem; color: #059669; margin-top: 4px; }
+        body { background: #f3f4f6; color: #1a1a1a; font-family: 'Inter', sans-serif; }
+        .serif { font-family: 'Playfair Display', serif; }
+        label.f { display: block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #4b5563; margin-bottom: 4px; }
+        input[type=text], input[type=date], textarea { width: 100%; border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 10px; font-size: 14px; background: white; }
+        input:disabled { background: #f3f4f6; color: #6b7280; }
+        .drop { border: 2px dashed #cbd5e1; border-radius: 10px; padding: 18px; text-align: center; cursor: pointer; background: #f9fafb; font-size: 13px; color: #4b5563; }
+        .drop:hover, .drop.over { border-color: #111; background: #f3f4f6; }
+        .exh-item { border: 1px solid #e5e7eb; border-radius: 10px; padding: 10px 12px; cursor: pointer; background: white; }
+        .exh-item:hover { border-color: #9ca3af; }
+        .exh-item.on { border-color: #111; box-shadow: 0 0 0 1px #111; }
+        .art-pick { border: 2px solid transparent; border-radius: 10px; padding: 4px; cursor: pointer; background: white; text-align: center; }
+        .art-pick.on { border-color: #111; }
+        .art-pick img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 6px; background: #e5e7eb; }
+        .art-pick span { display: block; font-size: 11px; margin-top: 3px; line-height: 1.2; }
+        .g-item { position: relative; border-radius: 8px; overflow: hidden; background: #e5e7eb; }
+        .g-item img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+        .g-item .bar { position: absolute; left: 0; right: 0; bottom: 0; display: flex; justify-content: space-between; background: rgba(0,0,0,.55); color: white; font-size: 11px; }
+        .g-item .bar button { padding: 3px 7px; }
+        .g-item .name { position: absolute; top: 0; left: 0; right: 0; background: rgba(255,255,255,.85); font-size: 10px; padding: 2px 5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-family: monospace; }
     </style>
 </head>
-<body class="min-h-screen pb-20">
+<body class="min-h-screen py-8 px-4">
+<div class="max-w-6xl mx-auto">
 
-    <div id="loginScreen">
-        <div class="bg-white p-10 rounded-2xl shadow-2xl max-w-sm w-full text-center">
-            <h1 class="font-serif text-3xl mb-2 text-black">Magna Manager</h1>
-            <p class="text-gray-400 text-xs uppercase tracking-widest mb-8">v3.1 · Exhibitions Paths Fix</p>
-            <input type="password" id="passwordInput" placeholder="Senha" class="text-center mb-4 border-gray-300">
-            <label class="flex items-center justify-center gap-2 text-xs text-gray-500 mb-4 cursor-pointer">
-                <input type="checkbox" id="trustDeviceCheckbox" checked class="cursor-pointer">
-                <span>Confiar neste dispositivo</span>
-            </label>
-            <button onclick="checkLogin()" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:opacity-80 transition">ENTRAR</button>
-            <p id="errorMsg" class="text-red-500 text-xs mt-4 hidden">Senha incorreta</p>
-        </div>
+    <a href="admin-hub.html" class="text-xs text-gray-500 hover:text-black">← Voltar ao Admin Hub</a>
+    <h1 class="serif text-3xl mt-2 mb-1">Exposições</h1>
+    <p class="text-sm text-gray-500 mb-6">Grava diretamente no servidor (<code>exhibitions.json</code>, com backup automático). As imagens são reduzidas no browser antes do envio. Uma exposição em <strong>rascunho</strong> já conta para a situação e a proveniência das obras, mas só aparece na lista do site depois de publicada.</p>
+
+    <div id="statusBar" class="hidden mb-4 p-3 rounded-lg text-sm font-medium"></div>
+
+    <div id="loginBox" class="hidden bg-white rounded-xl border p-6 mb-6 max-w-md">
+        <label class="f" for="secretInput">MAGNA_API_SECRET</label>
+        <input type="password" id="secretInput" autocomplete="off" class="mb-3" style="width:100%;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;">
+        <label class="flex items-center gap-2 text-xs text-gray-500 mb-3"><input type="checkbox" id="rememberSecret" checked> Guardar neste dispositivo</label>
+        <button onclick="login()" class="bg-black text-white rounded-lg px-4 py-2 text-sm font-bold">Entrar</button>
     </div>
 
-    <div id="adminContent" class="max-w-6xl mx-auto p-4 md:p-8">
-        
-        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-            <div>
-                <a href="admin-hub.html" class="inline-block text-xs text-gray-400 hover:text-black mb-2 no-underline">← Voltar ao Admin Hub</a>
-                <h1 class="font-serif text-2xl font-bold text-gray-900">Magna Exhibitions Manager</h1>
-                <p class="text-sm text-gray-500">Garante os caminhos corretos das pastas.</p>
-            </div>
-            
-            <div class="w-full md:w-auto relative group">
-                <input type="file" id="jsonLoader" accept=".json" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
-                <div id="dropZone" class="flex items-center gap-3 px-6 py-3 bg-purple-50 border border-purple-200 rounded-lg text-purple-700 font-medium group-hover:bg-purple-100 transition shadow-sm cursor-pointer">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                    <span>Carregar 'exhibitions.json'</span>
-                </div>
-            </div>
-        </header>
+    <div id="app" class="hidden grid lg:grid-cols-12 gap-6 items-start">
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            <div class="lg:col-span-8 bg-white p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 relative">
-                
-                <div class="mb-8 relative z-50">
-                    <label>Selecione a Exposição</label>
-                    <div class="relative">
-                        <button id="selectBtn" class="custom-select-btn" onclick="toggleDropdown()">
-                            <span class="text-gray-400 italic">Carregue o arquivo JSON primeiro...</span>
-                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                        </button>
-                        <div id="dropdownList" class="custom-options"></div>
-                    </div>
+        <!-- Lista -->
+        <div class="lg:col-span-4 bg-white rounded-xl border p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-bold">Exposições</h2>
+                <button onclick="newExhibition()" class="bg-black text-white rounded-lg px-3 py-1.5 text-xs font-bold">+ Nova</button>
+            </div>
+            <div id="exhList" class="space-y-2"></div>
+        </div>
+
+        <!-- Formulário -->
+        <div class="lg:col-span-8 bg-white rounded-xl border p-6">
+            <div id="formEmpty" class="text-sm text-gray-400 italic">Escolha uma exposição à esquerda, ou crie uma nova.</div>
+
+            <div id="form" class="hidden">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h2 id="formTitle" class="serif text-2xl">Nova exposição</h2>
+                    <label class="flex items-center gap-2 text-sm font-medium cursor-pointer">
+                        <input type="checkbox" id="published" class="w-4 h-4">
+                        Publicada no site
+                    </label>
                 </div>
 
-                <form id="exhibForm" class="opacity-50 pointer-events-none transition-opacity duration-300">
-                    
-                    <div class="section-header mt-0">
-                        <span>Informações Básicas</span>
-                        <div class="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded border border-gray-200">
-                             <span class="text-[10px] uppercase font-bold text-gray-400">ID:</span>
-                             <input type="text" id="slug" class="bg-transparent border-none p-0 w-40 font-mono text-xs focus:ring-0 text-right font-bold text-black" placeholder="nova-exposicao">
-                        </div>
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div class="md:col-span-2">
+                        <label class="f" for="title">Título</label>
+                        <input type="text" id="title" oninput="suggestSlug()">
                     </div>
+                    <div>
+                        <label class="f" for="slug">ID <span class="normal-case font-normal text-gray-400">(pasta das fotos; não muda depois)</span></label>
+                        <input type="text" id="slug" placeholder="2026-nome-da-expo" class="font-mono" oninput="slugTouched = true">
+                    </div>
+                </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                        <div>
-                            <label>Título</label>
-                            <input type="text" id="title" class="font-serif text-lg font-bold">
-                        </div>
-                        <div>
-                            <label>Localização</label>
-                            <input type="text" id="location">
-                        </div>
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="f" for="location">Local</label>
+                        <input type="text" id="location" placeholder="Ex.: Forte de Albarquel, Setúbal, Portugal">
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div>
-                            <label>Data de Início</label>
-                            <input type="date" id="startDate" oninput="updateDateLabel()">
-                        </div>
-                        <div>
-                            <label>Data de Fim (opcional)</label>
-                            <input type="date" id="endDate" oninput="updateDateLabel()">
-                        </div>
-                        <div>
-                            <label>Rótulo Exibido no Site</label>
-                            <input type="text" id="date" placeholder="gerado automaticamente, pode editar">
-                        </div>
+                    <div>
+                        <label class="f" for="startDate">Início</label>
+                        <input type="date" id="startDate" oninput="updateDateLabel(); suggestSlug()">
                     </div>
+                    <div>
+                        <label class="f" for="endDate">Fim <span class="normal-case font-normal text-gray-400">(vazio = até nova indicação)</span></label>
+                        <input type="date" id="endDate" oninput="updateDateLabel()">
+                    </div>
+                </div>
 
-                    <div class="section-header"><span>Capa (Flyer)</span></div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-start mb-6">
-                        <div class="md:col-span-1 drop-zone bg-purple-50 border-purple-200" id="flyerDrop">
-                            <input type="file" id="flyerInput" class="hidden" accept="image/*">
-                            <p class="text-xs text-purple-800 font-bold mb-1">CAPA</p>
-                            <p class="text-[10px] text-gray-500">Arraste a imagem</p>
+                <div class="mb-4">
+                    <label class="f" for="dateLabel">Rótulo da data no site <span class="normal-case font-normal text-gray-400">(automático, pode editar)</span></label>
+                    <input type="text" id="dateLabel">
+                </div>
+
+                <label class="f">Descrição</label>
+                <div class="grid md:grid-cols-3 gap-3 mb-6">
+                    <textarea id="desc_pt" rows="3" placeholder="PT"></textarea>
+                    <textarea id="desc_en" rows="3" placeholder="EN"></textarea>
+                    <textarea id="desc_es" rows="3" placeholder="ES"></textarea>
+                </div>
+
+                <!-- Cartaz -->
+                <div class="grid md:grid-cols-4 gap-4 mb-6 items-start">
+                    <div>
+                        <label class="f">Cartaz</label>
+                        <div id="flyerPreview" class="rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center text-xs text-gray-400" style="min-height:120px">sem cartaz</div>
+                    </div>
+                    <div class="md:col-span-3">
+                        <div id="flyerDrop" class="drop">
+                            <input type="file" id="flyerInput" accept="image/*" class="hidden">
+                            <strong>Clique ou arraste o cartaz</strong><br>
+                            <span class="text-xs text-gray-400">Reduzido para 2000 px no lado maior e enviado logo para o servidor.</span>
                         </div>
-                        <div class="md:col-span-2">
-                            <label>Arquivo da Capa</label>
-                            <input type="text" id="image" class="font-mono text-xs bg-gray-50 text-gray-600 mb-1" placeholder="exemplo: flyer-vinhos.jpg">
-                            <p class="path-preview">Será guardado em: assets/exhibition/flyers/ (nome do ficheiro apenas, sem subpasta) — <span>...</span></p>
-                        </div>
+                        <p id="flyerName" class="text-[11px] font-mono text-gray-500 mt-1"></p>
                     </div>
+                </div>
 
-                    <div class="section-header flex justify-between">
-                        <span>Installation Views (Galeria)</span>
-                        <button type="button" onclick="clearGallery()" class="text-[10px] text-red-500 hover:underline uppercase font-bold">Limpar Lista</button>
-                    </div>
-                    
-                    <div class="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <div class="drop-zone mb-3 bg-white" id="galleryDrop">
-                            <input type="file" id="galleryInput" class="hidden" accept="image/*" multiple>
-                            <div class="pointer-events-none">
-                                <svg class="w-8 h-8 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <p class="text-sm font-medium text-gray-700">Adicionar Fotos</p>
-                                <p class="text-xs text-gray-400 mt-1">Arraste múltiplas imagens</p>
-                            </div>
-                        </div>
-                        <label>Nomes dos Arquivos</label>
-                        <textarea id="gallery_images" rows="4" class="font-mono text-xs bg-white text-gray-600 leading-relaxed mb-1" placeholder="view1.jpg, view2.jpg..."></textarea>
-                        <p class="path-preview">Serão guardados em: assets/exhibition/img/&lt;slug&gt;/ (apenas nomes de ficheiro) — <span>...</span></p>
-                    </div>
-                    
-                    <div class="section-header"><span>Descrições</span></div>
-                    <div class="space-y-4 mb-6">
-                        <div><label>PT</label><textarea id="desc_pt" rows="2"></textarea></div>
-                        <div><label>EN</label><textarea id="desc_en" rows="2"></textarea></div>
-                        <div><label>ES</label><textarea id="desc_es" rows="2"></textarea></div>
-                    </div>
+                <!-- Fotos -->
+                <div class="flex items-center justify-between mb-2">
+                    <label class="f !mb-0">Fotos da exposição <span id="galleryCount" class="normal-case font-normal text-gray-500"></span></label>
+                    <button type="button" onclick="optimizeExisting()" class="text-xs underline">Reduzir as imagens já existentes</button>
+                </div>
+                <div id="galleryDrop" class="drop mb-3">
+                    <input type="file" id="galleryInput" accept="image/*" multiple class="hidden">
+                    <strong>Clique ou arraste várias fotos</strong><br>
+                    <span class="text-xs text-gray-400">Reduzidas para 1600 px no lado maior e enviadas logo para o servidor. A ordem abaixo é a ordem no site.</span>
+                </div>
+                <div id="progress" class="hidden text-xs text-gray-600 mb-2"></div>
+                <div id="gallery" class="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2 mb-6"></div>
 
-                    <div class="section-header"><span>Obras (IDs do artworks.json)</span></div>
-                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-100 mb-8">
-                        <textarea id="artworks_list" rows="3" class="font-mono text-sm bg-white border-yellow-200" placeholder="choco, figueirinha"></textarea>
+                <!-- Obras -->
+                <div class="flex items-center justify-between mb-2">
+                    <label class="f !mb-0">Obras expostas <span id="pickCount" class="normal-case font-normal text-gray-500"></span></label>
+                    <div class="text-xs flex gap-3">
+                        <button type="button" class="underline" onclick="pickAll(true)">Selecionar todas</button>
+                        <button type="button" class="underline" onclick="pickAll(false)">Limpar</button>
                     </div>
+                </div>
+                <div id="artGrid" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 mb-6"></div>
 
-                    <button type="button" onclick="generateJSON()" class="w-full py-4 bg-black text-white rounded-lg font-bold text-lg hover:bg-gray-800 shadow-lg transition transform hover:-translate-y-1 ring-4 ring-transparent hover:ring-purple-200">
-                        GERAR JSON ATUALIZADO
-                    </button>
-                    <p class="text-center text-xs text-gray-500 mt-2">Clique para ver os caminhos completos na caixa verde ao lado.</p>
-
-                </form>
-            </div>
-
-            <div class="lg:col-span-4 space-y-6 sticky top-8">
-                <div class="bg-gray-900 text-green-400 p-5 rounded-xl shadow-lg font-mono text-xs relative group">
-                    <div class="flex justify-between items-center mb-2 border-b border-gray-700 pb-2">
-                        <span class="font-bold text-white">Snippet JSON Gerado</span>
-                        <button onclick="copyToClipboard()" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-500 transition font-bold text-[10px] uppercase">Copiar</button>
-                    </div>
-                    <p class="text-[10px] text-gray-400 mb-3 leading-tight">
-                        Verifique se os caminhos abaixo contêm as pastas corretas antes de copiar para o seu arquivo.
-                    </p>
-                    <textarea id="output" class="w-full h-[500px] bg-transparent border-none resize-none focus:ring-0 text-green-300 p-0 font-mono text-[11px] leading-5" readonly>// O código com os caminhos corretos aparecerá aqui após clicar em GERAR.</textarea>
+                <div class="flex flex-wrap items-center gap-3">
+                    <button id="saveBtn" onclick="saveExhibition()" class="bg-black text-white rounded-lg px-5 py-2.5 text-sm font-bold">💾 Guardar no servidor</button>
+                    <a id="previewLink" href="#" target="_blank" class="text-sm underline hidden">Pré-visualizar no site ↗</a>
+                    <button id="deleteBtn" onclick="deleteExhibition()" class="ml-auto text-xs underline text-red-600 hidden">Apagar exposição</button>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
-    <script>
-        // --- Device trust helpers ---
-        const TRUST_KEY = 'magna_trust_token';
-        const TRUST_EXPIRY_KEY = 'magna_trust_expiry';
-        const TRUST_DURATION_MS = 90 * 24 * 60 * 60 * 1000; // 90 dias
+<script>
+    const IS_DEV = window.location.hostname === '127.0.0.1' || window.location.hostname === 'localhost';
+    const API    = IS_DEV ? 'http://127.0.0.1:3100' : 'https://brainboxmed.com/magna/api';
+    const SECRET_STORAGE_KEY = 'magna_api_secret';
+    const SLUG_RE = /^[a-z0-9-]+$/;
+    const FLYER_MAX = 2000, PHOTO_MAX = 1600, JPEG_Q = 0.82;
+    const MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-        function isDeviceTrusted() {
-            const token = localStorage.getItem(TRUST_KEY);
-            const expiry = parseInt(localStorage.getItem(TRUST_EXPIRY_KEY) || '0', 10);
-            return !!token && Date.now() < expiry;
+    let SECRET = localStorage.getItem(SECRET_STORAGE_KEY) || sessionStorage.getItem(SECRET_STORAGE_KEY) || '';
+    let exhibitions = {};
+    let artworks = {};
+    let current = null;      // slug da exposição aberta (null = nova)
+    let isNew = false;
+    let slugTouched = false;
+    let image = '';          // nome do ficheiro do cartaz
+    let gallery = [];        // nomes dos ficheiros das fotos, por ordem
+    let picked = new Set();
+    let dirty = false;
+
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+    const $ = id => document.getElementById(id);
+
+    function showStatus(msg, type) {
+        const bar = $('statusBar');
+        bar.textContent = msg;
+        bar.className = 'mb-4 p-3 rounded-lg text-sm font-medium ' +
+            (type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' : 'bg-green-50 text-green-800 border border-green-200');
+        if (type !== 'error') setTimeout(() => bar.classList.add('hidden'), 6000);
+    }
+
+    async function api(path, opts = {}) {
+        const res = await fetch(`${API}${path}`, { ...opts, headers: { 'Content-Type': 'application/json', 'X-Magna-Secret': SECRET } });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        return data;
+    }
+
+    async function login() {
+        const v = $('secretInput').value.trim();
+        if (!v) return;
+        SECRET = v;
+        try {
+            await api('/verify-secret');
+            ($('rememberSecret').checked ? localStorage : sessionStorage).setItem(SECRET_STORAGE_KEY, v);
+            start();
+        } catch (e) { showStatus('Secret inválido, ou servidor inacessível.', 'error'); }
+    }
+
+    // Lê sempre a versão do servidor, nunca uma cópia em cache
+    async function fetchExhibitions() {
+        const r = await fetch('../exhibitions.json?v=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) throw new Error('Não foi possível ler exhibitions.json (HTTP ' + r.status + ')');
+        return r.json();
+    }
+
+    async function start() {
+        $('loginBox').classList.add('hidden');
+        $('app').classList.remove('hidden');
+        try {
+            [exhibitions, artworks] = await Promise.all([
+                fetchExhibitions(),
+                fetch('../artworks.json?v=' + Date.now(), { cache: 'no-store' }).then(r => r.json())
+            ]);
+        } catch (e) { showStatus('Erro ao carregar dados: ' + e.message, 'error'); }
+        renderList();
+        const want = new URLSearchParams(location.search).get('id');
+        if (want && exhibitions[want]) openExhibition(want);
+    }
+
+    // ---------- Lista ----------
+    function renderList() {
+        const entries = Object.entries(exhibitions).sort((a, b) => String(b[1].startDate || '').localeCompare(String(a[1].startDate || '')));
+        $('exhList').innerHTML = entries.length ? entries.map(([slug, x]) => `
+            <div class="exh-item ${slug === current ? 'on' : ''}" onclick="openExhibition('${esc(slug)}')">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="font-medium text-sm">${esc(x.title || slug)}</div>
+                    ${x.published === false ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 whitespace-nowrap">Rascunho</span>' : ''}
+                </div>
+                <div class="text-xs text-gray-500 mt-0.5">${esc(x.startDate || 'sem data')}${x.endDate && x.endDate !== x.startDate ? ' → ' + esc(x.endDate) : ''} · ${(x.artworks || []).length} obra(s) · ${(x.gallery || []).length} foto(s)${x.image ? '' : ' · <span class="text-red-600">sem cartaz</span>'}</div>
+            </div>`).join('') : '<p class="text-sm text-gray-400 italic">Ainda não há exposições.</p>';
+    }
+
+    function confirmDiscard() {
+        return !dirty || confirm('Há alterações por guardar nesta exposição. Descartá-las?');
+    }
+
+    function newExhibition() {
+        if (!confirmDiscard()) return;
+        current = null; isNew = true; slugTouched = false;
+        fillForm('', { published: false });
+    }
+
+    function openExhibition(slug) {
+        if (slug !== current && !confirmDiscard()) return;
+        current = slug; isNew = false; slugTouched = true;
+        fillForm(slug, exhibitions[slug] || {});
+    }
+
+    function fillForm(slug, x) {
+        $('formEmpty').classList.add('hidden');
+        $('form').classList.remove('hidden');
+        $('formTitle').textContent = isNew ? 'Nova exposição' : (x.title || slug);
+        $('slug').value = slug;
+        $('slug').disabled = !isNew;
+        $('title').value = x.title || '';
+        $('location').value = x.location || '';
+        $('startDate').value = x.startDate || '';
+        $('endDate').value = x.endDate || '';
+        $('dateLabel').value = x.date || '';
+        $('published').checked = x.published !== false;
+        $('desc_pt').value = x.description?.pt || '';
+        $('desc_en').value = x.description?.en || '';
+        $('desc_es').value = x.description?.es || '';
+        image = x.image || '';
+        gallery = Array.isArray(x.gallery) ? [...x.gallery] : [];
+        picked = new Set((x.artworks || []).map(a => resolveArtSlug(a)).filter(Boolean));
+        $('deleteBtn').classList.toggle('hidden', isNew);
+        $('previewLink').classList.toggle('hidden', isNew);
+        if (!isNew) $('previewLink').href = `../exhibition.html?id=${encodeURIComponent(slug)}&preview=1`;
+        renderFlyer(); renderGallery(); renderGrid(); renderList();
+        dirty = false;
+    }
+
+    // Os IDs das obras em exhibitions.json podem ter maiúsculas diferentes ("Time")
+    function resolveArtSlug(a) {
+        const s = String(a || '').trim();
+        if (artworks[s]) return s;
+        return Object.keys(artworks).find(k => k.toLowerCase() === s.toLowerCase()) || s;
+    }
+
+    function slugify(s) {
+        return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+    }
+    function suggestSlug() {
+        if (!isNew || slugTouched) return;
+        const y = ($('startDate').value || '').slice(0, 4);
+        $('slug').value = [y, slugify($('title').value)].filter(Boolean).join('-');
+    }
+
+    function updateDateLabel() {
+        const s = $('startDate').value, e = $('endDate').value;
+        if (!s) return;
+        const sd = new Date(s + 'T00:00:00');
+        if (e && e !== s) {
+            const ed = new Date(e + 'T00:00:00');
+            $('dateLabel').value = (sd.getFullYear() === ed.getFullYear())
+                ? `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`
+                : `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()}, ${sd.getFullYear()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`;
+        } else {
+            $('dateLabel').value = `${MONTHS_ABBR[sd.getMonth()]}, ${sd.getFullYear()}`;
         }
+    }
 
-        function trustThisDevice() {
-            const token = crypto.randomUUID();
-            localStorage.setItem(TRUST_KEY, token);
-            localStorage.setItem(TRUST_EXPIRY_KEY, String(Date.now() + TRUST_DURATION_MS));
+    // ---------- Obras ----------
+    function renderGrid() {
+        $('artGrid').innerHTML = Object.entries(artworks)
+            .sort((a, b) => (a[1].title || a[0]).localeCompare(b[1].title || b[0]))
+            .map(([slug, a]) => `
+                <div class="art-pick ${picked.has(slug) ? 'on' : ''}" onclick="togglePick('${esc(slug)}')" title="${esc(a.title || slug)}">
+                    <img loading="lazy" src="../${esc(a.thumbnail || (Array.isArray(a.image) ? a.image[0] : a.image) || '')}" alt="">
+                    <span>${esc(a.title || slug)}</span>
+                </div>`).join('');
+        $('pickCount').textContent = `(${picked.size} selecionada${picked.size === 1 ? '' : 's'})`;
+    }
+    function togglePick(slug) { picked.has(slug) ? picked.delete(slug) : picked.add(slug); dirty = true; renderGrid(); }
+    function pickAll(on) { picked = on ? new Set(Object.keys(artworks)) : new Set(); dirty = true; renderGrid(); }
+
+    // ---------- Imagens ----------
+    function currentSlugForUpload() {
+        const slug = $('slug').value.trim();
+        if (!SLUG_RE.test(slug)) {
+            showStatus('Preencha primeiro um ID válido (só minúsculas, números e "-") — é o nome da pasta das fotos.', 'error');
+            return null;
         }
-
-        function clearDeviceTrust() {
-            localStorage.removeItem(TRUST_KEY);
-            localStorage.removeItem(TRUST_EXPIRY_KEY);
+        if (isNew && exhibitions[slug]) {
+            showStatus(`Já existe uma exposição com o ID "${slug}". Escolha outro.`, 'error');
+            return null;
         }
+        return slug;
+    }
 
-        function unlockAdmin() {
-            document.getElementById('loginScreen').style.display = 'none';
-            document.getElementById('adminContent').style.display = 'block';
+    // Nome seguro para o servidor: sem acentos, espaços ou pontos extra; sempre .jpg
+    function safeName(original, taken) {
+        let base = slugify(String(original).replace(/\.[^.]+$/, '')) || 'foto';
+        let name = base + '.jpg', i = 2;
+        while (taken.has(name)) name = `${base}-${i++}.jpg`;
+        taken.add(name);
+        return name;
+    }
+
+    // Redimensiona no browser (respeita a rotação EXIF das fotos do telemóvel) → JPEG base64
+    async function shrink(blob, maxSide) {
+        const bmp = await createImageBitmap(blob, { imageOrientation: 'from-image' });
+        const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+        const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, w, h); // PNG com transparência → fundo branco
+        ctx.drawImage(bmp, 0, 0, w, h);
+        bmp.close && bmp.close();
+        const out = await new Promise(res => c.toBlob(res, 'image/jpeg', JPEG_Q));
+        const dataUrl = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.readAsDataURL(out); });
+        return { dataUrl, bytes: out.size, w, h };
+    }
+
+    function progress(msg) {
+        const p = $('progress');
+        if (!msg) { p.classList.add('hidden'); return; }
+        p.textContent = msg; p.classList.remove('hidden');
+    }
+
+    async function uploadFlyer(file) {
+        const slug = currentSlugForUpload(); if (!slug) return;
+        try {
+            progress('A reduzir e enviar o cartaz…');
+            const { dataUrl, bytes } = await shrink(file, FLYER_MAX);
+            const filename = `${slug}-cartaz-${Date.now().toString(36)}.jpg`;
+            await api('/upload-exhibition-flyer', { method: 'POST', body: JSON.stringify({ filename, imageData: dataUrl }) });
+            image = filename; dirty = true;
+            renderFlyer();
+            showStatus(`Cartaz enviado (${Math.round(bytes / 1024)} KB). Não se esqueça de guardar a exposição.`, 'success');
+        } catch (e) { showStatus('❌ Cartaz: ' + e.message, 'error'); }
+        progress('');
+    }
+
+    async function uploadPhotos(files) {
+        const slug = currentSlugForUpload(); if (!slug) return;
+        const list = [...files].filter(f => f.type.startsWith('image/'));
+        const taken = new Set(gallery);
+        let ok = 0, total = 0;
+        for (let i = 0; i < list.length; i++) {
+            progress(`A reduzir e enviar ${i + 1} de ${list.length}: ${list[i].name}`);
+            try {
+                const { dataUrl, bytes } = await shrink(list[i], PHOTO_MAX);
+                const filename = safeName(list[i].name, taken);
+                await api('/upload-exhibition-gallery', { method: 'POST', body: JSON.stringify({ slug, filename, imageData: dataUrl }) });
+                gallery.push(filename); ok++; total += bytes; dirty = true;
+                renderGallery();
+            } catch (e) { showStatus(`❌ ${list[i].name}: ${e.message}`, 'error'); }
         }
+        progress('');
+        if (ok) showStatus(`${ok} foto(s) enviada(s), ${Math.round(total / 1024)} KB no total. Não se esqueça de guardar a exposição.`, 'success');
+    }
 
-        async function checkLogin() {
-            const p = document.getElementById('passwordInput').value;
-            const msgBuffer  = new TextEncoder().encode(p);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hash = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2,'0')).join('');
-            if (hash === "13f020a2bf9d1113807cf1c1c78a2e8f85b31a652ea4db3ccdf1877339c8dcef") {
-                if (document.getElementById('trustDeviceCheckbox').checked) {
-                    trustThisDevice();
-                }
-                document.getElementById('errorMsg').classList.add('hidden');
-                unlockAdmin();
-            } else {
-                document.getElementById('errorMsg').classList.remove('hidden');
+    // Reduz as imagens que já estão no servidor (cartaz > 1 MB, fotos > 600 KB).
+    // Substitui os ficheiros no servidor; nomes inválidos passam a nomes seguros.
+    async function optimizeExisting() {
+        const slug = isNew ? null : current;
+        if (!slug) { showStatus('Guarde a exposição primeiro.', 'error'); return; }
+        if (!confirm('Reduzir as imagens desta exposição que estão no servidor?\n\nOs ficheiros grandes são substituídos pelas versões reduzidas (fotos: 1600 px; cartaz: 2000 px). Os originais ficam só na sua cópia local.')) return;
+        const taken = new Set(gallery);
+        const failed = [];
+        let done = 0, saved = 0;
+        // O mesmo nome com acentos pode estar gravado de duas formas (NFC/NFD): tenta ambas
+        const job = async (folder, rawName, maxSide, limit, upload) => {
+            let r = null;
+            for (const n of [...new Set([rawName, rawName.normalize('NFC'), rawName.normalize('NFD')])]) {
+                r = await fetch(folder + encodeURIComponent(n) + '?v=' + Date.now(), { cache: 'no-store' });
+                if (r.ok) break;
             }
-        }
-        document.getElementById('passwordInput').addEventListener('keypress', e => { if(e.key==='Enter') checkLogin(); });
-
-        // Auto-unlock on trusted devices
-        if (isDeviceTrusted()) {
-            unlockAdmin();
-        }
-
-        // === CARREGAR JSON ===
-        const fileInput = document.getElementById('jsonLoader');
-        const dropZone = document.getElementById('dropZone');
-        fileInput.addEventListener('change', handleFile);
-        function handleFile(e) {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (evt) => {
+            if (!r || !r.ok) throw new Error('não encontrada no servidor');
+            const blob = await r.blob();
+            if (blob.size <= limit) return null;
+            const out = await shrink(blob, maxSide);
+            await upload(out.dataUrl);
+            saved += blob.size - out.bytes; done++;
+            return true;
+        };
+        try {
+            if (image) {
+                progress('Cartaz…');
+                const okName = /^[a-zA-Z0-9_-]+\.(jpg|jpeg|png|webp)$/i.test(image) && /\.jpe?g$/i.test(image) ? image : `${slug}-cartaz-${Date.now().toString(36)}.jpg`;
+                const r = await job('../assets/exhibition/flyers/', image, FLYER_MAX, 1024 * 1024,
+                    d => api('/upload-exhibition-flyer', { method: 'POST', body: JSON.stringify({ filename: okName, imageData: d }) }));
+                if (r) image = okName;
+            }
+            for (let i = 0; i < gallery.length; i++) {
+                const old = gallery[i];
+                progress(`Foto ${i + 1} de ${gallery.length}: ${old}`);
+                const valid = /^[a-zA-Z0-9_-]+\.(jpg|jpeg)$/i.test(old);
+                let name = old;
+                if (!valid) { taken.delete(old); name = safeName(old, taken); }
                 try {
-                    globalExhibitions = JSON.parse(evt.target.result);
-                    renderDropdown();
-                    dropZone.innerHTML = `<span class="text-green-700 font-bold">✅ Arquivo Carregado!</span>`;
-                    dropZone.className = "flex items-center gap-3 px-6 py-3 bg-green-100 border border-green-300 rounded-lg transition shadow-sm";
-                } catch(err) { alert("Erro: O arquivo não é um JSON válido."); }
-            };
-            reader.readAsText(file);
-        }
-
-        // === DROPDOWN ===
-        function toggleDropdown() {
-            if(Object.keys(globalExhibitions).length === 0) return alert("Carregue o exhibitions.json primeiro.");
-            document.getElementById('dropdownList').classList.toggle('open');
-        }
-
-        function renderDropdown() {
-            const list = document.getElementById('dropdownList');
-            list.innerHTML = `<div class="option-item" onclick="loadExhibition(null)"><div class="w-10 h-10 bg-black text-white rounded flex items-center justify-center font-bold text-lg">+</div><div class="info"><span class="title">Criar Nova Exposição</span></div></div>`;
-            
-            Object.keys(globalExhibitions).forEach(slug => {
-                const item = globalExhibitions[slug];
-                // Resolve imagem para preview: flyers ficam em pasta plana (sem subpasta)
-                let imgPreview = item.image || '';
-                if(!imgPreview.includes('/')) imgPreview = '../assets/exhibition/flyers/' + imgPreview;
-
-                list.innerHTML += `
-                <div class="option-item" onclick="loadExhibition('${slug}')">
-                    <img src="${imgPreview}" onerror="this.src='https://via.placeholder.com/40?text=IMG'">
-                    <div class="info"><span class="title">${item.title}</span><span class="slug text-xs text-gray-400">${slug}</span></div>
-                </div>`;
-            });
-        }
-
-        // === CARREGAR DADOS ===
-        function loadExhibition(slug) {
-            document.getElementById('dropdownList').classList.remove('open');
-            document.getElementById('exhibForm').classList.remove('opacity-50', 'pointer-events-none');
-            const btn = document.getElementById('selectBtn');
-
-            if(!slug) {
-                // NOVO
-                btn.innerHTML = `<span class="font-bold text-purple-600">Nova Exposição</span>`;
-                document.getElementById('exhibForm').reset();
-                document.getElementById('slug').readOnly = false;
-                document.getElementById('output').value = "// Preencha e clique em GERAR para ver o código com os caminhos corretos.";
-                return;
+                    const r = await job(`../assets/exhibition/img/${slug}/`, old, PHOTO_MAX, 600 * 1024,
+                        d => api('/upload-exhibition-gallery', { method: 'POST', body: JSON.stringify({ slug, filename: name, imageData: d }) }));
+                    if (r) gallery[i] = name; else if (!valid) taken.add(old);
+                } catch (e) { failed.push(`${old} (${e.message})`); }
             }
-
-            // EDITAR
-            const data = globalExhibitions[slug];
-            btn.innerHTML = `<span class="font-bold">${data.title}</span>`;
-            document.getElementById('slug').value = slug;
-            document.getElementById('slug').readOnly = true;
-            
-            document.getElementById('title').value = data.title;
-            document.getElementById('date').value = data.date || '';
-            document.getElementById('startDate').value = data.startDate || '';
-            document.getElementById('endDate').value = data.endDate || '';
-            document.getElementById('location').value = data.location;
-            
-            // LIMPEZA DE CAMINHOS PARA OS CAMPOS DE INPUT
-            // Removemos a pasta para mostrar apenas o nome do arquivo no input.
-            document.getElementById('image').value = (data.image || "").split('/').pop();
-
-            if(data.gallery && Array.isArray(data.gallery)) {
-                const cleanNames = data.gallery.map(p => p.split('/').pop());
-                document.getElementById('gallery_images').value = cleanNames.join(', ');
-            } else {
-                document.getElementById('gallery_images').value = "";
-            }
-
-            document.getElementById('desc_pt').value = data.description?.pt || "";
-            document.getElementById('desc_en').value = data.description?.en || "";
-            document.getElementById('desc_es').value = data.description?.es || "";
-
-            if(data.artworks && Array.isArray(data.artworks)) {
-                document.getElementById('artworks_list').value = data.artworks.join(', ');
-            } else {
-                document.getElementById('artworks_list').value = "";
-            }
-            document.getElementById('output').value = "// Clique em GERAR JSON para atualizar o código.";
+        } catch (e) { failed.push('cartaz (' + e.message + ')'); }
+        progress('');
+        renderFlyer(); renderGallery();
+        if (done) {
+            dirty = true;
+            await saveExhibition(`Reduzidas ${done} imagem(ns), menos ${(saved / 1048576).toFixed(1)} MB.`);
         }
+        if (failed.length) showStatus(`⚠️ ${done ? 'Reduzidas ' + done + ', mas ' : ''}não foi possível tratar: ${failed.join('; ')}`, 'error');
+        else if (!done) showStatus('Nenhuma imagem precisava de ser reduzida.', 'success');
+    }
 
-        // === DRAG & DROP ===
-        const flyerDrop = document.getElementById('flyerDrop');
-        const flyerInput = document.getElementById('flyerInput');
-        flyerDrop.addEventListener('click', () => flyerInput.click());
-        flyerInput.addEventListener('change', (e) => { 
-            if(e.target.files[0]) document.getElementById('image').value = e.target.files[0].name; 
-        });
-        flyerDrop.addEventListener('dragover', e => { e.preventDefault(); flyerDrop.style.borderColor = '#9333ea'; });
-        flyerDrop.addEventListener('drop', e => { 
-            e.preventDefault(); flyerDrop.style.borderColor = '#cbd5e1';
-            if(e.dataTransfer.files[0]) document.getElementById('image').value = e.dataTransfer.files[0].name;
-        });
+    function renderFlyer() {
+        const box = $('flyerPreview');
+        box.innerHTML = image ? `<img src="../assets/exhibition/flyers/${esc(image)}?v=${Date.now()}" class="w-full h-auto" onerror="this.replaceWith(document.createTextNode('ficheiro não encontrado'))">` : 'sem cartaz';
+        $('flyerName').textContent = image || '';
+    }
 
-        const galleryDrop = document.getElementById('galleryDrop');
-        const galleryInput = document.getElementById('galleryInput');
-        const galleryText = document.getElementById('gallery_images');
-        galleryDrop.addEventListener('click', () => galleryInput.click());
-        galleryInput.addEventListener('change', (e) => addFilesToGallery(e.target.files));
-        galleryDrop.addEventListener('dragover', e => { e.preventDefault(); galleryDrop.style.borderColor = '#9333ea'; });
-        galleryDrop.addEventListener('drop', e => { 
-            e.preventDefault(); galleryDrop.style.borderColor = '#cbd5e1';
-            addFilesToGallery(e.dataTransfer.files);
-        });
+    function renderGallery() {
+        const slug = $('slug').value.trim();
+        $('galleryCount').textContent = `(${gallery.length})`;
+        $('gallery').innerHTML = gallery.map((f, i) => `
+            <div class="g-item">
+                <img loading="lazy" src="../assets/exhibition/img/${esc(slug)}/${esc(f)}" alt="" onerror="this.style.opacity=.2">
+                <div class="name" title="${esc(f)}">${esc(f)}</div>
+                <div class="bar">
+                    <button type="button" onclick="moveImg(${i},-1)" title="Mover para trás">◀</button>
+                    <button type="button" onclick="removeImg(${i})" title="Tirar da lista">✕</button>
+                    <button type="button" onclick="moveImg(${i},1)" title="Mover para a frente">▶</button>
+                </div>
+            </div>`).join('');
+    }
+    function moveImg(i, d) {
+        const j = i + d; if (j < 0 || j >= gallery.length) return;
+        [gallery[i], gallery[j]] = [gallery[j], gallery[i]]; dirty = true; renderGallery();
+    }
+    function removeImg(i) { gallery.splice(i, 1); dirty = true; renderGallery(); }
 
-        function addFilesToGallery(files) {
-            if(!files.length) return;
-            const names = Array.from(files).map(f => f.name);
-            const current = galleryText.value.trim();
-            galleryText.value = current ? current + ', ' + names.join(', ') : names.join(', ');
+    function wireDrop(zoneId, inputId, handler) {
+        const z = $(zoneId), inp = $(inputId);
+        z.addEventListener('click', () => inp.click());
+        inp.addEventListener('change', e => { if (e.target.files.length) handler(e.target.files); inp.value = ''; });
+        z.addEventListener('dragover', e => { e.preventDefault(); z.classList.add('over'); });
+        z.addEventListener('dragleave', () => z.classList.remove('over'));
+        z.addEventListener('drop', e => { e.preventDefault(); z.classList.remove('over'); if (e.dataTransfer.files.length) handler(e.dataTransfer.files); });
+    }
+    wireDrop('flyerDrop', 'flyerInput', files => uploadFlyer(files[0]));
+    wireDrop('galleryDrop', 'galleryInput', files => uploadPhotos(files));
+    ['title', 'location', 'startDate', 'endDate', 'dateLabel', 'desc_pt', 'desc_en', 'desc_es', 'published', 'slug']
+        .forEach(id => $(id).addEventListener('input', () => { dirty = true; }));
+    window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+    // ---------- Gravar ----------
+    function readForm() {
+        return {
+            title: $('title').value.trim(),
+            date: $('dateLabel').value.trim(),
+            startDate: $('startDate').value,
+            endDate: $('endDate').value || '',
+            location: $('location').value.trim(),
+            image,
+            description: { pt: $('desc_pt').value.trim(), en: $('desc_en').value.trim(), es: $('desc_es').value.trim() },
+            gallery: [...gallery],
+            artworks: [...picked],
+            published: $('published').checked
+        };
+    }
+
+    async function saveExhibition(okPrefix) {
+        const slug = $('slug').value.trim();
+        const x = readForm();
+        if (!SLUG_RE.test(slug)) return showStatus('ID inválido: só minúsculas, números e "-".', 'error');
+        if (!x.title) return showStatus('Falta o título.', 'error');
+        if (!x.startDate) return showStatus('Falta a data de início (sem ela a exposição não entra na proveniência nem na situação das obras).', 'error');
+        if (x.endDate && x.endDate < x.startDate) return showStatus('A data de fim é anterior à de início.', 'error');
+        if (x.published && !x.image && !confirm('Vai publicar uma exposição sem cartaz. Continuar?')) return;
+
+        const btn = $('saveBtn'); btn.disabled = true; btn.textContent = '⏳ A guardar…';
+        try {
+            // Parte sempre do ficheiro atual do servidor e só altera esta exposição
+            const fresh = await fetchExhibitions();
+            if (isNew && fresh[slug]) throw new Error(`Já existe uma exposição com o ID "${slug}".`);
+            fresh[slug] = { ...(fresh[slug] || {}), ...x };
+            await api('/save-exhibitions', { method: 'POST', body: JSON.stringify(fresh) });
+            exhibitions = fresh;
+            current = slug; isNew = false; dirty = false;
+            fillForm(slug, exhibitions[slug]);
+            showStatus(`✅ ${okPrefix ? okPrefix + ' ' : ''}Exposição guardada${x.published ? '' : ' (rascunho — não aparece na lista do site)'}.`, 'success');
+        } catch (e) {
+            showStatus('❌ ' + e.message, 'error');
         }
-        function clearGallery() { if(confirm("Limpar lista?")) document.getElementById('gallery_images').value = ""; }
+        btn.disabled = false; btn.textContent = '💾 Guardar no servidor';
+    }
 
-        // === DATA (calendário) → rótulo automático ===
-        const MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        function updateDateLabel() {
-            const s = document.getElementById('startDate').value;
-            const e = document.getElementById('endDate').value;
-            if (!s) return;
-            const sd = new Date(s + 'T00:00:00');
-            const label = document.getElementById('date');
-            if (e && e !== s) {
-                const ed = new Date(e + 'T00:00:00');
-                label.value = (sd.getFullYear() === ed.getFullYear())
-                    ? `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`
-                    : `${MONTHS_ABBR[sd.getMonth()]},${sd.getDate()}, ${sd.getFullYear()} - ${MONTHS_ABBR[ed.getMonth()]},${ed.getDate()}, ${ed.getFullYear()}`;
-            } else {
-                label.value = `${MONTHS_ABBR[sd.getMonth()]}, ${sd.getFullYear()}`;
-            }
-        }
+    async function deleteExhibition() {
+        if (!current) return;
+        if (!confirm(`Apagar a exposição "${exhibitions[current]?.title || current}"?\n\nSai do site, da situação das obras e da proveniência dos certificados. As imagens ficam no servidor.`)) return;
+        try {
+            const fresh = await fetchExhibitions();
+            delete fresh[current];
+            await api('/save-exhibitions', { method: 'POST', body: JSON.stringify(fresh) });
+            exhibitions = fresh; current = null; dirty = false;
+            $('form').classList.add('hidden'); $('formEmpty').classList.remove('hidden');
+            renderList();
+            showStatus('Exposição apagada (há backup no servidor).', 'success');
+        } catch (e) { showStatus('❌ ' + e.message, 'error'); }
+    }
 
-        // === GERAR JSON (CORREÇÃO CRÍTICA DE CAMINHOS) ===
-        function generateJSON() {
-            const slug = document.getElementById('slug').value.trim();
-            if(!slug) return alert("O ID/Slug é obrigatório.");
-
-            // 1. CAPA (Flyer): apenas o nome do ficheiro (pasta plana "assets/exhibition/flyers/",
-            //    resolvida em tempo de execução por exhibition.html)
-            let imgFilename = document.getElementById('image').value.trim();
-            // Remove qualquer caminho anterior (resolve C:\user... ou assets/...)
-            imgFilename = imgFilename.replace(/\\/g, '/').split('/').pop();
-            const finalImg = imgFilename;
-
-            // 2. GALERIA: apenas os nomes dos ficheiros (pasta "assets/exhibition/img/<slug>/",
-            //    resolvida em tempo de execução por exhibition.html com base no slug)
-            const rawGallery = document.getElementById('gallery_images').value.split(',');
-            const finalGallery = rawGallery
-                .map(s => s.trim())
-                .filter(s => s.length > 0)
-                .map(name => {
-                    // Limpa o nome do arquivo (remove caminho, se houver)
-                    return name.replace(/\\/g, '/').split('/').pop();
-                });
-
-            // Obras
-            const finalArtworks = document.getElementById('artworks_list').value.split(',').map(s => s.trim()).filter(s => s.length > 0);
-
-            const startDateVal = document.getElementById('startDate').value;
-            const endDateVal   = document.getElementById('endDate').value;
-            if (!startDateVal) alert("⚠ Sem Data de Início: a exposição vai aparecer no fim da lista na home.");
-
-            const jsonObj = {
-                title: document.getElementById('title').value,
-                date: document.getElementById('date').value,
-                startDate: startDateVal || undefined,
-                endDate: endDateVal || startDateVal || undefined,
-                location: document.getElementById('location').value,
-                image: finalImg, // Caminho corrigido
-                description: {
-                    pt: document.getElementById('desc_pt').value,
-                    en: document.getElementById('desc_en').value,
-                    es: document.getElementById('desc_es').value
-                },
-                gallery: finalGallery, // Caminhos corrigidos
-                artworks: finalArtworks
-            };
-
-            const jsonString = `"${slug}": ${JSON.stringify(jsonObj, null, 4)},`;
-            
-            const output = document.getElementById('output');
-            output.value = jsonString;
-            output.classList.add('bg-green-900', 'text-white');
-            setTimeout(() => output.classList.remove('bg-green-900', 'text-white'), 300);
-        }
-
-        function copyToClipboard() {
-            const copyText = document.getElementById("output");
-            copyText.select(); document.execCommand("copy");
-            alert("Código copiado! Verifique os caminhos antes de salvar.");
-        }
-    </script>
+    (async function boot() {
+        if (!SECRET) { $('loginBox').classList.remove('hidden'); return; }
+        try { await api('/verify-secret'); start(); }
+        catch (e) { $('loginBox').classList.remove('hidden'); }
+    })();
+</script>
 </body>
 </html>

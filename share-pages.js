@@ -235,6 +235,7 @@ async function generate() {
 
     for (const [slug, ex] of Object.entries(exhibitions)) {
         if (!SLUG_PATTERN.test(slug) || !ex || typeof ex !== 'object') continue;
+        if (ex.published === false) continue; // rascunho: ainda não é público
         const image = await ogImage('exhibition', slug, [exhibitionSourceImage(slug, ex), FALLBACK_IMAGE]);
         if (image.rel.startsWith('share/img/')) keep.img.add(path.basename(image.rel));
 

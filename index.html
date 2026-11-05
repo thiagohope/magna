@@ -26,7 +26,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="situations-lib.js?v=20261104b"></script>
+    <script src="situations-lib.js?v=20261104c"></script>
     <script src="share-lib.js"></script>
 
     <style>
@@ -1167,8 +1167,10 @@
       // ── EXHIBITIONS ──
       async function loadExhibitions() {
         try {
-          const res  = await fetch('exhibitions.json');
-          const data = await res.json();
+          const res  = await fetch('exhibitions.json?v=' + Date.now());
+          const all  = await res.json();
+          // Rascunhos (published:false) contam para a situação das obras mas não aparecem aqui
+          const data = Object.fromEntries(Object.entries(all).filter(([, e]) => e && e.published !== false));
           const list = document.getElementById('exhibitionsList');
           list.innerHTML = '';
           // Mais recente primeiro: ordena por startDate (fallback: endDate, depois final da lista)

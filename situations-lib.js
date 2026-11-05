@@ -28,7 +28,7 @@
         return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
     }
 
-    async function load(base) {
+    async function loadSituationsFile(base) {
         try {
             const r = await fetch((base || '') + 'situations.json?v=' + Date.now());
             if (!r.ok) return [];
@@ -37,6 +37,31 @@
         } catch (e) {
             return [];
         }
+    }
+
+    // Fonte única das exposições: exhibitions.json. Cada exposição (publicada ou
+    // rascunho) conta como situação "em exposição" das obras da sua lista.
+    function exhibitionsAsSituations(exhibitions) {
+        return Object.entries(exhibitions || {})
+            .filter(([, x]) => x && typeof x === 'object' && x.startDate)
+            .map(([slug, x]) => ({
+                id: 'exh_' + slug, type: 'exhibition', exhibition: slug, title: x.title || '',
+                place: x.location || x.title || '', startDate: x.startDate, endDate: x.endDate || '',
+                artworks: Array.isArray(x.artworks) ? x.artworks : []
+            }));
+    }
+
+    // situations.json (reservada, em restauro e exposições antigas ainda não migradas)
+    // + exposições do exhibitions.json. Uma exposição antiga do situations.json que já
+    // exista no exhibitions.json (mesma data de início e pelo menos uma obra em comum)
+    // é ignorada, para não aparecer duas vezes.
+    async function load(base) {
+        const [sits, exh] = await Promise.all([loadSituationsFile(base), loadExhibitions(base)]);
+        const fromExh = exhibitionsAsSituations(exh);
+        const low = a => (a || []).map(x => String(x).trim().toLowerCase());
+        const legacy = sits.filter(s => !(s.type === 'exhibition' && fromExh.some(e =>
+            e.startDate === s.startDate && low(e.artworks).some(a => low(s.artworks).includes(a)))));
+        return legacy.concat(fromExh);
     }
 
     function isActive(s, t) {
@@ -117,17 +142,17 @@
         const add   = e => { if (![...seen, ...out].some(h => same(h, e))) out.push(e); };
         const low   = String(slug || '').trim().toLowerCase();
 
-        Object.values(exhibitions || {}).forEach(x => {
+        Object.entries(exhibitions || {}).forEach(([exSlug, x]) => {
             if (!x || !x.startDate || !(x.artworks || []).some(a => String(a).trim().toLowerCase() === low)) return;
             const end = x.endDate || x.startDate;
             if (end >= t) return; // ainda a decorrer ou futura
             add({ date: x.startDate, event: 'Exhibition', location: x.location || x.title || '',
-                  details: [x.title, range(x.startDate, end)].filter(Boolean).join(' · ') });
+                  details: [x.title, range(x.startDate, end)].filter(Boolean).join(' · '), exhibition: exSlug });
         });
         endedExhibitionsFor(situations, slug, t).forEach(s =>
             add({ date: s.startDate, event: 'Exhibition', location: s.place || '', details: range(s.startDate, s.endDate) }));
         return out;
     }
 
-    global.MagnaSituations = { load, today, isActive, activeFor, hasActive, endedExhibitionsFor, labels, describe, formatDate, collectionEntry, loadExhibitions, provenanceExhibitions };
+    global.MagnaSituations = { load, today, isActive, activeFor, hasActive, endedExhibitionsFor, labels, describe, formatDate, collectionEntry, loadExhibitions, provenanceExhibitions, exhibitionsAsSituations };
 })(window);

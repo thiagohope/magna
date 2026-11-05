@@ -1417,9 +1417,21 @@ const server = http.createServer((req, res) => {
 
         readJsonBody(req, res, MAX_JSON_SIZE, (parsed) => {
             try {
-                if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+                if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
                     throw new Error('Root must be a JSON object');
                 }
+                // Validação mínima: um erro aqui partia a home e os certificados.
+                Object.entries(parsed).forEach(([slug, ex]) => {
+                    if (!SLUG_PATTERN.test(slug)) throw new Error(`ID de exposição inválido "${slug}" — só minúsculas, números e "-".`);
+                    if (!ex || typeof ex !== 'object' || Array.isArray(ex)) throw new Error(`${slug}: entrada inválida.`);
+                    ['startDate', 'endDate'].forEach(k => {
+                        if (ex[k] && !ISO_DATE_PATTERN.test(ex[k])) throw new Error(`${slug}: ${k} inválida.`);
+                    });
+                    if (ex.startDate && ex.endDate && ex.endDate < ex.startDate) throw new Error(`${slug}: a data de fim é anterior à de início.`);
+                    if (ex.artworks !== undefined && !Array.isArray(ex.artworks)) throw new Error(`${slug}: "artworks" tem de ser uma lista.`);
+                    if (ex.gallery !== undefined && !Array.isArray(ex.gallery)) throw new Error(`${slug}: "gallery" tem de ser uma lista.`);
+                    if ('published' in ex) ex.published = ex.published !== false; // sem campo = publicada (exposições antigas)
+                });
 
                 makeBackup(EXHIBITIONS_PATH, 'exhibitions');
 

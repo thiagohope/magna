@@ -195,8 +195,8 @@
 
             try {
                 const [exhRes, artRes] = await Promise.all([
-                    fetch('exhibitions.json'),
-                    fetch('artworks.json')
+                    fetch('exhibitions.json?v=' + Date.now()),
+                    fetch('artworks.json?v=' + Date.now())
                 ]);
 
                 const exhibitions = await exhRes.json();
@@ -204,6 +204,8 @@
                 const data = exhibitions[slug];
 
                 if(!data) throw new Error("ID não encontrado no JSON.");
+                // Rascunho: só visível em pré-visualização a partir do admin (?preview=1)
+                if (data.published === false && urlParams.get('preview') !== '1') throw new Error("Exposição ainda não publicada.");
 
                 // Traduções
                 const t = translations[currentLang];

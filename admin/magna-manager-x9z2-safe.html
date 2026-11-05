@@ -15,6 +15,7 @@
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="../situations-lib.js?v=20261104c"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
     <style>
         body { background: #f8fafc; font-family: 'Inter', sans-serif; color: #334155; }
@@ -256,8 +257,16 @@
                         <span>Histórico de Proveniência</span>
                         <button type="button" onclick="addHistoryRow()" class="text-[10px] bg-black text-white px-3 py-1 rounded hover:opacity-80 uppercase font-bold">+ Adicionar</button>
                     </div>
-                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-6">
-                        <div id="historyList" class="space-y-3"><p class="text-center text-xs text-gray-400 italic py-2">Nenhum registro.</p></div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-3">
+                        <div id="historyList" class="space-y-3" oninput="renderAutoProvenance()" onchange="renderAutoProvenance()"><p class="text-center text-xs text-gray-400 italic py-2">Nenhum registro.</p></div>
+                    </div>
+                    <div class="bg-emerald-50 p-4 rounded-xl border border-emerald-100 mb-6">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-bold uppercase text-emerald-800">Linhas automáticas no certificado</span>
+                            <button type="button" onclick="renderAutoProvenance(true)" class="text-[10px] underline text-emerald-800">↻ atualizar</button>
+                        </div>
+                        <p class="text-[10px] text-emerald-700 mb-2">Não se editam aqui: as exposições vêm do gestor de Exposições e a coleção da "Situação atual" (abaixo). Para corrigir uma exposição — ou tirar esta obra dela — abra-a no gestor. Uma linha escrita à mão acima com a mesma data substitui a automática.</p>
+                        <div id="autoProvenance" class="text-xs space-y-1"></div>
                     </div>
 
                     <!-- Certificate data -->
@@ -466,7 +475,7 @@
             </div>
             <input type="text" class="hist-loc text-xs mb-2" placeholder="Local">
             <input type="text" class="hist-details text-xs text-gray-500" placeholder="Detalhes (opcional)">
-            <button onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-100 text-red-500 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition shadow-sm">×</button>
+            <button type="button" title="Apagar esta linha" onclick="this.parentElement.remove(); renderAutoProvenance()" class="absolute -top-2 -right-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold transition shadow-sm">×</button>
         </div>
     </template>
 
@@ -553,6 +562,41 @@
             return o;
         }
 
+        // Mostra o que o certificado acrescenta sozinho (exposições + coleção), com a origem.
+        let _provSources = null;
+        async function renderAutoProvenance(reload) {
+            const box = document.getElementById('autoProvenance');
+            if (!box || !window.MagnaSituations || !MagnaSituations.provenanceExhibitions) return;
+            const slug = document.getElementById('slug').value.trim();
+            if (!slug) { box.innerHTML = '<p class="italic text-gray-400">—</p>'; return; }
+            if (reload || !_provSources) _provSources = Promise.all([MagnaSituations.load('../'), MagnaSituations.loadExhibitions('../')]);
+            const [sits, exh] = await _provSources;
+            const manual = [...document.querySelectorAll('.history-row')].map(r => ({
+                date: r.querySelector('.hist-date').value, event: r.querySelector('.hist-event').value, location: r.querySelector('.hist-loc').value
+            })).filter(h => h.event !== 'Transfer');
+            const lines = MagnaSituations.provenanceExhibitions(sits, exh, slug, manual);
+            const unavailable = document.getElementById('status').value === 'unavailable';
+            const coll = unavailable ? MagnaSituations.collectionEntry({
+                collectionType: document.getElementById('collectionType').value,
+                collectionSince: document.getElementById('collectionSince').value,
+                publicCollection: document.getElementById('publicCollection').value.trim(),
+                collectionCountry: document.getElementById('collectionCountry').value.trim()
+            }) : null;
+            if (coll) lines.push({ ...coll, fromCollection: true });
+            lines.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
+            box.innerHTML = lines.length ? lines.map(l => `
+                <div class="flex flex-wrap items-baseline gap-x-2 bg-white rounded border border-emerald-100 px-2 py-1">
+                    <span class="font-bold w-20">${privEsc(l.date)}</span>
+                    <span class="uppercase font-bold text-[10px]">${privEsc(l.event)}</span>
+                    <span>${privEsc(l.location)}</span>
+                    <span class="ml-auto text-[10px] text-emerald-700">${l.fromCollection ? 'Situação atual ↓'
+                        : l.exhibition ? `<a class="underline" target="_blank" href="magna-exhibitions-manager.html?id=${encodeURIComponent(l.exhibition)}">gestor de Exposições ↗</a>`
+                        : 'Situações (formato antigo)'}</span>
+                </div>`).join('') : '<p class="italic text-gray-400">Nenhuma.</p>';
+        }
+        ['status', 'collectionSince', 'collectionCountry', 'publicCollection'].forEach(id =>
+            document.addEventListener('DOMContentLoaded', () => document.getElementById(id).addEventListener('input', () => renderAutoProvenance())));
+
         // Situação atual: coleção pública mostra o nome; privada só o país.
         function onCollectionTypeChange() {
             const t = document.getElementById('collectionType').value;
@@ -560,6 +604,7 @@
             document.getElementById('collectionCountryBox').classList.toggle('invisible', t !== 'private');
             const country = document.getElementById('collectionCountry');
             if (t === 'private' && !country.value.trim()) country.value = 'Portugal';
+            renderAutoProvenance();
         }
         // A data do registo interno preenche o "Desde" quando este está vazio (fica editável).
         document.addEventListener('DOMContentLoaded', () => {
@@ -1737,6 +1782,7 @@
 
             onStatusChange();
             updateInterface();
+            renderAutoProvenance();
         }
 
         // ============================================================

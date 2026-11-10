@@ -47,7 +47,7 @@
     <a href="admin-hub.html" class="text-xs text-gray-500 hover:text-black">← Voltar ao Admin Hub</a>
     <h1 class="serif text-3xl mt-2 mb-1">Situações das Obras</h1>
     <p class="text-sm text-gray-500 mb-6">Situações temporárias, para várias obras de uma vez: <strong>em exposição</strong>, <strong>reservada</strong> ou <strong>em restauro</strong>. Cada uma só aparece no site entre a data de início e a de fim; depois a obra volta sozinha ao que era. Este ficheiro é público — não escreva aqui nomes de clientes.</p>
-    <p class="text-sm text-gray-500 -mt-4 mb-6">As <strong>exposições</strong> são gravadas nas Exposições do site (<code>exhibitions.json</code>) — a mesma fonte usada pela página da exposição, pela situação das obras e pela proveniência dos certificados. Uma exposição criada aqui fica em <strong>rascunho</strong>: falta juntar cartaz e fotos no <a href="magna-exhibitions-manager.html" class="underline">gestor de Exposições</a> e publicar.</p>
+    <p class="text-sm text-gray-500 -mt-4 mb-6">As <strong>exposições</strong> são gravadas nas Exposições do site (<code>exhibitions.json</code>) — a mesma fonte usada pela página da exposição, pela situação das obras e pela proveniência dos certificados. Enquanto decorre, aparece na faixa do topo da home e nas obras; quando termina, passa sozinha para a secção Exposições do site. O cartaz e as fotos juntam-se depois, no <a href="magna-exhibitions-manager.html" class="underline">gestor de Exposições</a>.</p>
 
     <div id="statusBar" class="hidden mb-4 p-3 rounded-lg text-sm font-medium"></div>
 
@@ -203,7 +203,7 @@
     function renderExhSelect(selected) {
         const opts = Object.entries(exhibitions).sort((a, b) => String(b[1].startDate || '').localeCompare(String(a[1].startDate || '')));
         document.getElementById('exhSelect').innerHTML = '<option value="">＋ Nova exposição</option>' +
-            opts.map(([slug, x]) => `<option value="${esc(slug)}">${esc(x.title || slug)}${x.startDate ? ' · ' + esc(x.startDate.slice(0, 4)) : ''}${x.published === false ? ' (rascunho)' : ''}</option>`).join('');
+            opts.map(([slug, x]) => `<option value="${esc(slug)}">${esc(x.title || slug)}${x.startDate ? ' · ' + esc(x.startDate.slice(0, 4)) : ''}${x.published === false ? ' (oculta)' : ''}</option>`).join('');
         document.getElementById('exhSelect').value = selected || '';
     }
 
@@ -303,7 +303,7 @@
             slug = base; let i = 2;
             while (fresh[slug]) slug = `${base}-${i++}`;
         }
-        const prev = fresh[slug] || { image: '', gallery: [], description: { pt: '', en: '', es: '' }, published: false };
+        const prev = fresh[slug] || { image: '', gallery: [], description: { pt: '', en: '', es: '' } };
         const datesChanged = prev.startDate !== startDate || (prev.endDate || '') !== endDate;
         fresh[slug] = {
             ...prev, title, location: place, startDate, endDate,
@@ -312,7 +312,7 @@
         };
         const isNewExh = !editingExh;
         if (await persistExhibitions(fresh, isNewExh
-            ? `✅ Exposição criada em rascunho (${picked.size} obra${picked.size === 1 ? '' : 's'}). Falta juntar cartaz e fotos e publicar no gestor de Exposições.`
+            ? `✅ Exposição criada (${picked.size} obra${picked.size === 1 ? '' : 's'}). Já aparece no site enquanto decorrer; cartaz e fotos juntam-se depois no gestor de Exposições.`
             : `✅ Exposição atualizada (${picked.size} obra${picked.size === 1 ? '' : 's'}).`)) resetForm();
     }
 
@@ -409,7 +409,7 @@
                 <div class="border rounded-lg p-3 mb-2 flex flex-wrap items-start justify-between gap-3">
                     <div class="min-w-0">
                         <span class="text-[11px] font-bold uppercase px-2 py-0.5 rounded ${TYPE_COLOR[s.type]}">${TYPE_LABEL[s.type]}</span>
-                        ${s.draft ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Rascunho</span>' : ''}
+                        ${s.draft ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-gray-200 text-gray-700">Oculta</span>' : ''}
                         ${s.legacy ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-red-100 text-red-800" title="Exposição antiga em situations.json — será migrada para as Exposições">Formato antigo</span>' : ''}
                         <span class="text-sm font-medium ml-1">${esc(s.exh ? s.title : (s.place || ''))}</span>
                         ${s.exh && s.place ? `<span class="text-xs text-gray-500">— ${esc(s.place)}</span>` : ''}

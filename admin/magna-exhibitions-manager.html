@@ -34,7 +34,7 @@
 
     <a href="admin-hub.html" class="text-xs text-gray-500 hover:text-black">← Voltar ao Admin Hub</a>
     <h1 class="serif text-3xl mt-2 mb-1">Exposições</h1>
-    <p class="text-sm text-gray-500 mb-6">Grava diretamente no servidor (<code>exhibitions.json</code>, com backup automático). As imagens são reduzidas no browser antes do envio. Uma exposição em <strong>rascunho</strong> já conta para a situação e a proveniência das obras, mas só aparece na lista do site depois de publicada.</p>
+    <p class="text-sm text-gray-500 mb-6">Grava diretamente no servidor (<code>exhibitions.json</code>, com backup automático). As imagens são reduzidas no browser antes do envio. A data decide onde aparece: <strong>a decorrer</strong> → faixa no topo da home, etiqueta nas obras e certificados; <strong>terminada</strong> → secção Exposições do site. Junte cartaz e fotos quando puder. Desmarque "Visível no site" só para esconder uma exposição.</p>
 
     <div id="statusBar" class="hidden mb-4 p-3 rounded-lg text-sm font-medium"></div>
 
@@ -65,7 +65,7 @@
                     <h2 id="formTitle" class="serif text-2xl">Nova exposição</h2>
                     <label class="flex items-center gap-2 text-sm font-medium cursor-pointer">
                         <input type="checkbox" id="published" class="w-4 h-4">
-                        Publicada no site
+                        Visível no site
                     </label>
                 </div>
 
@@ -175,6 +175,7 @@
     let picked = new Set();
     let dirty = false;
 
+    const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
     const $ = id => document.getElementById(id);
 
@@ -232,7 +233,9 @@
             <div class="exh-item ${slug === current ? 'on' : ''}" onclick="openExhibition('${esc(slug)}')">
                 <div class="flex items-start justify-between gap-2">
                     <div class="font-medium text-sm">${esc(x.title || slug)}</div>
-                    ${x.published === false ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 whitespace-nowrap">Rascunho</span>' : ''}
+                    ${x.published === false ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-gray-200 text-gray-700 whitespace-nowrap">Oculta</span>'
+                      : (x.endDate && x.endDate < today() && !(x.gallery || []).length) ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 whitespace-nowrap">Faltam fotos</span>'
+                      : (x.startDate && x.startDate <= today() && (!x.endDate || today() <= x.endDate)) ? '<span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 whitespace-nowrap">A decorrer</span>' : ''}
                 </div>
                 <div class="text-xs text-gray-500 mt-0.5">${esc(x.startDate || 'sem data')}${x.endDate && x.endDate !== x.startDate ? ' → ' + esc(x.endDate) : ''} · ${(x.artworks || []).length} obra(s) · ${(x.gallery || []).length} foto(s)${x.image ? '' : ' · <span class="text-red-600">sem cartaz</span>'}</div>
             </div>`).join('') : '<p class="text-sm text-gray-400 italic">Ainda não há exposições.</p>';
@@ -245,7 +248,7 @@
     function newExhibition() {
         if (!confirmDiscard()) return;
         current = null; isNew = true; slugTouched = false;
-        fillForm('', { published: false });
+        fillForm('', { published: true });
     }
 
     function openExhibition(slug) {
@@ -520,7 +523,6 @@
         if (!x.title) return showStatus('Falta o título.', 'error');
         if (!x.startDate) return showStatus('Falta a data de início (sem ela a exposição não entra na proveniência nem na situação das obras).', 'error');
         if (x.endDate && x.endDate < x.startDate) return showStatus('A data de fim é anterior à de início.', 'error');
-        if (x.published && !x.image && !confirm('Vai publicar uma exposição sem cartaz. Continuar?')) return;
 
         const btn = $('saveBtn'); btn.disabled = true; btn.textContent = '⏳ A guardar…';
         try {
@@ -532,7 +534,7 @@
             exhibitions = fresh;
             current = slug; isNew = false; dirty = false;
             fillForm(slug, exhibitions[slug]);
-            showStatus(`✅ ${okPrefix ? okPrefix + ' ' : ''}Exposição guardada${x.published ? '' : ' (rascunho — não aparece na lista do site)'}.`, 'success');
+            showStatus(`✅ ${okPrefix ? okPrefix + ' ' : ''}Exposição guardada${x.published ? '' : ' (oculta — não aparece no site)'}.`, 'success');
         } catch (e) {
             showStatus('❌ ' + e.message, 'error');
         }

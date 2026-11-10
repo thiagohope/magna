@@ -8,7 +8,7 @@
  *  - Se já existir no exhibitions.json uma exposição com a mesma data de início
  *    e pelo menos uma obra em comum (ou o mesmo local), junta-lhe as obras que
  *    faltarem — não cria duplicado.
- *  - Senão cria uma exposição nova em RASCUNHO (published:false), com o local
+ *  - Senão cria uma exposição nova (visível conforme as datas), com o local
  *    como título provisório, para depois completar no gestor de Exposições.
  *  - Remove essas exposições do situations.json (reservada/restauro ficam).
  *  - Faz cópia de segurança dos dois ficheiros em backups/ antes de escrever.
@@ -79,10 +79,9 @@ for (const s of toMove) {
             startDate: s.startDate, endDate: s.endDate || '',
             location: s.place, image: '',
             description: { pt: '', en: '', es: '' },
-            gallery: [], artworks: [...(s.artworks || [])],
-            published: false
+            gallery: [], artworks: [...(s.artworks || [])]
         };
-        console.log(`  • ${s.place} (${s.startDate}) → nova exposição em RASCUNHO "${slug}" (${(s.artworks || []).length} obra(s)) — complete título, cartaz e fotos no gestor`);
+        console.log(`  • ${s.place} (${s.startDate}) → nova exposição "${slug}" (${(s.artworks || []).length} obra(s)) — título provisório = local; complete título, cartaz e fotos no gestor`);
     }
 }
 

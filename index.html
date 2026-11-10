@@ -1186,8 +1186,8 @@
 
       // ── EXHIBITIONS ──
       // ── EM EXPOSIÇÃO AGORA ──
-      // Exposições a decorrer hoje (publicadas ou ainda em rascunho). As publicadas
-      // têm link para a página da exposição; os rascunhos ainda não têm página.
+      // A data decide onde cada exposição aparece: a decorrer → esta faixa no topo;
+      // terminada → secção Exposições. published:false = ocultada à mão (exceção).
       const NOW_TXT = {
         en: { label: 'On view now', until: 'until', open: 'open until further notice', works: n => `${n} work${n === 1 ? '' : 's'} on view`, view: 'See exhibition', go: 'Directions', live: 'On now' },
         pt: { label: 'Em exposição agora', until: 'até', open: 'até nova indicação', works: n => `${n} obra${n === 1 ? '' : 's'} em exposição`, view: 'Ver exposição', go: 'Como chegar', live: 'A decorrer' },
@@ -1198,7 +1198,7 @@
         const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
         const today = MagnaSituations.today();
         const live = Object.entries(all || {})
-          .filter(([, e]) => e && e.startDate && e.startDate <= today && (!e.endDate || today <= e.endDate))
+          .filter(([, e]) => e && e.published !== false && e.startDate && e.startDate <= today && (!e.endDate || today <= e.endDate))
           .sort(([, a], [, b]) => String(a.endDate || '9999').localeCompare(String(b.endDate || '9999')));
         const box = document.getElementById('nowShowing');
         if (!live.length) { box.classList.add('hidden'); return; }
@@ -1215,7 +1215,7 @@
                 <div class="now-card__meta">${esc(e.location || '')}${e.location ? ' · ' : ''}${esc(when)}${n ? ' · ' + T.works(n) : ''}</div>
               </div>
               <div class="now-card__actions">
-                ${e.published !== false ? `<a class="now-btn now-btn--dark" href="exhibition.html?id=${encodeURIComponent(slug)}">${T.view}</a>` : ''}
+                <a class="now-btn now-btn--dark" href="exhibition.html?id=${encodeURIComponent(slug)}">${T.view}</a>
                 ${maps ? `<a class="now-btn now-btn--light" href="${maps}" target="_blank" rel="noopener">${T.go}</a>` : ''}
               </div>
             </div>`;
@@ -1227,8 +1227,11 @@
         try {
           const res  = await fetch('exhibitions.json?v=' + Date.now());
           const all  = await res.json();
-          // Rascunhos (published:false) contam para a situação das obras mas não aparecem aqui
-          const data = Object.fromEntries(Object.entries(all).filter(([, e]) => e && e.published !== false));
+          // Secção Exposições: só as que já terminaram (as a decorrer estão na faixa do topo,
+          // as futuras ainda não aparecem). Sem data de início = exposição antiga, mostra-se.
+          const todayL = MagnaSituations.today();
+          const ended = e => !e.startDate || (!!e.endDate && e.endDate < todayL);
+          const data = Object.fromEntries(Object.entries(all).filter(([, e]) => e && e.published !== false && ended(e)));
           renderNowShowing(all);
           const today = MagnaSituations.today();
           const isLive = e => e.startDate && e.startDate <= today && (!e.endDate || today <= e.endDate);

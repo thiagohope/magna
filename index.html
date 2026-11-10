@@ -459,6 +459,21 @@
       @media (min-width: 1024px) {
         .gallery-wrapper { grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
       }
+      /* ── EM EXPOSIÇÃO AGORA ── */
+      .now-list { display:flex; flex-direction:column; gap:.75rem; }
+      .now-card { display:flex; gap:1rem; align-items:center; background:#fafaf8; border:1px solid #ececec; border-radius:14px; padding:.85rem 1rem; }
+      .now-card__flyer { width:64px; height:84px; flex-shrink:0; border-radius:6px; overflow:hidden; background:#eee; }
+      .now-card__flyer img { width:100%; height:100%; object-fit:cover; display:block; }
+      .now-card__label { display:inline-flex; align-items:center; gap:.4rem; font-size:.66rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:#b4232a; }
+      .now-card__label::before { content:''; width:7px; height:7px; border-radius:50%; background:#e11d48; box-shadow:0 0 0 3px rgba(225,29,72,.15); }
+      .now-card__title { font-family:'Playfair Display',serif; font-size:1.05rem; font-weight:500; color:#111; margin:.15rem 0 .1rem; line-height:1.25; }
+      .now-card__meta { font-size:.8rem; color:#666; }
+      .now-card__actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-left:auto; }
+      .now-btn { font-size:.72rem; font-weight:600; border-radius:999px; padding:.45rem .9rem; border:1px solid #111; white-space:nowrap; text-decoration:none; }
+      .now-btn--dark { background:#111; color:#fff; }
+      .now-btn--light { background:#fff; color:#111; }
+      .exhib-live { display:inline-block; margin-left:.5rem; font-size:.6rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#fff; background:#e11d48; border-radius:999px; padding:.15rem .5rem; vertical-align:middle; }
+      @media (max-width:640px) { .now-card { flex-wrap:wrap; } .now-card__actions { margin-left:0; width:100%; } }
     </style>
   </head>
   <body>
@@ -527,6 +542,11 @@
         <p class="intro-body" data-i18n="introText" style="font-style:italic;">I started painting to fill...</p>
         <p class="intro-quote" data-i18n="introText2"></p>
       </div>
+    </section>
+
+    <!-- EM EXPOSIÇÃO AGORA: aparece sozinho enquanto houver exposições a decorrer -->
+    <section id="nowShowing" class="bg-white hidden" style="padding-bottom:2.5rem;">
+      <div class="container"><div id="nowShowingList" class="now-list"></div></div>
     </section>
 
     <!-- FILTER TOOLBAR -->
@@ -1165,12 +1185,53 @@
       }, {passive:true});
 
       // ── EXHIBITIONS ──
+      // ── EM EXPOSIÇÃO AGORA ──
+      // Exposições a decorrer hoje (publicadas ou ainda em rascunho). As publicadas
+      // têm link para a página da exposição; os rascunhos ainda não têm página.
+      const NOW_TXT = {
+        en: { label: 'On view now', until: 'until', open: 'open until further notice', works: n => `${n} work${n === 1 ? '' : 's'} on view`, view: 'See exhibition', go: 'Directions', live: 'On now' },
+        pt: { label: 'Em exposição agora', until: 'até', open: 'até nova indicação', works: n => `${n} obra${n === 1 ? '' : 's'} em exposição`, view: 'Ver exposição', go: 'Como chegar', live: 'A decorrer' },
+        es: { label: 'En exposición ahora', until: 'hasta', open: 'hasta nuevo aviso', works: n => `${n} obra${n === 1 ? '' : 's'} en exposición`, view: 'Ver exposición', go: 'Cómo llegar', live: 'En curso' }
+      };
+      function renderNowShowing(all) {
+        const T = NOW_TXT[currentLang] || NOW_TXT.en;
+        const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+        const today = MagnaSituations.today();
+        const live = Object.entries(all || {})
+          .filter(([, e]) => e && e.startDate && e.startDate <= today && (!e.endDate || today <= e.endDate))
+          .sort(([, a], [, b]) => String(a.endDate || '9999').localeCompare(String(b.endDate || '9999')));
+        const box = document.getElementById('nowShowing');
+        if (!live.length) { box.classList.add('hidden'); return; }
+        document.getElementById('nowShowingList').innerHTML = live.map(([slug, e]) => {
+          const n = (e.artworks || []).length;
+          const when = e.endDate ? `${T.until} ${MagnaSituations.formatDate(e.endDate, currentLang)}` : T.open;
+          const maps = e.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.location)}` : '';
+          return `
+            <div class="now-card">
+              ${e.image ? `<div class="now-card__flyer"><img src="assets/exhibition/flyers/${esc(e.image)}" alt="" onerror="this.parentElement.remove()"></div>` : ''}
+              <div class="min-w-0">
+                <span class="now-card__label">${T.label}</span>
+                <div class="now-card__title">${esc(e.title || slug)}</div>
+                <div class="now-card__meta">${esc(e.location || '')}${e.location ? ' · ' : ''}${esc(when)}${n ? ' · ' + T.works(n) : ''}</div>
+              </div>
+              <div class="now-card__actions">
+                ${e.published !== false ? `<a class="now-btn now-btn--dark" href="exhibition.html?id=${encodeURIComponent(slug)}">${T.view}</a>` : ''}
+                ${maps ? `<a class="now-btn now-btn--light" href="${maps}" target="_blank" rel="noopener">${T.go}</a>` : ''}
+              </div>
+            </div>`;
+        }).join('');
+        box.classList.remove('hidden');
+      }
+
       async function loadExhibitions() {
         try {
           const res  = await fetch('exhibitions.json?v=' + Date.now());
           const all  = await res.json();
           // Rascunhos (published:false) contam para a situação das obras mas não aparecem aqui
           const data = Object.fromEntries(Object.entries(all).filter(([, e]) => e && e.published !== false));
+          renderNowShowing(all);
+          const today = MagnaSituations.today();
+          const isLive = e => e.startDate && e.startDate <= today && (!e.endDate || today <= e.endDate);
           const list = document.getElementById('exhibitionsList');
           list.innerHTML = '';
           // Mais recente primeiro: ordena por startDate (fallback: endDate, depois final da lista)
@@ -1206,7 +1267,7 @@
                        alt="${exhib.title}" class="w-full h-auto max-h-72 object-contain group-hover:scale-105 transition duration-700">
                 </div>
                 <div class="flex-1 min-w-0">
-                  <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${exhib.date}</span>
+                  <span class="text-xs font-bold text-gray-400 uppercase tracking-widest">${exhib.date}</span>${isLive(exhib) ? `<span class="exhib-live">${NOW_TXT[currentLang]?.live || NOW_TXT.en.live}</span>` : ''}
                   <h3 class="text-lg serif font-medium mt-1 mb-1 group-hover:text-black transition">${exhib.title}</h3>
                   <p class="text-gray-700 text-sm font-medium mb-2">${exhib.location}</p>
                   <p class="text-gray-500 text-sm leading-relaxed line-clamp-3">${desc}</p>

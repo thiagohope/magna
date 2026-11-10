@@ -1024,6 +1024,22 @@ const server = http.createServer((req, res) => {
                     throw new Error('Root must be a JSON object');
                 }
 
+                // Situação atual (coleção pública/privada): um admin antigo, em cache, não
+                // conhece estes campos e grava sem eles. Se o campo nem sequer vier no pedido,
+                // mantém-se o que está no disco (o admin atual envia-os sempre, mesmo vazios).
+                {
+                    let disk = null;
+                    try { disk = JSON.parse(fs.readFileSync(ARTWORKS_PATH, 'utf8')); } catch (_) { disk = null; }
+                    if (disk) Object.entries(parsed).forEach(([slug, art]) => {
+                        const prev = disk[slug];
+                        if (!art || typeof art !== 'object' || Array.isArray(art) || !prev) return;
+                        if (!('collectionType' in art)) {
+                            ['collectionType', 'collectionSince', 'collectionCountry'].forEach(k => { if (prev[k]) art[k] = prev[k]; });
+                            if (!('publicCollection' in art) && prev.publicCollection) art.publicCollection = prev.publicCollection;
+                        }
+                    });
+                }
+
                 // createdAt (data de publicação, AAAA-MM-DD): nunca se perde por omissão
                 // (o admin reconstrói cada obra só a partir do formulário). Se o pedido não
                 // trouxer uma data válida, mantém-se a do disco; slugs novos recebem a de hoje.

@@ -127,7 +127,7 @@
         }
     }
 
-    // Todas as exposições JÁ TERMINADAS de uma obra, vindas de exhibitions.json e de
+    // Todas as exposições JÁ INICIADAS de uma obra (terminadas e a decorrer), vindas de exhibitions.json e de
     // situations.json, sem duplicar entre si nem com as escritas à mão no histórico.
     // Duplicado = mesma data de início, ou mesmo ano e mesmo local (ignorando acentos,
     // maiúsculas e pontuação: "Setúbal" = "Setubal").
@@ -144,12 +144,12 @@
 
         Object.entries(exhibitions || {}).forEach(([exSlug, x]) => {
             if (!x || !x.startDate || !(x.artworks || []).some(a => String(a).trim().toLowerCase() === low)) return;
-            const end = x.endDate || x.startDate;
-            if (end >= t) return; // ainda a decorrer ou futura
+            const end = x.endDate || '';
+            if (x.startDate > t) return; // futura: ainda não faz parte da proveniência (a decorrer já faz)
             add({ date: x.startDate, event: 'Exhibition', location: x.location || x.title || '',
                   details: [x.title, range(x.startDate, end)].filter(Boolean).join(' · '), exhibition: exSlug });
         });
-        endedExhibitionsFor(situations, slug, t).forEach(s =>
+        (situations || []).filter(s => s.type === 'exhibition' && (s.artworks || []).includes(slug) && s.startDate && s.startDate <= t).forEach(s =>
             add({ date: s.startDate, event: 'Exhibition', location: s.place || '', details: range(s.startDate, s.endDate) }));
         return out;
     }

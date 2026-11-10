@@ -15,7 +15,7 @@
         }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="../situations-lib.js?v=20261104c"></script>
+    <script src="../situations-lib.js?v=20261110"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,600;1,400&display=swap" rel="stylesheet">
     <style>
         body { background: #f8fafc; font-family: 'Inter', sans-serif; color: #334155; }
@@ -1824,9 +1824,11 @@
                 story:      { pt: document.getElementById('story_pt').value, en: document.getElementById('story_en').value, es: document.getElementById('story_es').value },
                 status:     document.getElementById('status').value,
                 publicCollection: document.getElementById('collectionType').value === 'private' ? '' : document.getElementById('publicCollection').value.trim(),
-                collectionType:    document.getElementById('collectionType').value || undefined,
-                collectionSince:   document.getElementById('collectionSince').value || undefined,
-                collectionCountry: document.getElementById('collectionCountry').value.trim() || undefined,
+                // Enviados sempre (mesmo vazios): assim o servidor distingue "limpei o campo"
+                // de "versão antiga do admin que não conhece estes campos".
+                collectionType:    document.getElementById('collectionType').value,
+                collectionSince:   document.getElementById('collectionSince').value,
+                collectionCountry: document.getElementById('collectionCountry').value.trim(),
                 location:   { pt: document.getElementById('loc_pt').value, en: 'Setubal', es: 'Setubal' },
                 originalHash: document.getElementById('originalHash').value,
                 editionsSold: {

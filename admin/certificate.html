@@ -22,7 +22,24 @@
             background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
             box-shadow: 0 20px 50px -12px rgba(0,0,0,0.15);
         }
-        .stamp-border { border: 8px double #b49b57; }
+        /* Friso dourado: desenhado por dentro da folha (8 mm da borda), em todas as
+           páginas. Colado à borda do papel era cortado pelas impressoras (margem não
+           imprimível) e pelo arredondamento da altura da página no PDF. */
+        .sheet { position: relative; }
+        .sheet::after {
+            content: ''; position: absolute; inset: 8mm; border: 6px double #b49b57;
+            pointer-events: none; z-index: 40;
+        }
+
+        /* Verso (página 2) */
+        .verso { font-size: 10.5pt; line-height: 1.5; text-align: left; }
+        .verso .v-sec { font-size: 7.5pt; letter-spacing: .18em; text-transform: uppercase; color: #8a7a4a; margin: 0 0 2.5mm; }
+        .verso .v-sec b { color: #1a1a1a; font-weight: 600; }
+        .verso .v-just { text-align: justify; hyphens: auto; }
+        .verso .v-date { color: #8a7a4a; font-variant-numeric: tabular-nums; }
+        /* PT: título mais comprido — mantém-se numa só linha */
+        html[lang="pt"] h1[data-i18n="certTitle"] { letter-spacing: 0.08em; white-space: nowrap; font-size: clamp(1.4rem, 3.6vw, 2rem); }
+        .verso .v-lbl { font-size: 7pt; letter-spacing: .14em; text-transform: uppercase; color: #6b7280; }
         .watermark {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg);
             font-size: 8rem; opacity: 0.03; font-family: 'Playfair Display', serif; 
@@ -31,14 +48,25 @@
 
         @media print {
             @page { size: A4 portrait; margin: 0; }
-            body { background: white; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+            /* !important: as classes Tailwind do body (py-10 px-4 min-h-screen flex)
+               ganhavam a esta regra e empurravam a folha para fora da página A4. */
+            html, body { background: white !important; margin: 0 !important; padding: 0 !important;
+                         display: block !important; min-height: 0 !important; height: auto !important; }
             .no-print { display: none !important; }
-            .paper-texture {
-                width: 210mm; height: 296mm; max-width: none; margin: 0; box-shadow: none;
-                border: 6px double #b49b57; padding: 40px !important;
-                page-break-after: avoid; page-break-inside: avoid;
+            .sheet {
+                width: 210mm !important; height: 296mm !important; max-width: none !important;
+                margin: 0 !important; box-shadow: none !important; border: 0 !important;
+                padding: 17mm 18mm !important; overflow: hidden !important;
+                break-inside: avoid; page-break-inside: avoid;
+                break-after: page; page-break-after: always;
             }
+            .sheet:last-of-type { break-after: auto; page-break-after: auto; }
+            /* Frente: o conteúdo (h-full = altura da folha inteira) somava-se ao cabeçalho
+               e o rodapé com assinatura e data ficava fora da página, cortado. */
+            main.sheet { display: flex !important; flex-direction: column; }
+            main.sheet > #content:not(.hidden) { height: auto !important; flex: 1 1 auto; min-height: 0; }
             h1 { font-size: 2.2rem !important; }
+            html[lang="pt"] h1[data-i18n="certTitle"] { font-size: 1.9rem !important; letter-spacing: 0.08em !important; white-space: nowrap; }
             h2 { font-size: 2rem !important; }
             .watermark { font-size: 6rem; }
         }
@@ -76,6 +104,14 @@
                 </select>
             </div>
 
+            <div class="flex flex-col gap-2 shrink-0">
+                <label class="text-xs font-bold uppercase tracking-widest text-gray-500">Língua / Language</label>
+                <div class="flex rounded-lg border border-gray-300 overflow-hidden text-sm font-bold">
+                    <button type="button" data-lang="pt" class="lang-btn px-4 py-2">PT</button>
+                    <button type="button" data-lang="en" class="lang-btn px-4 py-2 border-l border-gray-300">EN</button>
+                </div>
+            </div>
+
             <div class="flex gap-2 md:justify-end md:items-end w-full md:w-auto">
                 <a href="admin-hub.html" class="px-4 py-2 bg-white rounded shadow text-sm font-bold text-gray-600 hover:bg-gray-50 hover:text-black transition border border-gray-200 whitespace-nowrap flex items-center justify-center">
                     ← Back to Admin Hub
@@ -93,16 +129,16 @@
         </div>
     </div>
 
-    <main class="paper-texture bg-white w-full max-w-[800px] p-8 md:p-16 relative overflow-hidden stamp-border">
+    <main class="sheet paper-texture bg-white w-full max-w-[800px] p-8 md:p-16 relative overflow-hidden">
         <div class="watermark">Magna Original</div>
 
         <header class="text-center mb-8 border-b-2 border-gold pb-6">
             <img src="../assets/icons/M02.png" alt="Magna" class="h-20 mx-auto mb-4 object-contain">
-            <h1 class="official text-3xl md:text-4xl uppercase tracking-widest mb-2 text-gray-900">Certificate of Authenticity</h1>
-            <p class="text-[10px] uppercase tracking-[0.4em] text-gold font-bold">Official Provenance Record · BrainboxMed Registry</p>
+            <h1 class="official text-3xl md:text-4xl uppercase tracking-widest mb-2 text-gray-900" data-i18n="certTitle">Certificate of Authenticity</h1>
+            <p class="text-[10px] uppercase tracking-[0.4em] text-gold font-bold" data-i18n="record">Official Provenance Record</p>
         </header>
 
-        <div id="loading" class="text-center py-10 text-gray-400">Verifying certified registry...</div>
+        <div id="loading" class="text-center py-10 text-gray-400" data-i18n="loading">Verifying certified registry...</div>
         
         <div id="content" class="hidden relative z-10 flex flex-col h-full justify-between">
             <div class="grid grid-cols-3 gap-8 items-start mb-6">
@@ -114,30 +150,30 @@
                         <div class="p-1 bg-white border border-gray-400 w-24 h-24 flex items-center justify-center">
                             <img id="qrcode" src="" class="w-full h-full object-contain">
                         </div>
-                        <p class="text-[8px] text-gray-400 mt-1 uppercase tracking-wide text-center">Digital ID Verification</p>
+                        <p class="text-[8px] text-gray-400 mt-1 uppercase tracking-wide text-center" data-i18n="digitalId">Digital ID Verification</p>
                     </div>
                 </div>
 
                 <div class="col-span-2 pl-4">
                     <h2 id="artTitle" class="serif text-4xl italic mb-1 text-black leading-tight">...</h2>
-                    <p class="text-xs text-gold font-bold mb-6 tracking-wide uppercase">Original Artwork by Magna</p>
+                    <p class="text-xs text-gold font-bold mb-6 tracking-wide uppercase" data-i18n="original">Original Artwork by Magna</p>
 
                     <div class="grid grid-cols-2 gap-y-4 gap-x-4 text-sm py-4 border-t border-b border-gray-100">
-                        <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Creation Year</span><span id="artYear" class="font-serif text-lg">...</span></div>
-                        <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Dimensions</span><span id="artDimensions" class="font-serif text-lg">...</span></div>
-                        <div class="col-span-2"><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Technique</span><span id="artTechnique" class="font-medium">...</span></div>
-                        <div id="collectionBlock" class="col-span-2 hidden"><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold">Public Collection</span><span id="artCollection" class="font-medium"></span></div>
+                        <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="year">Creation Year</span><span id="artYear" class="font-serif text-lg">...</span></div>
+                        <div><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="dims">Dimensions</span><span id="artDimensions" class="font-serif text-lg">...</span></div>
+                        <div class="col-span-2"><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="tech">Technique</span><span id="artTechnique" class="font-medium">...</span></div>
+                        <div id="collectionBlock" class="col-span-2 hidden"><span class="block text-[9px] text-gray-400 uppercase tracking-wide font-bold" data-i18n="pubColl">Public Collection</span><span id="artCollection" class="font-medium"></span></div>
                     </div>
 
                     <div class="mt-4 bg-yellow-50 p-3 rounded border border-yellow-100 print:bg-transparent print:border-gray-200">
-                        <span class="block text-[9px] text-yellow-700 uppercase tracking-wide font-bold mb-1 print:text-gray-500">Registry ID</span>
+                        <span class="block text-[9px] text-yellow-700 uppercase tracking-wide font-bold mb-1 print:text-gray-500" data-i18n="registry">Registry ID</span>
                         <code id="artHash" class="block font-mono text-[9px] text-black break-all">...</code>
                     </div>
                 </div>
             </div>
 
             <div class="pt-4 flex-grow">
-                <h3 class="official text-xs font-bold uppercase border-b border-gray-300 inline-block mb-4 text-gold">Provenance & History</h3>
+                <h3 class="official text-xs font-bold uppercase border-b border-gray-300 inline-block mb-4 text-gold" data-i18n="provenance">Provenance &amp; History</h3>
                 <ul id="historyList" class="relative border-l-2 border-gray-200 ml-2 space-y-4 pb-2"></ul>
             </div>
 
@@ -145,18 +181,187 @@
                 <div class="text-center">
                     <img src="../assets/icons/magna-sign.png" alt="Magna Signature" class="h-20 mx-auto mb-1 opacity-90 mix-blend-multiply" style="transform: rotate(-2deg);">
                     <div class="h-px w-20 bg-gold mx-auto"></div>
-                    <p class="text-[9px] uppercase mt-1 tracking-widest text-gray-500">Artist Signature</p>
+                    <p class="text-[9px] uppercase mt-1 tracking-widest text-gray-500" data-i18n="artistSig">Artist Signature</p>
                 </div>
                 <div class="text-right">
                     <p class="text-xs font-bold" id="currentDate">Date</p>
-                    <p class="text-[9px] text-gray-400 uppercase mt-1">Certified by Magna Ecosystem</p>
+                    <p class="text-[9px] text-gray-400 uppercase mt-1" data-i18n="certifiedBy">Certified by Magna Ecosystem</p>
                 </div>
             </footer>
         </div>
     </main>
 
+    <!-- ===== PÁGINA 2 · VERSO (modelo; preenchido com os dados de cada obra) ===== -->
+    <section id="verso" class="sheet verso paper-texture bg-white w-full max-w-[800px] p-8 md:p-16 mt-10 overflow-hidden hidden">
+        <header class="text-center mb-7">
+            <p id="vHead" class="text-[8.5pt] uppercase tracking-[0.3em] text-gray-600">… · Certificado de Autenticidade</p>
+            <div class="h-px w-12 bg-gold mx-auto mt-3"></div>
+        </header>
+
+        <div class="v-sec">01 / <b data-i18n="vDeclTitle">Declaração de autenticidade</b></div>
+        <p id="vDecl" class="v-just mb-6">Eu, Magna Rosiane Leite Oliveira Gonçalves, conhecida profissionalmente por Magna Leite, artista plástica, declaro e certifico, sob minha inteira responsabilidade, que a obra acima identificada, intitulada <span id="vTitle">…</span>, foi concebida e executada inteiramente por mim<span id="vYear"></span>.</p>
+
+        <div class="v-sec">02 / <b data-i18n="vHistTitle">Histórico da obra</b></div>
+        <div id="vHistory" class="mb-6 space-y-0.5"></div>
+
+        <div class="v-sec">03 / <b data-i18n="vVerTitle">Verificação</b></div>
+        <div class="flex gap-5 items-start mb-8">
+            <img id="vQr" src="" alt="QR" class="w-[24mm] h-[24mm] shrink-0 object-contain">
+            <div>
+                <p class="text-[8.5pt] mb-1"><span class="v-lbl" data-i18n="vRegNo">Número de registo</span> <code id="vHash" class="font-mono text-[8.5pt]">…</code></p>
+                <p class="v-just" data-i18n="vVerText">O número de registo acima corresponde à etiqueta de autenticidade afixada no verso da tela. Para confirmar a autenticidade desta obra, compare o número de registo com o da etiqueta física, leia o código acima ou contacte a autora. Válido apenas acompanhado deste número; uma versão sem ele ou com o texto alterado não deve ser considerada válida.</p>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <div class="w-[70mm] border-b border-gray-400 h-8"></div>
+            <p class="v-lbl mt-1 mb-1.5" data-i18n="vArtistSig">Assinatura da autora</p>
+            <div class="grid grid-cols-[22mm_1fr] gap-y-0.5 text-[9pt]">
+                <span class="v-lbl self-center" data-i18n="vName">Nome</span><span>Magna Rosiane Leite Oliveira Gonçalves</span>
+                <span class="v-lbl self-center" data-i18n="vPlace">Local</span><span>Setúbal, Portugal</span>
+                <span class="v-lbl self-center" data-i18n="vDateLbl">Data</span><span id="vDate">…</span>
+                <span class="v-lbl self-center" data-i18n="vContact">Contacto</span><span>magnaxleite@gmail.com · www.magnaleite.com</span>
+            </div>
+        </div>
+
+        <div class="border border-[#e4dcc4] bg-[#fbf8f0] rounded px-6 py-5">
+            <p class="text-[9pt] font-semibold uppercase tracking-[0.15em] mb-2" data-i18n="vRightsTitle">Direitos de autor</p>
+            <p id="vRights" class="v-just mb-3">A transmissão da propriedade da peça física<span id="vTransfer"></span> não implica a cessão dos direitos de autor. Permanecem reservados à artista, em exclusivo, os direitos patrimoniais de exploração da obra, incluindo reprodução, distribuição, comunicação pública e transformação, em qualquer meio ou suporte. Qualquer utilização depende de autorização ou licença prévia, expressa e escrita da artista, nos termos da legislação aplicável. Mantêm-se os direitos morais legalmente reconhecidos.</p>
+            <p class="text-[6.5pt] uppercase tracking-[0.14em] text-gold mb-5" data-i18n="vRightsNote">A assinatura abaixo refere-se apenas a esta secção — direitos de autor</p>
+            <div class="w-[70mm] border-b border-gray-500"></div>
+            <p id="vSigLabel" class="v-lbl mt-1">Assinatura da instituição</p>
+            <p class="v-lbl mt-1.5" data-i18n="vName">Nome</p>
+            <div class="w-[70mm] border-b border-dashed border-gray-400 h-4"></div>
+            <p id="vSigDecl" class="text-[8pt] italic text-gray-500 mt-1.5 leading-snug max-w-[80mm]"></p>
+        </div>
+    </section>
+
     <script>
         const JSON_PATH = '../artworks.json';
+
+        // ===== Língua (PT/EN): escolhida na barra, guardada no URL (?lang=pt|en) =====
+        const I18N = {
+            pt: {
+                docTitle: 'Certificado de Autenticidade', certTitle: 'Certificado de Autenticidade',
+                record: 'Registo Oficial de Proveniência', digitalId: 'Verificação digital',
+                original: 'Obra original de Magna', year: 'Ano de criação', dims: 'Dimensões', tech: 'Técnica',
+                pubColl: 'Coleção pública', registry: 'Número de registo', provenance: 'Proveniência e Histórico',
+                artistSig: 'Assinatura da artista', certifiedBy: 'Certificado pelo Ecossistema Magna',
+                issued: 'Emitido em', loading: 'A verificar o registo certificado…', pending: 'Registo pendente',
+                events: { Creation: 'Criação', Exhibition: 'Exposição', Transfer: 'Transferência', Restoration: 'Restauro', Certification: 'Certificação', Collection: 'Coleção' },
+                vHead: 'Certificado de Autenticidade', vDeclTitle: 'Declaração de autenticidade', vHistTitle: 'Histórico da obra',
+                vVerTitle: 'Verificação', vRegNo: 'Número de registo', vArtistSig: 'Assinatura da autora',
+                vName: 'Nome', vPlace: 'Local', vDateLbl: 'Data', vContact: 'Contacto',
+                vRightsTitle: 'Direitos de autor', vRightsNote: 'A assinatura abaixo refere-se apenas a esta secção — direitos de autor',
+                vVerText: 'O número de registo acima corresponde à etiqueta de autenticidade afixada no verso da tela. Para confirmar a autenticidade desta obra, compare o número de registo com o da etiqueta física, leia o código acima ou contacte a autora. Válido apenas acompanhado deste número; uma versão sem ele ou com o texto alterado não deve ser considerada válida.',
+                decl: (t, y) => `Eu, Magna Rosiane Leite Oliveira Gonçalves, conhecida profissionalmente por Magna Leite, artista plástica, declaro e certifico, sob minha inteira responsabilidade, que a obra acima identificada, intitulada "${t}", foi concebida e executada inteiramente por mim${y ? `, no ano de ${y}` : ''}.`,
+                rights: inst => `A transmissão da propriedade da peça física${inst ? ` — neste caso, por doação ${artigo(inst).a} ${inst} —` : ''} não implica a cessão dos direitos de autor. Permanecem reservados à artista, em exclusivo, os direitos patrimoniais de exploração da obra, incluindo reprodução, distribuição, comunicação pública e transformação, em qualquer meio ou suporte. Qualquer utilização depende de autorização ou licença prévia, expressa e escrita da artista, nos termos da legislação aplicável. Mantêm-se os direitos morais legalmente reconhecidos.`,
+                sigInst: 'Assinatura da instituição', sigBuyer: 'Assinatura do adquirente',
+                declInst: inst => `Declaro, em representação ${artigo(inst).de} ${inst}, estar ciente dos direitos de autor acima reservados à artista.`,
+                declBuyer: 'Declaro estar ciente dos direitos de autor acima reservados à artista.',
+                hCert: 'Atribuição de número de registo.', hCreation: 'Conclusão da obra', hRestoration: 'Restauro',
+                hExhibition: 'Exposição', hTo: 'a', hCollPub: inst => `Coleção ${artigo(inst).de} ${inst}.`, hCollPriv: 'Coleção particular',
+                locPub: 'Coleção pública', locPriv: 'Coleção particular'
+            },
+            en: {
+                docTitle: 'Certificate of Authenticity', certTitle: 'Certificate of Authenticity',
+                record: 'Official Provenance Record', digitalId: 'Digital ID Verification',
+                original: 'Original Artwork by Magna', year: 'Creation Year', dims: 'Dimensions', tech: 'Technique',
+                pubColl: 'Public Collection', registry: 'Registry ID', provenance: 'Provenance & History',
+                artistSig: 'Artist Signature', certifiedBy: 'Certified by Magna Ecosystem',
+                issued: 'Issued', loading: 'Verifying certified registry…', pending: 'Pending Registration',
+                events: { Creation: 'Creation', Exhibition: 'Exhibition', Transfer: 'Transfer', Restoration: 'Restoration', Certification: 'Certification', Collection: 'Collection' },
+                vHead: 'Certificate of Authenticity', vDeclTitle: 'Declaration of authenticity', vHistTitle: 'History of the work',
+                vVerTitle: 'Verification', vRegNo: 'Registration number', vArtistSig: "Artist's signature",
+                vName: 'Name', vPlace: 'Place', vDateLbl: 'Date', vContact: 'Contact',
+                vRightsTitle: 'Copyright', vRightsNote: 'The signature below refers only to this section — copyright',
+                vVerText: 'The registration number above matches the authenticity label affixed to the back of the canvas. To confirm the authenticity of this work, compare the registration number with the one on the physical label, scan the code above or contact the artist. Valid only when accompanied by this number; any version without it or with altered text should not be considered valid.',
+                decl: (t, y) => `I, Magna Rosiane Leite Oliveira Gonçalves, professionally known as Magna Leite, visual artist, hereby declare and certify, under my sole responsibility, that the work identified above, entitled "${t}", was conceived and executed entirely by me${y ? ` in ${y}` : ''}.`,
+                rights: inst => `The transfer of ownership of the physical work${inst ? ` — in this case, by donation to ${inst} —` : ''} does not imply any assignment of copyright. All economic rights to exploit the work, including reproduction, distribution, communication to the public and transformation, in any medium or format, remain exclusively reserved to the artist. Any use requires the artist's prior, express and written authorisation or licence, under the applicable law. The moral rights recognised by law are retained.`,
+                sigInst: "Institution's signature", sigBuyer: "Acquirer's signature",
+                declInst: inst => `I declare, on behalf of ${inst}, that I am aware of the copyright reserved to the artist above.`,
+                declBuyer: 'I declare that I am aware of the copyright reserved to the artist above.',
+                hCert: 'Registration number assigned.', hCreation: 'Work completed', hRestoration: 'Restoration',
+                hExhibition: 'Exhibition', hTo: 'to', hCollPub: inst => `Collection of ${inst}.`, hCollPriv: 'Private collection',
+                locPub: 'Public collection', locPriv: 'Private collection'
+            }
+        };
+        let LANG = (new URLSearchParams(window.location.search).get('lang') || 'pt').toLowerCase();
+        if (!I18N[LANG]) LANG = 'pt';
+        const T = () => I18N[LANG];
+
+        function applyStaticLang() {
+            document.documentElement.lang = LANG;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const v = T()[el.dataset.i18n];
+                if (typeof v === 'string') el.textContent = v;
+            });
+            document.querySelectorAll('.lang-btn').forEach(b => {
+                const on = b.dataset.lang === LANG;
+                b.classList.toggle('bg-black', on); b.classList.toggle('text-white', on);
+                b.classList.toggle('bg-white', !on); b.classList.toggle('text-gray-600', !on);
+            });
+        }
+
+        // ===== Verso (página 2) — modelo preenchido com os dados de cada obra =====
+        const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+        // AAAA-MM-DD → DD-MM-AAAA (datas só com ano ficam como estão)
+        const dmy = iso => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? `${m[3]}-${m[2]}-${m[1]}` : String(iso || ''); };
+        // "ao/do Forte…", "à/da Câmara…": género pela primeira palavra do nome da instituição
+        function artigo(nome) {
+            const w = String(nome || '').trim().split(/\s+/)[0].toLowerCase();
+            const fem = /(a|ção|são|dade|agem|ie)$/.test(w);
+            return { a: fem ? 'à' : 'ao', de: fem ? 'da' : 'do' };
+        }
+        const norm = v => String(v || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+        const isPublic = art => !!art.publicCollection && (art.collectionType || 'public') === 'public';
+
+        function versoLine(h, art, exhObj) {
+            const L = T();
+            const loc = h.location ? String(h.location).trim() : '';
+            switch (h.event) {
+                case 'Certification': return { date: dmy(h.date), text: L.hCert };
+                case 'Creation':      return { date: dmy(h.date), text: L.hCreation + (loc ? `, ${loc}` : '') + '.' };
+                case 'Restoration':   return { date: dmy(h.date), text: L.hRestoration + (loc ? `, ${loc}` : '') + '.' };
+                case 'Exhibition': {
+                    const x = (h.exhibition && exhObj && exhObj[h.exhibition]) || null;
+                    const title = x ? (x.title || '') : '';
+                    let end = x ? (x.endDate || '') : '';
+                    if (!x) { const m = String(h.details || '').match(/→\s*(\d{4}-\d{2}-\d{2})/); if (m) end = m[1]; }
+                    // Local sem repetir o que já está no título ("…Forte de Albarquel Setúbal" + "Forte de Albarquel, Setúbal, Portugal" → "Portugal")
+                    const rest = loc.split(',').map(t => t.trim()).filter(t => t && !norm(title).includes(norm(t))).join(', ');
+                    const date = (end && end !== h.date) ? `${dmy(h.date)} ${L.hTo} ${dmy(end)}` : dmy(h.date);
+                    const text = L.hExhibition + (title ? ` "${title}"` : '') + (rest ? (title ? `, ${rest}` : ` ${rest}`) : '') + '.';
+                    return { date, text };
+                }
+                case 'Collection':
+                    if (isPublic(art)) return { date: dmy(h.date), text: L.hCollPub(art.publicCollection) };
+                    return { date: dmy(h.date), text: L.hCollPriv + (art.collectionCountry ? `, ${art.collectionCountry}` : '') + '.' };
+                default: return { date: dmy(h.date), text: [L.events[h.event] || h.event, loc].filter(Boolean).join(', ') + '.' };
+            }
+        }
+
+        function fillVerso(art, slug, history, exhObj, qrUrl) {
+            const L = T();
+            const title = art.title || slug;
+            document.getElementById('vHead').textContent = `${title} · ${L.vHead}`;
+            document.getElementById('vDecl').textContent = L.decl(title, art.year);
+            document.getElementById('vHash').textContent = art.originalHash || L.pending;
+            document.getElementById('vQr').src = qrUrl; // o mesmo QR da frente → página pública de verificação
+            const d = new Date();
+            document.getElementById('vDate').textContent = `${String(d.getDate()).padStart(2, '0')} / ${String(d.getMonth() + 1).padStart(2, '0')} / ${d.getFullYear()}`;
+
+            // Histórico em ordem cronológica (a frente mostra do mais recente para o mais antigo)
+            const asc = [...history].sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')));
+            document.getElementById('vHistory').innerHTML = asc.map(h => versoLine(h, art, exhObj))
+                .map(l => `<p><span class="v-date">${esc(l.date)}</span> — ${esc(l.text)}</p>`).join('');
+
+            // Direitos de autor: coleção pública → assina a instituição; caso contrário, o adquirente
+            const inst = isPublic(art) ? art.publicCollection : '';
+            document.getElementById('vRights').textContent = L.rights(inst);
+            document.getElementById('vSigLabel').textContent = inst ? L.sigInst : L.sigBuyer;
+            document.getElementById('vSigDecl').textContent = inst ? L.declInst(inst) : L.declBuyer;
+        }
 
         function getSlugFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -197,10 +402,12 @@
         function resetUIForReload() {
             document.getElementById('historyList').innerHTML = '';
             document.getElementById('content').classList.add('hidden');
+            document.getElementById('verso').classList.add('hidden');
+            document.getElementById('vHistory').innerHTML = '';
             const loading = document.getElementById('loading');
             loading.style.display = 'block';
             loading.classList.remove('text-red-500');
-            loading.textContent = 'Verifying certified registry...';
+            loading.textContent = T().loading;
         }
 
         async function renderCertificate(db, slug) {
@@ -216,23 +423,23 @@
                 const art = db[slug];
 
                 // 1. Dados Básicos
-                document.title = `Certificate - ${art.title || slug}`;
+                document.title = `${T().docTitle} - ${art.title || slug}`;
                 document.getElementById('artImage').src = art.image ? ('../' + art.image) : "";
                 document.getElementById('artTitle').textContent = art.title || slug;
                 document.getElementById('artYear').textContent = art.year || "";
-                document.getElementById('artDimensions').textContent = art.dimensions || "";
+                document.getElementById('artDimensions').textContent = LANG === 'pt' ? String(art.dimensions || '').replace(/\(\s*H\s*x\s*W\s*\)/i, '(A x L)') : (art.dimensions || '');
 
                 // 2. Técnica
-                const tech = (art.technique && art.technique.en) ? art.technique.en :
-                             (art.technique && art.technique.pt) ? art.technique.pt : "Mixed Media";
+                const t = art.technique || {};
+                const tech = t[LANG] || t.en || t.pt || (LANG === 'pt' ? 'Técnica mista' : 'Mixed Media');
                 document.getElementById('artTechnique').textContent = tech;
                 document.getElementById('artCollection').textContent = art.publicCollection || '';
                 document.getElementById('collectionBlock').classList.toggle('hidden', !art.publicCollection);
 
                 // 3. Hash e Data
-                document.getElementById('artHash').textContent = art.originalHash || "Pending Registration";
+                document.getElementById('artHash').textContent = art.originalHash || T().pending;
                 // Data de emissão, por extenso (o formato numérico 11/4/2026 é ambíguo)
-                document.getElementById('currentDate').textContent = 'Issued ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+                document.getElementById('currentDate').textContent = T().issued + ' ' + new Date().toLocaleDateString(LANG === 'pt' ? 'pt-PT' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
                 // 4. Link "View Artwork"
                 const artPageUrl = `../artwork.html?id=${slug}`;
@@ -263,30 +470,34 @@
                 publicHistory.sort((a, b) => String(b.date || '').localeCompare(String(a.date || '')));
                 const history = publicHistory.length > 0
                     ? publicHistory
-                    : [{ date: art.year || "", event: "Creation", location: "Magna Studio", details: "Artwork completed." }];
+                    : [{ date: art.year || "", event: "Creation", location: "Magna Studio", details: LANG === 'pt' ? "Obra concluída." : "Artwork completed." }];
 
                 const eventColors = {
-                    "Creation": "bg-yellow-400 border-yellow-500 print:border-gray-400 print:bg-gray-200",
-                    "Exhibition": "bg-purple-500 border-purple-600 print:border-gray-400 print:bg-gray-300",
-                    "Transfer": "bg-blue-500 border-blue-600 print:border-gray-600 print:bg-gray-400",
-                    "Restoration": "bg-red-400 border-red-500 print:border-gray-400 print:bg-gray-200",
-                    "Certification": "bg-gray-800 border-black print:border-black print:bg-black",
-                    "Collection": "bg-emerald-600 border-emerald-700 print:border-gray-600 print:bg-gray-500"
+                    "Creation": "bg-yellow-400 border-yellow-500",
+                    "Exhibition": "bg-purple-500 border-purple-600",
+                    "Transfer": "bg-blue-500 border-blue-600",
+                    "Restoration": "bg-red-400 border-red-500",
+                    "Certification": "bg-gray-800 border-black",
+                    "Collection": "bg-emerald-600 border-emerald-700"
                 };
 
                 history.forEach((item) => {
                     const li = document.createElement('li');
                     li.className = "pl-6 relative group";
                     const dotClass = eventColors[item.event] || "bg-gray-400 border-gray-500";
+                    const evLabel = T().events[item.event] || item.event || '';
+                    // "Public collection — X" / "Private collection" vêm do lib em inglês
+                    const locLabel = String(item.location || '')
+                        .replace(/^Public collection/, T().locPub).replace(/^Private collection/, T().locPriv);
 
                     li.innerHTML = `
                         <span class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full border-2 border-white shadow-sm ${dotClass}"></span>
                         <div class="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-4">
                             <span class="text-xs font-bold text-gray-900 w-20 shrink-0">${item.date || ""}</span>
                             <div>
-                                <span class="text-xs font-bold uppercase tracking-wide text-black">${item.event || ""}</span>
+                                <span class="text-xs font-bold uppercase tracking-wide text-black">${evLabel}</span>
                                 <span class="text-xs text-gray-500 mx-1 print:hidden">&middot;</span>
-                                <span class="text-xs text-gray-600 block sm:inline">${item.location || ""}</span>
+                                <span class="text-xs text-gray-600 block sm:inline">${locLabel}</span>
                                 ${item.details ? `<p class="text-[9px] text-gray-500 italic mt-0.5">${item.details}</p>` : ''}
                             </div>
                         </div>
@@ -294,8 +505,12 @@
                     historyList.appendChild(li);
                 });
 
+                // 7. Verso (página 2)
+                fillVerso(art, slug, history, exhObj, qrUrl);
+
                 loading.style.display = 'none';
                 content.classList.remove('hidden');
+                document.getElementById('verso').classList.remove('hidden');
 
             } catch (err) {
                 console.error(err);
@@ -307,6 +522,7 @@
         }
 
         (async function init() {
+            applyStaticLang();
             const db = await loadDB();
 
             let slug = getSlugFromUrl();
@@ -324,6 +540,18 @@
                 resetUIForReload();
                 await renderCertificate(db, newSlug);
             });
+
+            document.querySelectorAll('.lang-btn').forEach(b => b.addEventListener('click', async () => {
+                if (b.dataset.lang === LANG) return;
+                LANG = b.dataset.lang;
+                const url = new URL(window.location.href);
+                url.searchParams.set('lang', LANG);
+                window.history.replaceState({}, '', url.toString());
+                applyStaticLang();
+                const cur = document.getElementById('artSelect').value || slug;
+                resetUIForReload();
+                await renderCertificate(db, cur);
+            }));
 
             await renderCertificate(db, slug);
         })();

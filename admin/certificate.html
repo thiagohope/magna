@@ -53,23 +53,44 @@
             html, body { background: white !important; margin: 0 !important; padding: 0 !important;
                          display: block !important; min-height: 0 !important; height: auto !important; }
             .no-print { display: none !important; }
+            .sheet { break-inside: avoid; page-break-inside: avoid; break-after: page; page-break-after: always; }
+            .sheet:last-of-type { break-after: auto; page-break-after: auto; }
             .sheet {
                 width: 210mm !important; height: 296mm !important; max-width: none !important;
                 margin: 0 !important; box-shadow: none !important; border: 0 !important;
                 padding: 17mm 18mm !important; overflow: hidden !important;
-                break-inside: avoid; page-break-inside: avoid;
-                break-after: page; page-break-after: always;
             }
-            .sheet:last-of-type { break-after: auto; page-break-after: auto; }
             /* Frente: o conteúdo (h-full = altura da folha inteira) somava-se ao cabeçalho
                e o rodapé com assinatura e data ficava fora da página, cortado. */
             main.sheet { display: flex !important; flex-direction: column; }
             main.sheet > #content:not(.hidden) { height: auto !important; flex: 1 1 auto; min-height: 0; }
-            h1 { font-size: 2.2rem !important; }
-            html[lang="pt"] h1[data-i18n="certTitle"] { font-size: 1.9rem !important; letter-spacing: 0.08em !important; white-space: nowrap; }
-            h2 { font-size: 2rem !important; }
-            .watermark { font-size: 6rem; }
+            /* Pinturas verticais: imagem limitada em altura, para não empurrar o rodapé */
+            .sheet #artImage { max-height: 78mm; width: auto; max-width: 100%; margin: 0 auto; }
+            .sheet h1 { font-size: 2.2rem !important; }
+            html[lang="pt"] .sheet h1[data-i18n="certTitle"] { font-size: 1.9rem !important; letter-spacing: 0.08em !important; white-space: nowrap; }
+            .sheet h2 { font-size: 2rem !important; }
+            .sheet .watermark { font-size: 6rem; }
+            /* Ajuste automático (ver fitSheets): se ainda não couber, encolhe o conteúdo */
+            .sheet > *:not(.watermark) { zoom: var(--fit, 1); }
         }
+        /* A mesma geometria da impressão, aplicada no ecrã só durante a medição (fitSheets) */
+        .sheet.measure {
+            width: 210mm !important; height: 296mm !important; max-width: none !important;
+            margin: 0 !important; box-shadow: none !important; border: 0 !important;
+            padding: 17mm 18mm !important; overflow: hidden !important;
+        }
+        /* Frente: o conteúdo (h-full = altura da folha inteira) somava-se ao cabeçalho
+           e o rodapé com assinatura e data ficava fora da página, cortado. */
+        main.sheet.measure { display: flex !important; flex-direction: column; }
+        main.sheet.measure > #content:not(.hidden) { height: auto !important; flex: 1 1 auto; min-height: 0; }
+        /* Pinturas verticais: imagem limitada em altura, para não empurrar o rodapé */
+        .sheet.measure #artImage { max-height: 78mm; width: auto; max-width: 100%; margin: 0 auto; }
+        .sheet.measure h1 { font-size: 2.2rem !important; }
+        html[lang="pt"] .sheet.measure h1[data-i18n="certTitle"] { font-size: 1.9rem !important; letter-spacing: 0.08em !important; white-space: nowrap; }
+        .sheet.measure h2 { font-size: 2rem !important; }
+        .sheet.measure .watermark { font-size: 6rem; }
+        /* Ajuste automático (ver fitSheets): se ainda não couber, encolhe o conteúdo */
+        .sheet.measure > *:not(.watermark) { zoom: var(--fit, 1); }
     </style>
     <script>
     (function() {
@@ -362,6 +383,41 @@
             document.getElementById('vSigLabel').textContent = inst ? L.sigInst : L.sigBuyer;
             document.getElementById('vSigDecl').textContent = inst ? L.declInst(inst) : L.declBuyer;
         }
+
+        // ===== Ajuste à folha A4 antes de imprimir =====
+        // Mede cada folha com a geometria exata da impressão (classe .measure) e, se o
+        // conteúdo passar o friso, encolhe-o (zoom) só o necessário. Assim nenhuma obra
+        // — pintura vertical, muitas exposições, texto em PT ou EN — corta a assinatura.
+        function fitSheets() {
+            const MARGIN_MM = 3; // folga mínima entre o conteúdo e o friso
+            document.querySelectorAll('.sheet:not(.hidden)').forEach(sh => {
+                sh.style.removeProperty('--fit');
+                sh.classList.add('measure');
+                const mmPx = sh.getBoundingClientRect().height / 296;
+                const limit = () => sh.getBoundingClientRect().bottom - (8 + MARGIN_MM) * mmPx - 6; // 6px = linha dupla do friso
+                const bottom = () => {
+                    let max = 0;
+                    sh.querySelectorAll('*').forEach(e => {
+                        if (e.closest('.watermark') || e.offsetParent === null) return;
+                        const r = e.getBoundingClientRect();
+                        if (r.height > 0) max = Math.max(max, r.bottom);
+                    });
+                    return max;
+                };
+                const top = sh.getBoundingClientRect().top + 17 * mmPx;
+                let fit = 1;
+                for (let i = 0; i < 4; i++) {          // converge em 1–2 passos
+                    const over = bottom() - limit();
+                    if (over <= 0) break;
+                    const avail = limit() - top;
+                    fit = Math.max(0.6, fit * avail / (avail + over));
+                    sh.style.setProperty('--fit', fit.toFixed(3));
+                }
+                sh.classList.remove('measure');
+            });
+        }
+        window.addEventListener('beforeprint', fitSheets);
+        window.addEventListener('afterprint', () => document.querySelectorAll('.sheet').forEach(sh => sh.style.removeProperty('--fit')));
 
         function getSlugFromUrl() {
             const params = new URLSearchParams(window.location.search);
